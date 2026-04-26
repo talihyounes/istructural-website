@@ -5,16 +5,16 @@ if (typeof document !== "undefined") {
   document.title = "iStructural Group Inc. | Structural Engineering, Management & AI Assessment";
   const meta = document.querySelector('meta[name="description"]');
   if (meta) {
-    meta.setAttribute("content", "iStructural Group Inc. — Advanced structural engineering, project management, and AI-powered structural assessment. 87 projects. 1,400+ engineers trained. Canada, MENA, global.");
+    meta.setAttribute("content", "iStructural Group Inc. | Advanced structural engineering, project management, and AI-powered structural assessment. Canada, MENA, global.");
   } else {
     const m = document.createElement("meta");
     m.name = "description";
-    m.content = "iStructural Group Inc. — Advanced structural engineering, project management, and AI-powered structural assessment. 87 projects. 1,400+ engineers trained. Canada, MENA, global.";
+    m.content = "iStructural Group Inc. | Advanced structural engineering, project management, and AI-powered structural assessment. Canada, MENA, global.";
     document.head.appendChild(m);
   }
 }
 
-// ── FORMSPREE ENDPOINT — replace YOUR_FORM_ID with your actual Formspree form ID ──
+// ── FORMSPREE ENDPOINT | replace YOUR_FORM_ID with your actual Formspree form ID ──
 // Create a free account at formspree.io, create a new form, copy the ID.
 // Example: if your form URL is https://formspree.io/f/xpzvwkab, the ID is xpzvwkab
 const FORMSPREE_ID = "jgjrvgk";
@@ -146,9 +146,9 @@ const tC={"Damage AI":P.coral,Platform:P.teal,Adjacent:P.gold,Processing:P.s1,Ha
 
 const phases = [
   {id:"p1",label:"Phase 1",title:"Smartphone Preliminary",price:"",liability:"No liability",color:P.s3,
-   items:["Free standardized forms (EN/FR/AR)","Guided photo protocol (far/near/nearer/nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
+   items:["Free standardized forms","Guided photo protocol (far, near, nearer, nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
   {id:"p2",label:"Phase 2",title:"AI Deep Inspection",price:"",liability:"Inspection-level",color:P.s1,
-   items:["Specialist data: LiDAR, drone, thermal, GPR","Partner AI processing (23 platforms)","3D digital twin + defect overlay","Severity-rated findings (ACI, Eurocode)","Detailed inspection dossier"]},
+   items:["Specialist data: LiDAR, drone, thermal, GPR","Curated partner AI processing","3D digital twin and defect overlay","Severity-rated findings (ACI, Eurocode)","Detailed inspection dossier"]},
   {id:"p3",label:"Phase 3",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
    items:["FEA (ETABS, SAP2000, CSiBridge)","Full load + capacity calculations","Repair drawings (AutoCAD, Revit)","Material specs + construction sequence","Authority submission package"]},
 ];
@@ -169,13 +169,27 @@ const submitStyle = (color) => ({
   letterSpacing:0.3,
 });
 
-// ── FORM HOOK ──
+// ── CAPTCHA HOOK (simple math, server-replaceable with reCAPTCHA / Cloudflare Turnstile on deploy) ──
+function useCaptcha() {
+  const [a] = useState(() => Math.floor(Math.random() * 9) + 1);
+  const [b] = useState(() => Math.floor(Math.random() * 9) + 1);
+  const [op] = useState(() => Math.random() > 0.5 ? "+" : "x");
+  const [answer, setAnswer] = useState("");
+  const expected = op === "+" ? (a + b) : (a * b);
+  const ok = parseInt(answer, 10) === expected;
+  const question = `${a} ${op} ${b} = ?`;
+  return {answer, setAnswer, ok, question};
+}
+
+// ── FORM HOOK (with CAPTCHA gate) ──
 function useForm(initial) {
   const [values, setValues] = useState(initial);
-  const [status, setStatus] = useState("idle"); // idle | sending | success | error
+  const [status, setStatus] = useState("idle"); // idle | sending | success | error | captcha
+  const captcha = useCaptcha();
   const set = (k) => (e) => setValues(v => ({...v, [k]: e.target.value}));
   const submit = async (e) => {
     e.preventDefault();
+    if (!captcha.ok) { setStatus("captcha"); return; }
     setStatus("sending");
     try {
       const res = await fetch(FORMSPREE_URL, {
@@ -189,8 +203,20 @@ function useForm(initial) {
       setStatus("error");
     }
   };
-  return {values, set, status, submit};
+  return {values, set, status, submit, captcha};
 }
+
+// ── CAPTCHA UI BLOCK ──
+const CaptchaBlock = ({captcha, status}) => (
+  <div style={{marginTop:8,padding:"10px 12px",borderRadius:7,background:"#F0F8F6",border:`1px solid ${P.teal}40`}}>
+    <div style={{fontSize:8,fontWeight:700,color:P.teal,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>Security Check</div>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{fontFamily:"'Fraunces',serif",fontSize:13,fontWeight:700,color:P.charcoal,padding:"6px 12px",background:P.white,borderRadius:5,letterSpacing:2,border:"1px dashed #cfd5dc",minWidth:80,textAlign:"center"}}>{captcha.question}</div>
+      <input type="text" inputMode="numeric" placeholder="Answer" value={captcha.answer} onChange={(e)=>captcha.setAnswer(e.target.value)} style={{...inputStyle,marginBottom:0,flex:1}} required />
+    </div>
+    {status === "captcha" && <div style={{fontSize:8.5,color:P.coral,marginTop:6,fontWeight:600}}>Incorrect answer. Please try again.</div>}
+  </div>
+);
 
 // ── FORM STATUS MESSAGES ──
 const FormStatus = ({status, color}) => {
@@ -248,7 +274,7 @@ export default function App(){
         {[{t:"Management",i:["Project Management","Business Strategy","Risk & Financial","Value Engineering"]},
           {t:"Design",i:["Structural Design","PT Concrete","Seismic & Wind","Third-Party Review","Training"]},
           {t:"AI & Technology",i:["AI Literacy & Readiness","AI Assessment Platform","Phase 1/2/3","Start a Project"]},
-          {t:"Resources",i:["Knowledge Hub","Projects (87)","Gallery","Contact"]},
+          {t:"Resources",i:["Knowledge Hub","Projects","Gallery","Contact"]},
         ].map(c=><div key={c.t}><div style={{fontSize:9,fontWeight:700,color:P.tealL,marginBottom:5}}>{c.t}</div>{c.i.map(x=><div key={x} style={{fontSize:8,color:"#7A96AE",padding:"1px 0",cursor:"pointer"}}>{x}</div>)}</div>)}
       </div>
       <div style={{borderTop:"1px solid #1E3A55",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:7.5,color:"#5A7A95"}}>
@@ -274,7 +300,7 @@ export default function App(){
         <div style={{padding:"44px 28px 40px",maxWidth:560}}>
           <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Since 2010 | Structural Solutions | Management | AI Assessment</div>
           <h1 style={{fontFamily:"'Fraunces',serif",fontSize:32,fontWeight:800,color:P.white,lineHeight:1.15,margin:0}}>Engineering intelligence<br/>for the built world</h1>
-          <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.7,marginTop:12,maxWidth:500}}>iStructural Group Inc. has championed advanced structural engineering for complex and unconventional projects for over two decades. Hybrid structural systems, structural forensics, seismic and wind engineering, and finite element modeling — now powered by AI-driven assessment and next-generation digital tools.</p>
+          <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.7,marginTop:12,maxWidth:500}}>iStructural Group Inc. has championed advanced structural engineering for complex and unconventional projects for over two decades. Hybrid structural systems, structural forensics, seismic and wind engineering, and finite element modeling | now powered by AI-driven assessment and next-generation digital tools.</p>
           <div style={{display:"flex",gap:8,marginTop:18}}>
             <div onClick={()=>setPage("s1")} style={{background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Management</div>
             <div onClick={()=>setPage("s2")} style={{background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Design & Consultancy</div>
@@ -289,9 +315,9 @@ export default function App(){
           {num:"01",key:"s1",title:"Management & Business Support",color:P.s1,bg:P.s1L,tag:"Strategy that builds before construction begins",
            items:["Project & Construction Management","Business Strategy & Growth","Risk & Financial Management","Value Engineering (V.E.)","ROI & Investment Analysis"]},
           {num:"02",key:"s2",title:"Design Services & Consultancy",color:P.s2,bg:P.s2L,tag:"Engineering precision for structures that endure",
-           items:["Structural Design (Buildings & Bridges)","PT Concrete / Vertical PT Innovation","Seismic & Wind Engineering","Third-Party Review & Verification","Training (CSi Licensed, 1400+ Engineers)"]},
+           items:["Seismic and Wind Engineering","Third-Party Review and Verification","Training (CSi Licensed)"]},
           {num:"03",key:"s3",title:"AI & Technology Services",color:P.s3,bg:P.s3L,tag:"From AI literacy to stamped engineering drawings",
-           items:["AI Literacy & Organizational Readiness (AI 101)","Tool Integration & Process Automation","AI Structural Assessment Platform (3-Phase)","Knowledge Hub (free resources for all)","23+ AI Inspection Partners Integrated"]},
+           items:["AI Literacy and Organizational Readiness (AI 101)","Tool Integration and Process Automation","AI Structural Assessment Platform (3-Phase)","Knowledge Hub (free resources for all)","Curated AI Inspection Partner Network"]},
         ].map((s,i)=>(
           <div key={s.key} onClick={()=>setPage(s.key)} style={{padding:"24px 20px 20px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=s.bg;e.currentTarget.style.borderBottom=`3px solid ${s.color}`;}}
@@ -309,9 +335,9 @@ export default function App(){
       <div style={{background:P.sand,padding:"22px 24px"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:10}}>Three damage assessment sub-markets</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-          {[{t:"Post-natural disaster",s:"70M+ affected/year",d:"Earthquakes, floods, wildfires. AI in under 1 hour vs. weeks.",c:P.coral},
-            {t:"Post-conflict / war zones",s:"No competitor in this lane",d:"UN/World Bank requires certified assessment. MENA focus.",c:P.redD},
-            {t:"Heritage & aging assets",s:"Mandates expanding",d:"Digital twins, Champlain Tower triggered mandates.",c:P.s2}].map((m,i)=>
+          {[{t:"Post-natural disaster",s:"",d:"Earthquakes, floods, wildfires. AI triage in under one hour versus weeks of manual inspection.",c:P.coral},
+            {t:"Post-conflict / war zones",s:"",d:"UN and World Bank programs require certified structural assessment. MENA focus.",c:P.redD},
+            {t:"Heritage and aging assets",s:"",d:"Digital twins and post-Champlain Tower oversight have reshaped inspection mandates.",c:P.s2}].map((m,i)=>
             <div key={i} style={{padding:"12px 14px",borderRadius:10,background:P.white,border:`1px solid ${m.c}15`}}>
               <div style={{fontSize:8,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:1.5}}>{m.t}</div>
               <div style={{fontSize:15,fontWeight:800,color:P.charcoal,marginTop:3,fontFamily:"'Fraunces',serif"}}>{m.s}</div>
@@ -323,14 +349,14 @@ export default function App(){
 
       <div onClick={()=>setPage("hub")} style={{padding:"16px 24px",background:P.greenD+"08",borderTop:`1px solid ${P.greenD}15`,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:P.greenD}}>Knowledge Hub — Free for every engineer, architect, and safety officer</div>
+          <div style={{fontSize:11,fontWeight:700,color:P.greenD}}>Knowledge Hub | Free for every engineer, architect, and safety officer</div>
           <div style={{fontSize:9,color:P.slate,marginTop:2}}>Forms, crack library, calculators, software directory, standards, management templates</div>
         </div>
         <div style={{background:P.greenD,color:P.white,padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Browse &#8594;</div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:0,background:P.navy}}>
-        {[{v:"2010",l:"Founded"},{v:"87",l:"Projects delivered"},{v:"1,400+",l:"Engineers trained"},{v:"3-Phase",l:"AI model (unique)"},{v:"23+",l:"AI partners"}].map((s,i)=>
+        {[{v:"2010",l:"Founded"}].map((s,i)=>
           <div key={i} style={{padding:"14px 10px",textAlign:"center",borderRight:i<4?"1px solid #1E3A55":"none"}}>
             <div style={{fontSize:18,fontWeight:800,color:P.tealL,fontFamily:"'Fraunces',serif"}}>{s.v}</div>
             <div style={{fontSize:8,color:"#7A96AE",marginTop:2}}>{s.l}</div>
@@ -367,13 +393,10 @@ export default function App(){
       <HeroBg color1={P.s2}><div style={{padding:"32px 28px 28px"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 02</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Design Services & Consultancy</h2>
-        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:480,lineHeight:1.6}}>Performance-based seismic design for super-tall structures exceeding 200m. Advanced nonlinear applications. CSi certified training for 1,400+ engineers.</p>
+        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:480,lineHeight:1.6}}>Performance-based seismic design for super-tall structures exceeding 200m. Advanced nonlinear applications. CSi certified training programs.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
-        {[{n:"Structural Design",d:"Conventional and PT concrete. Bridge design with construction stage analysis and time-dependent materials. High-rise, long-span, irregular geometry."},
-          {n:"PT Concrete & Vertical PT",d:"Innovative Vertical PT in walls and columns to enhance lateral performance (CP, LS to IO). PT slabs, beams, transfer optimization."},
-          {n:"Seismic & Wind Engineering",d:"ASCE 41, Eurocode 8. Dynamic response, base isolation, damper design. Wind tunnel correlation. Structures exceeding 200m."},
-          {n:"Nonlinear & Thermal Analysis",d:"Advanced nonlinear applications. Dynamic and thermal analysis. Vibration studies for rotated and twisted buildings."},
+        {[{n:"Seismic and Wind Engineering",d:"ASCE 41, Eurocode 8. Dynamic response, base isolation, damper design. Wind tunnel correlation. Tall and supertall structures."},
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s2L:"transparent",border:`1px solid ${P.s2}10`,marginBottom:5}}>
           <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{o.n}</div><div style={{fontSize:10,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
         <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginTop:16,marginBottom:8}}>Third-Party Consultancy</div>
@@ -385,7 +408,7 @@ export default function App(){
             </div>)}
         </div>
         <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s2+"08",border:`1px solid ${P.s2}15`}}>
-          <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:5}}>Training — CSi Licensed Instructor (1,400+ Engineers)</div>
+          <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:5}}>Training | CSi Licensed Instructor</div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
             {["ETABS","SAP2000","CSiBridge","SAFE","RAM Concept","ADAPT PT"].map(sw=>
               <span key={sw} style={{fontSize:8.5,fontWeight:600,padding:"3px 8px",borderRadius:6,background:P.s2+"12",color:P.s2,border:`1px solid ${P.s2}25`}}>{sw}</span>)}
@@ -411,9 +434,9 @@ export default function App(){
             <div style={{fontSize:9,fontWeight:700,color:P.white,background:P.s3b,padding:"3px 10px",borderRadius:10}}>Part A</div>
             <div style={{fontSize:14,fontWeight:800,color:P.s3b,fontFamily:"'Fraunces',serif"}}>AI Literacy & Organizational Readiness</div>
           </div>
-          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Eradicating AI illiteracy across your organization. From AI 101 fundamentals through readiness assessment to hands-on tool integration — tailored to your industry, your team, and your workflows.</div>
+          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Eradicating AI illiteracy across your organization. From AI 101 fundamentals through readiness assessment to hands-on tool integration | tailored to your industry, your team, and your workflows.</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            {[{n:"AI 101 — Foundations",d:"What AI is, what it is not, how it works, where it applies. Tailored workshops for leadership, engineers, operations, and support teams. No technical background required."},
+            {[{n:"AI 101 | Foundations",d:"What AI is, what it is not, how it works, where it applies. Tailored workshops for leadership, engineers, operations, and support teams. No technical background required."},
               {n:"AI Readiness Assessment",d:"Evaluate your organization's AI maturity. Identify high-impact automation opportunities. Gap analysis: data, skills, infrastructure, culture. Actionable roadmap delivered."},
               {n:"Tool Selection & Integration",d:"Identify the right AI tools for your specific tasks: document processing, quality control, scheduling, reporting, communication. Vendor-neutral recommendations. Integration planning."},
               {n:"Implementation Support",d:"Hands-on support deploying selected AI tools into existing workflows. Staff training. Process redesign. Performance monitoring. Ongoing advisory retainer available."},
@@ -446,17 +469,6 @@ export default function App(){
         </div>
       </div>
 
-      <div style={{padding:"0 24px 18px"}}>
-        <div style={{background:P.sand,borderRadius:10,padding:"14px 16px",border:"1px solid #E0DDD5"}}>
-          <div style={{fontSize:10,fontWeight:700,color:P.charcoal,marginBottom:2}}>AI Partner Network — Phase 2 Integration Layer (23 platforms)</div>
-          <div style={{fontSize:8.5,color:P.slate,marginBottom:8}}>Evaluated for API integration. Available per project type and asset class.</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
-            {partners.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5,padding:"3px 7px",borderRadius:4,background:i%2===0?P.white:"transparent",fontSize:9}}>
-              <span style={{width:4,height:4,borderRadius:"50%",background:tC[p.type],flexShrink:0}}/><span style={{fontWeight:600,color:P.charcoal,minWidth:90}}>{p.name}</span><span style={{color:P.slate}}>{p.focus}</span>
-            </div>)}
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -499,14 +511,14 @@ export default function App(){
   const ProjectsPage=()=>(
     <div>
       <HeroBg color1={P.navy}><div style={{padding:"28px 28px 24px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Portfolio — {allProjects.length} Projects</div>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Portfolio</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Projects</h2>
         <p style={{fontSize:10,color:"#9BBCD6",marginTop:4}}>Selected work: buildings, bridges, infrastructure. UAE, KSA, Qatar, Lebanon, and international.</p>
       </div></HeroBg>
       <div style={{padding:"10px 24px 6px",background:P.sand,display:"flex",gap:16,alignItems:"center",borderBottom:"1px solid #e0e0e0",flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
           <span style={{fontSize:9,color:P.slate,fontWeight:600}}>Type:</span>
-          {cats.map(c=><div key={c} onClick={()=>{setPCat(c);setShowAll(false);}} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pCat===c?P.charcoal:"transparent",color:pCat===c?P.white:P.slate,border:`1px solid ${pCat===c?P.charcoal:"#ccc"}`}}>{c} ({c==="All"?allProjects.length:allProjects.filter(p=>p.c===c).length})</div>)}
+          {cats.map(c=><div key={c} onClick={()=>{setPCat(c);setShowAll(false);}} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pCat===c?P.charcoal:"transparent",color:pCat===c?P.white:P.slate,border:`1px solid ${pCat===c?P.charcoal:"#ccc"}`}}>{c}</div>)}
         </div>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
           <span style={{fontSize:9,color:P.slate,fontWeight:600}}>Region:</span>
@@ -514,7 +526,7 @@ export default function App(){
         </div>
       </div>
       <div style={{padding:"8px 24px"}}>
-        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Showing {displayed.length} of {filteredP.length} projects</div>
+        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Filter by Type and Region above.</div>
         {displayed.map((p,i)=>(
           <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 80px 50px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center"}}>
             <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.4}}>{p.n}</div>
@@ -522,7 +534,7 @@ export default function App(){
             <span style={{fontSize:8.5,color:P.slate,textAlign:"right"}}>{p.r}</span>
           </div>
         ))}
-        {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show all {filteredP.length} projects</div>}
+        {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
       </div>
     </div>
   );
@@ -532,7 +544,7 @@ export default function App(){
     <div>
       <HeroBg color1={P.s2}><div style={{padding:"28px 28px 24px"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Certified Training</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Training for 1,400+ Engineers</h2>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Training Programs</h2>
         <p style={{fontSize:10,color:P.white+"BB",marginTop:4}}>CSiAmerica Licensed Instructor. Advanced support for international firms.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
@@ -548,11 +560,11 @@ export default function App(){
     </div>
   );
 
-  // ══════════════════════ START A PROJECT — REAL FORMS ══════════════════════
+  // ══════════════════════ START A PROJECT | REAL FORMS ══════════════════════
 
   const S1Form = () => {
-    const {values, set, status, submit} = useForm({
-      _subject:"iStructural — Management & Business Inquiry",
+    const {values, set, status, submit, captcha} = useForm({
+      _subject:"iStructural | Management & Business Inquiry",
       company:"", project:"", service:"", description:"", budget:"", timeline:"", contact:"", email:""
     });
     return (
@@ -601,8 +613,9 @@ export default function App(){
             <textarea required style={textareaStyle} value={values.description} onChange={set("description")} placeholder="Describe your project, current challenges, and what you need from iStructural..." />
           </div>
         </div>
+        <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s1)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received — we will be in touch" : "Submit Management Inquiry"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Submit Management Inquiry"}
         </button>
         <FormStatus status={status} color={P.s1} />
       </form>
@@ -610,8 +623,8 @@ export default function App(){
   };
 
   const S2Form = () => {
-    const {values, set, status, submit} = useForm({
-      _subject:"iStructural — Design & Consultancy Inquiry",
+    const {values, set, status, submit, captcha} = useForm({
+      _subject:"iStructural | Design & Consultancy Inquiry",
       company:"", project:"", service:"", structure:"", size:"", drawings:"", requirements:"", contact:"", email:""
     });
     return (
@@ -660,9 +673,9 @@ export default function App(){
             <label style={labelStyle}>Existing Drawings Available?</label>
             <select style={inputStyle} value={values.drawings} onChange={set("drawings")}>
               <option value="">Select...</option>
-              <option>Yes — full set available</option>
-              <option>Yes — partial drawings</option>
-              <option>No — new design</option>
+              <option>Yes | full set available</option>
+              <option>Yes | partial drawings</option>
+              <option>No | new design</option>
             </select>
           </div>
           <div>
@@ -678,8 +691,9 @@ export default function App(){
             <textarea style={textareaStyle} value={values.requirements} onChange={set("requirements")} placeholder="Standards, code jurisdiction, specific challenges, delivery timeline..." />
           </div>
         </div>
+        <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s2)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received — we will be in touch" : "Submit Design Inquiry"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Submit Design Inquiry"}
         </button>
         <FormStatus status={status} color={P.s2} />
       </form>
@@ -687,13 +701,13 @@ export default function App(){
   };
 
   const S3Form = () => {
-    const {values, set, status, submit} = useForm({
-      _subject:"iStructural — AI & Technology Inquiry",
+    const {values, set, status, submit, captcha} = useForm({
+      _subject:"iStructural | AI & Technology Inquiry",
       company:"", topic:"", part:"", assetType:"", damageType:"", location:"", contact:"", email:"", notes:""
     });
     return (
       <form onSubmit={submit}>
-        <div style={{fontSize:13,fontWeight:700,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>AI & Technology — Start a Project</div>
+        <div style={{fontSize:13,fontWeight:700,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>AI & Technology | Start a Project</div>
         <div style={{fontSize:10,color:P.slate,marginBottom:12,lineHeight:1.6}}>AI literacy workshop, tool integration, or structural assessment platform. Select your path below.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
           <div style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${P.s3b}20`,background:P.s3bL}}>
@@ -720,13 +734,13 @@ export default function App(){
             <label style={labelStyle}>Service Path *</label>
             <select required style={inputStyle} value={values.part} onChange={set("part")}>
               <option value="">Select your path...</option>
-              <option>Part A — AI Literacy: AI 101 Workshop</option>
-              <option>Part A — AI Literacy: Readiness Assessment</option>
-              <option>Part A — AI Literacy: Tool Selection & Integration</option>
-              <option>Part B — Phase 1: Smartphone Preliminary (no liability)</option>
-              <option>Part B — Phase 2: AI Deep Inspection</option>
-              <option>Part B — Phase 3: Stamped Engineering Report</option>
-              <option>Part B — Full 3-Phase Assessment</option>
+              <option>Part A | AI Literacy: AI 101 Workshop</option>
+              <option>Part A | AI Literacy: Readiness Assessment</option>
+              <option>Part A | AI Literacy: Tool Selection & Integration</option>
+              <option>Part B | Phase 1: Smartphone Preliminary (no liability)</option>
+              <option>Part B | Phase 2: AI Deep Inspection</option>
+              <option>Part B | Phase 3: Stamped Engineering Report</option>
+              <option>Part B | Full 3-Phase Assessment</option>
             </select>
           </div>
           <div>
@@ -771,8 +785,9 @@ export default function App(){
             <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Any relevant context: urgency, team size, existing data, preferred language (EN/FR/AR)..." />
           </div>
         </div>
+        <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s3)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received — we will be in touch" : "Submit Project"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Submit Project"}
         </button>
         <FormStatus status={status} color={P.s3} />
       </form>

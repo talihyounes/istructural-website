@@ -232,6 +232,7 @@ export default function App(){
   const [pCat,setPCat]=useState("All");
   const [pReg,setPReg]=useState("All");
   const [sTab,setSTab]=useState("s1");
+  const [trainingSw,setTrainingSw]=useState("");
   const [showAll,setShowAll]=useState(false);
 
   const filteredP = useMemo(()=>{
@@ -279,7 +280,7 @@ export default function App(){
       </div>
       <div style={{borderTop:"1px solid #1E3A55",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:7.5,color:"#5A7A95"}}>
         <span>iStructural Group Inc. | istructgroup.com | Canada | info@istructgroup.com</span>
-        <span>Copyright 2026</span>
+        <span>Copyright 2026 iStructural Group Inc. All rights reserved.</span>
       </div>
     </div>
   );
@@ -312,18 +313,17 @@ export default function App(){
       {/* 3 EQUAL PILLARS */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0}}>
         {[
-          {num:"01",key:"s1",title:"Management & Business Support",color:P.s1,bg:P.s1L,tag:"Strategy that builds before construction begins",
+          {key:"s1",title:"Management & Business Support",color:P.s1,bg:P.s1L,tag:"Strategy that builds before construction begins",
            items:["Project & Construction Management","Business Strategy & Growth","Risk & Financial Management","Value Engineering (V.E.)","ROI & Investment Analysis"]},
-          {num:"02",key:"s2",title:"Design Services & Consultancy",color:P.s2,bg:P.s2L,tag:"Engineering precision for structures that endure",
+          {key:"s2",title:"Design Services & Consultancy",color:P.s2,bg:P.s2L,tag:"Engineering precision for structures that endure",
            items:["Seismic and Wind Engineering","Third-Party Review and Verification","Training (CSi Licensed)"]},
-          {num:"03",key:"s3",title:"AI & Technology Services",color:P.s3,bg:P.s3L,tag:"From AI literacy to stamped engineering drawings",
+          {key:"s3",title:"AI & Technology Services",color:P.s3,bg:P.s3L,tag:"From AI literacy to stamped engineering drawings",
            items:["AI Literacy and Organizational Readiness (AI 101)","Tool Integration and Process Automation","AI Structural Assessment Platform (3-Phase)","Knowledge Hub (free resources for all)","Curated AI Inspection Partner Network"]},
         ].map((s,i)=>(
           <div key={s.key} onClick={()=>setPage(s.key)} style={{padding:"24px 20px 20px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=s.bg;e.currentTarget.style.borderBottom=`3px solid ${s.color}`;}}
             onMouseLeave={e=>{e.currentTarget.style.background=P.white;e.currentTarget.style.borderBottom="3px solid transparent";}}>
-            <div style={{fontSize:28,fontWeight:800,color:s.color+"20",fontFamily:"'Fraunces',serif",lineHeight:1}}>{s.num}</div>
-            <div style={{fontSize:13,fontWeight:700,color:s.color,marginTop:6}}>{s.title}</div>
+            <div style={{fontSize:13,fontWeight:700,color:s.color,marginTop:0}}>{s.title}</div>
             <div style={{fontSize:10,color:P.warm,fontStyle:"italic",marginTop:3,fontFamily:"'Fraunces',serif"}}>{s.tag}</div>
             <div style={{marginTop:10}}>{s.items.map((it,j)=><div key={j} style={{fontSize:9.5,color:P.charcoal,padding:"2px 0",display:"flex",gap:5}}><span style={{color:s.color,fontWeight:800,fontSize:8}}>+</span>{it}</div>)}</div>
             <div style={{fontSize:10,fontWeight:700,color:s.color,marginTop:12}}>Explore services &#8594;</div>
@@ -349,7 +349,7 @@ export default function App(){
 
       <div onClick={()=>setPage("hub")} style={{padding:"16px 24px",background:P.greenD+"08",borderTop:`1px solid ${P.greenD}15`,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:P.greenD}}>Knowledge Hub | Free for every engineer, architect, and safety officer</div>
+          <div style={{fontSize:11,fontWeight:700,color:P.greenD}}>Knowledge Hub | Free for every engineer, architect, safety officer, and developers</div>
           <div style={{fontSize:9,color:P.slate,marginTop:2}}>Forms, crack library, calculators, software directory, standards, management templates</div>
         </div>
         <div style={{background:P.greenD,color:P.white,padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Browse &#8594;</div>
@@ -549,13 +549,15 @@ export default function App(){
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
-          {[{n:"ETABS",d:"Multi-story building. Lateral systems, P-delta, response spectrum."},{n:"SAP2000",d:"General purpose. Linear/nonlinear, static/dynamic."},{n:"CSiBridge",d:"Bridge modeling, staging, tendon layout, seismic."},{n:"SAFE",d:"Slab and foundation. PT and RC. FEA + strip design."},{n:"RAM Concept",d:"PT slab specialist. Tendon profiling, load balancing."},{n:"ADAPT PT",d:"PT analysis. Continuous beam, one-way slab."}].map((s,i)=>
-            <div key={i} style={{padding:"12px 14px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`}}>
+          {[{n:"ETABS",d:"Multi-story building. Lateral systems, P-delta, response spectrum.",sw:"ETABS (CSi)"},{n:"SAP2000",d:"General purpose. Linear/nonlinear, static/dynamic.",sw:"SAP2000 (CSi)"},{n:"CSiBridge",d:"Bridge modeling, staging, tendon layout, seismic.",sw:"CSiBridge (CSi)"},{n:"SAFE",d:"Slab and foundation. PT and RC. FEA + strip design.",sw:"SAFE (CSi)"},{n:"RAM Concept",d:"PT slab specialist. Tendon profiling, load balancing.",sw:"RAM Concept (Bentley Systems)"},{n:"ADAPT PT",d:"PT analysis. Continuous beam, one-way slab.",sw:"ADAPT PT (RISA Tech)"},{n:"Others",d:"Other CSi or third-party software. Specify on request.",sw:"Other"}].map((s,i)=>
+            <div key={i} onClick={()=>{setPage("start");setSTab("s4");setTrainingSw(s.sw);}} style={{padding:"12px 14px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}
+              onMouseEnter={e=>{e.currentTarget.style.background=P.s2+"15";}}
+              onMouseLeave={e=>{e.currentTarget.style.background=P.s2L;}}>
               <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{s.n}</div>
               <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>{s.d}</div>
             </div>)}
         </div>
-        <div onClick={()=>{setPage("start");setSTab("s2");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s4");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
       </div>
     </div>
   );
@@ -794,6 +796,94 @@ export default function App(){
     );
   };
 
+  // ══════════════════════ S4 TRAINING FORM ══════════════════════
+  const S4Form = () => {
+    const {values, set, status, submit, captcha} = useForm({
+      contact:"", email:"", company:"", teamSize:"",
+      software: trainingSw || "", otherSwName:"", otherSwCompany:"",
+      format:"", dates:"", notes:""
+    });
+    const showOther = values.software === "Other";
+    return (
+      <form onSubmit={submit}>
+        <div style={{fontSize:13,fontWeight:700,color:P.s2,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Training | CSi Licensed Instructor</div>
+        <div style={{fontSize:9.5,color:P.slate,marginBottom:14,lineHeight:1.55}}>Corporate and university training on structural analysis software. Tell us your team and software focus and we will tailor the curriculum.</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div>
+            <label style={labelStyle}>Contact Name *</label>
+            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" />
+          </div>
+          <div>
+            <label style={labelStyle}>Email Address *</label>
+            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" />
+          </div>
+          <div>
+            <label style={labelStyle}>Company / Organization</label>
+            <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="Optional" />
+          </div>
+          <div>
+            <label style={labelStyle}>Team Size *</label>
+            <select required style={inputStyle} value={values.teamSize} onChange={set("teamSize")}>
+              <option value="">Select team size...</option>
+              <option>1 to 5</option>
+              <option>6 to 10</option>
+              <option>11 to 20</option>
+              <option>21 to 50</option>
+              <option>50 or more</option>
+            </select>
+          </div>
+          <div style={{gridColumn:"1 / -1"}}>
+            <label style={labelStyle}>Software Program (primary focus) *</label>
+            <select required style={inputStyle} value={values.software} onChange={set("software")}>
+              <option value="">Select software...</option>
+              <option>ETABS (CSi)</option>
+              <option>SAP2000 (CSi)</option>
+              <option>CSiBridge (CSi)</option>
+              <option>SAFE (CSi)</option>
+              <option>RAM Concept (Bentley Systems)</option>
+              <option>ADAPT PT (RISA Tech)</option>
+              <option>Other</option>
+            </select>
+          </div>
+          {showOther && (
+            <>
+              <div>
+                <label style={labelStyle}>Other Software Name *</label>
+                <input required={showOther} style={inputStyle} value={values.otherSwName} onChange={set("otherSwName")} placeholder="e.g. STAAD.Pro, Tekla, Robot..." />
+              </div>
+              <div>
+                <label style={labelStyle}>Software Company *</label>
+                <input required={showOther} style={inputStyle} value={values.otherSwCompany} onChange={set("otherSwCompany")} placeholder="e.g. Bentley Systems, Trimble, Autodesk..." />
+              </div>
+            </>
+          )}
+          <div>
+            <label style={labelStyle}>Training Format *</label>
+            <select required style={inputStyle} value={values.format} onChange={set("format")}>
+              <option value="">Select format...</option>
+              <option>In-person</option>
+              <option>Online live</option>
+              <option>Hybrid</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Preferred Dates / Timing</label>
+            <input style={inputStyle} value={values.dates} onChange={set("dates")} placeholder="e.g. Q3 2026, weekends only..." />
+          </div>
+          <div style={{gridColumn:"1 / -1"}}>
+            <label style={labelStyle}>Additional Notes</label>
+            <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Skill levels, learning objectives, certifications needed, language preference (EN/FR/AR)..." />
+          </div>
+        </div>
+        <CaptchaBlock captcha={captcha} status={status} />
+        <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s2)}>
+          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Request Training"}
+        </button>
+        <FormStatus status={status} color={P.s2} />
+      </form>
+    );
+  };
+
   const StartPage=()=>(
     <div>
       <div style={{background:P.navy,padding:"28px 28px 22px"}}>
@@ -801,13 +891,14 @@ export default function App(){
         <p style={{fontSize:10,color:"#9BBCD6",marginTop:4}}>Choose your service. We respond within 24 hours with scope, timeline, and proposal.</p>
       </div>
       <div style={{display:"flex",gap:0,borderBottom:"1px solid #e0e0e0"}}>
-        {[{id:"s1",l:"Management & Business",c:P.s1},{id:"s2",l:"Design & Consultancy",c:P.s2},{id:"s3",l:"AI & Technology",c:P.s3}].map(t=>
+        {[{id:"s1",l:"Management & Business",c:P.s1},{id:"s2",l:"Design & Consultancy",c:P.s2},{id:"s3",l:"AI & Technology",c:P.s3},{id:"s4",l:"Training",c:P.s2}].map(t=>
           <div key={t.id} onClick={()=>setSTab(t.id)} style={{flex:1,padding:"10px 14px",textAlign:"center",cursor:"pointer",borderBottom:sTab===t.id?`3px solid ${t.c}`:"3px solid transparent",background:sTab===t.id?t.c+"08":"transparent",fontSize:10.5,fontWeight:sTab===t.id?700:500,color:sTab===t.id?t.c:P.slate,transition:"all 0.2s"}}>{t.l}</div>)}
       </div>
       <div style={{padding:"20px 24px"}}>
         {sTab==="s1" && <S1Form />}
         {sTab==="s2" && <S2Form />}
         {sTab==="s3" && <S3Form />}
+        {sTab==="s4" && <S4Form />}
       </div>
     </div>
   );
@@ -826,7 +917,7 @@ export default function App(){
           <div key={i} style={{padding:"16px",borderRadius:10,border:"1px solid #e0e0e0"}}>
             <div style={{fontSize:11,fontWeight:700,color:P.charcoal}}>{c.t}</div>
             <div style={{fontSize:9.5,color:P.slate,marginTop:5,lineHeight:1.6}}>{c.d}</div>
-            <div onClick={()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s3":"s2");}}}
+            <div onClick={()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s3":i===2?"s4":"s2");}}}
               style={{marginTop:10,fontSize:10,fontWeight:700,color:c.c,cursor:"pointer"}}>{c.a} &#8594;</div>
           </div>)}
       </div>

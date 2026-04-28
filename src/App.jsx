@@ -376,13 +376,11 @@ export default function App(){
       <div style={{background:P.sand,padding:"22px 24px"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:10}}>Three damage assessment sub-markets</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-          {[{t:"Post-natural disaster",s:"",d:"Earthquakes, floods, wildfires. AI triage in under one hour versus weeks of manual inspection.",c:P.coral},
-            {t:"Post-conflict / war zones",s:"",d:"UN and World Bank programs require certified structural assessment. MENA focus.",c:P.redD},
-            {t:"Heritage and aging assets",s:"",d:"Digital twins and post-Champlain Tower oversight have reshaped inspection mandates.",c:P.s2}].map((m,i)=>
-            <div key={i} style={{padding:"12px 14px",borderRadius:10,background:P.white,border:`1px solid ${m.c}15`}}>
-              <div style={{fontSize:8,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:1.5}}>{m.t}</div>
-              <div style={{fontSize:15,fontWeight:800,color:P.charcoal,marginTop:3,fontFamily:"'Fraunces',serif"}}>{m.s}</div>
-              <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>{m.d}</div>
+          {[{t:"Post-natural disaster",c:P.coral},
+            {t:"Post-conflict / war zones",c:P.redD},
+            {t:"Heritage and aging assets",c:P.s2}].map((m,i)=>
+            <div key={i} style={{padding:"14px 16px",borderRadius:10,background:P.white,border:`1px solid ${m.c}15`}}>
+              <div style={{fontSize:10,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:1.6}}>{m.t}</div>
             </div>
           )}
         </div>
@@ -448,13 +446,6 @@ export default function App(){
               {c.i.map((x,j)=><div key={j} style={{fontSize:9,color:P.slate,padding:"1px 0"}}>+ {x}</div>)}
             </div>)}
         </div>
-        <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s2+"08",border:`1px solid ${P.s2}15`}}>
-          <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:5}}>Training | CSi Licensed Instructor</div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {["ETABS","SAP2000","CSiBridge","SAFE","RAM Concept","ADAPT PT"].map(sw=>
-              <span key={sw} style={{fontSize:8.5,fontWeight:600,padding:"3px 8px",borderRadius:6,background:P.s2+"12",color:P.s2,border:`1px solid ${P.s2}25`}}>{sw}</span>)}
-          </div>
-        </div>
         <div onClick={()=>{setPage("start");setSTab("s2");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
       </div>
     </div>
@@ -508,6 +499,7 @@ export default function App(){
             </div>
           )}
         </div>
+        <div onClick={()=>{setPage("start");setSTab("s3");}} style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Inquiry &#8594;</div>
       </div>
 
     </div>
@@ -525,12 +517,14 @@ export default function App(){
         {[{l:"Management",c:P.s1},{l:"Design & Engineering",c:P.s2},{l:"AI Platform",c:P.s3}].map(t=>
           <span key={t.l} style={{fontSize:8.5,fontWeight:600,padding:"3px 9px",borderRadius:6,background:t.c+"15",color:t.c,border:`1px solid ${t.c}25`}}>{t.l} Resources</span>)}
       </div>
+
+      {/* ═══ EXISTING 9 KNOWLEDGE HUB CATEGORY TILES ═══ */}
       <div style={{padding:"14px 24px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
           {[{n:"Crack & Damage Library",d:"Visual guide: crack types, spalling, delamination. Severity ratings.",s:"AI + Design",c:P.s3},
             {n:"Free Inspection Forms (EN/FR/AR)",d:"Safety pre-check, site ID, Phase 1 field form, post-disaster rapid.",s:"AI Platform",c:P.s3},
             {n:"Structural Calculators",d:"Beam deflection, buckling, seismic base shear, wind load. Browser-based.",s:"Design",c:P.s2},
-            {n:"Free Software Directory",d:"CloudCompare, OpenSees, Meshroom, xBIM, ETABS trial. Use-case guidance.",s:"Design + Training",c:P.s2},
+            {n:"Free Software Directory",d:"Trial software downloads from leading vendors. See section below.",s:"Design + Training",c:P.s2},
             {n:"International Standards",d:"FEMA, ACI, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO.",s:"All Services",c:P.greenD},
             {n:"PM Templates & Frameworks",d:"RFP templates, scope of work, risk registers, milestone tracking.",s:"Management",c:P.s1},
             {n:"V.E. & ROI Tools",d:"Value engineering templates, cost-benefit calculators, LEED guides.",s:"Management",c:P.s1},
@@ -543,6 +537,52 @@ export default function App(){
             </div>
             <div style={{fontSize:8.5,color:P.slate,marginTop:3,lineHeight:1.5}}>{r.d}</div>
           </div>)}
+        </div>
+      </div>
+
+      {/* ═══ FREE SOFTWARE DIRECTORY SECTION ═══ */}
+      <div style={{padding:"22px 24px 18px",borderTop:"1px solid #e0e0e0",background:P.sand}}>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.slate,textTransform:"uppercase",marginBottom:6}}>Free Software Directory</div>
+        <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:4}}>Trial Software Downloads</div>
+        <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Direct links to official trial downloads from the respective software vendors. All trials require user registration on the vendor's website. iStructural Group Inc. does not host, distribute, or modify any third-party software. See the disclaimer at the bottom of this page.</div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[
+            {n:"ETABS",v:"Computers and Structures, Inc.",d:"Multi-story buildings, lateral systems, P-delta, response spectrum.",url:"https://www.csiamerica.com/products/etabs/trial",c:P.s3},
+            {n:"SAP2000",v:"Computers and Structures, Inc.",d:"General-purpose structural analysis, linear, nonlinear, static, dynamic.",url:"https://www.csiamerica.com/products/sap2000/trial",c:P.s3},
+            {n:"CSiBridge",v:"Computers and Structures, Inc.",d:"Bridge analysis, design, rating, staged construction, tendon layout.",url:"https://www.csiamerica.com/products/csibridge/trial",c:P.s3},
+            {n:"SAFE",v:"Computers and Structures, Inc.",d:"Slab and foundation design, PT and RC, FEA and strip method.",url:"https://www.csiamerica.com/products/safe/trial",c:P.s3},
+            {n:"IDEA StatiCa",v:"IDEA StatiCa s.r.o.",d:"Steel connection design, code-check, 14-day full trial.",url:"https://www.ideastatica.com/product-downloads",c:P.s1},
+            {n:"MIDAS Civil NX",v:"MIDAS Information Technology Co.",d:"Bridges and civil structures, advanced FEA, staged construction.",url:"https://resource.midasuser.com/en/free-trial",c:P.gold},
+            {n:"MIDAS GEN",v:"MIDAS Information Technology Co.",d:"Buildings and general structural analysis, code-check.",url:"https://resource.midasuser.com/en/free-trial",c:P.gold},
+            {n:"ADAPT-Builder",v:"RISA Tech, Inc.",d:"Concrete buildings with PT, integrated BIM, 10-day trial.",url:"https://risa.com/products/adapt-builder",c:P.s2},
+            {n:"ADAPT-PT/RC",v:"RISA Tech, Inc.",d:"Post-tensioned beam and slab design, 10-day trial.",url:"https://risa.com/products/adapt-pt-rc",c:P.s2},
+            {n:"RISA-3D",v:"RISA Tech, Inc.",d:"3D analysis and design, integrates with RISAFloor.",url:"https://risa.com/products/risa-3d",c:P.s2},
+            {n:"RISAFloor",v:"RISA Tech, Inc.",d:"Multi-story building gravity systems and floor design.",url:"https://risa.com/products/risafloor",c:P.s2},
+          ].map((s,i)=>(
+            <div key={i} style={{padding:"12px 14px",borderRadius:8,background:P.white,border:`1px solid ${s.c}20`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:130}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
+                <div style={{fontSize:8,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:6}}>by {s.v}</div>
+                <div style={{fontSize:9,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
+              </div>
+              <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:9,fontWeight:700,color:P.white,background:s.c,padding:"5px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor Trial &nearr;</a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ GENERIC DISCLAIMER (covers all third-party content site-wide) ═══ */}
+      <div style={{padding:"18px 24px 24px",background:"#FAFAFA",borderTop:"1px solid #d0d0d0"}}>
+        <div style={{fontSize:8,fontWeight:700,letterSpacing:2,color:P.charcoal,textTransform:"uppercase",marginBottom:8}}>Disclaimer, Copyright, and Third-Party Notice</div>
+        <div style={{fontSize:8.5,color:P.slate,lineHeight:1.7,maxWidth:1100}}>
+          <p style={{marginBottom:6}}>All third-party content referenced or linked from this Knowledge Hub, including but not limited to software programs, documents, datasheets, code excerpts, technical standards, training materials, brand names, logos, trademarks, and any associated documentation, is the exclusive property of its respective owners, vendors, publishers, or issuing authorities.</p>
+          <p style={{marginBottom:6}}>iStructural Group Inc. is not affiliated with, endorsed by, or sponsored by any third party referenced on this page unless explicitly stated. iStructural Group Inc. holds no rights, licenses, or ownership over any third-party content.</p>
+          <p style={{marginBottom:6}}>External links provided here lead to the official sources of the respective owners. iStructural Group Inc. does not host, distribute, modify, or redistribute any third-party content. We are not responsible for the availability, terms of use, licensing terms, privacy practices, or any outcomes resulting from interaction with linked external resources. Trial periods, license restrictions, eligibility, and access terms are governed solely by the respective owners and may change without notice.</p>
+          <p style={{marginBottom:6}}>Documents and materials displayed within this Knowledge Hub that explicitly carry the badge <strong style={{color:P.charcoal}}>"AUTHORED BY iSTRUCTURAL GROUP INC."</strong> or the iStructural Group Inc. copyright notice are the original intellectual property of iStructural Group Inc. and may not be reproduced, redistributed, or modified without prior written consent.</p>
+          <p style={{marginBottom:6}}>All other content is referenced strictly for educational and informational purposes. iStructural Group Inc. does not claim authorship, endorsement, or any proprietary interest in third-party content unless explicitly stated.</p>
+          <p style={{marginBottom:0}}>By accessing this Knowledge Hub, you acknowledge and accept these terms.</p>
+          <p style={{marginTop:8,fontSize:7.5,fontStyle:"italic",color:"#888"}}>Last updated: April 2026.</p>
         </div>
       </div>
     </div>
@@ -951,12 +991,12 @@ export default function App(){
       </div>
       <div style={{padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
         {[{t:"General Inquiry",d:"Management, design, or consultancy.",a:"info@istructgroup.com",c:P.slate,href:"mailto:info@istructgroup.com"},
-          {t:"Start a Project",d:"Management, design, or AI assessment.",a:"Start a Project",c:P.s3,href:null},
+          {t:"Start a Project",d:"Management, design, or AI assessment.",a:"Start a Project",c:P.s1,href:null},
           {t:"Training",d:"CSi training for your team.",a:"Request Training",c:P.s2,href:null}].map((c,i)=>
           <div key={i} style={{padding:"16px",borderRadius:10,border:"1px solid #e0e0e0"}}>
             <div style={{fontSize:11,fontWeight:700,color:P.charcoal}}>{c.t}</div>
             <div style={{fontSize:9.5,color:P.slate,marginTop:5,lineHeight:1.6}}>{c.d}</div>
-            <div onClick={()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s3":i===2?"s4":"s2");}}}
+            <div onClick={()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s1":i===2?"s4":"s1");}}}
               style={{marginTop:10,fontSize:10,fontWeight:700,color:c.c,cursor:"pointer"}}>{c.a} &#8594;</div>
           </div>)}
       </div>

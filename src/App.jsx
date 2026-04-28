@@ -170,15 +170,19 @@ const submitStyle = (color) => ({
 });
 
 // ── CAPTCHA HOOK (simple math, server-replaceable with reCAPTCHA / Cloudflare Turnstile on deploy) ──
+// ── PUZZLE CAPTCHA HOOK (drag-fit puzzle piece + confidence percentage) ──
+// Production note: replace with hCaptcha component (<HCaptcha sitekey={KEY} onVerify={...} />)
+// when ready. Sign up at hcaptcha.com to get a free sitekey. Install: npm install @hcaptcha/react.
 function useCaptcha() {
-  const [a] = useState(() => Math.floor(Math.random() * 9) + 1);
-  const [b] = useState(() => Math.floor(Math.random() * 9) + 1);
-  const [op] = useState(() => Math.random() > 0.5 ? "+" : "x");
-  const [answer, setAnswer] = useState("");
-  const expected = op === "+" ? (a + b) : (a * b);
-  const ok = parseInt(answer, 10) === expected;
-  const question = `${a} ${op} ${b} = ?`;
-  return {answer, setAnswer, ok, question};
+  // The puzzle slot is at a random x position; user drags slider to match
+  const [targetX] = useState(() => Math.floor(Math.random() * 140) + 60); // 60-200 px
+  const [sliderX, setSliderX] = useState(0);
+  const [released, setReleased] = useState(false);
+  const tolerance = 8; // pixels
+  const distance = Math.abs(sliderX - targetX);
+  const accuracy = Math.max(0, Math.round(100 - (distance / 2.5)));
+  const ok = released && distance <= tolerance;
+  return {targetX, sliderX, setSliderX, released, setReleased, accuracy, ok, distance};
 }
 
 // ── FORM HOOK (with CAPTCHA gate) ──
@@ -206,17 +210,48 @@ function useForm(initial) {
   return {values, set, status, submit, captcha};
 }
 
-// ── CAPTCHA UI BLOCK ──
-const CaptchaBlock = ({captcha, status}) => (
-  <div style={{marginTop:8,padding:"10px 12px",borderRadius:7,background:"#F0F8F6",border:`1px solid ${P.teal}40`}}>
-    <div style={{fontSize:8,fontWeight:700,color:P.teal,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>Security Check</div>
-    <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div style={{fontFamily:"'Fraunces',serif",fontSize:13,fontWeight:700,color:P.charcoal,padding:"6px 12px",background:P.white,borderRadius:5,letterSpacing:2,border:"1px dashed #cfd5dc",minWidth:80,textAlign:"center"}}>{captcha.question}</div>
-      <input type="text" inputMode="numeric" placeholder="Answer" value={captcha.answer} onChange={(e)=>captcha.setAnswer(e.target.value)} style={{...inputStyle,marginBottom:0,flex:1}} required />
+// ── PUZZLE CAPTCHA UI (drag-fit slider with accuracy %) ──
+const CaptchaBlock = ({captcha, status}) => {
+  const handleChange = (e) => {
+    captcha.setSliderX(parseInt(e.target.value, 10));
+  };
+  const handleMouseUp = () => captcha.setReleased(true);
+  const statusColor = captcha.ok ? P.greenD : (captcha.released ? P.coral : P.slate);
+  const statusText = captcha.ok
+    ? `Verified ✓  Accuracy: ${captcha.accuracy}%`
+    : (captcha.released
+        ? `Off by ${captcha.distance}px. Drag again. Accuracy: ${captcha.accuracy}%`
+        : `Drag the slider to align the puzzle piece. Live accuracy: ${captcha.accuracy}%`);
+
+  return (
+    <div style={{marginTop:8,padding:"12px 14px",borderRadius:7,background:"#F0F8F6",border:`1px solid ${P.teal}40`}}>
+      <div style={{fontSize:8,fontWeight:700,color:P.teal,letterSpacing:1.2,textTransform:"uppercase",marginBottom:8}}>Security Check &middot; Drag to Fit Puzzle Piece</div>
+
+      {/* Puzzle visual: track + target slot + draggable piece */}
+      <div style={{position:"relative",height:36,background:P.white,borderRadius:6,border:"1px solid #d0d8e0",overflow:"hidden",marginBottom:8}}>
+        {/* Background pattern (mimics the gray puzzle backdrop in real captchas) */}
+        <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg, #f4f6f8 0 6px, #e9edf1 6px 12px)"}} />
+        {/* Target slot (the missing-piece outline at random position) */}
+        <div style={{position:"absolute",left:captcha.targetX,top:6,width:24,height:24,border:`2px dashed ${P.teal}`,borderRadius:6,background:"rgba(14,190,168,0.08)"}} />
+        {/* Draggable puzzle piece */}
+        <div style={{position:"absolute",left:captcha.sliderX,top:6,width:24,height:24,background:captcha.ok?P.greenD:P.teal,borderRadius:6,boxShadow:"0 2px 6px rgba(0,0,0,0.15)",pointerEvents:"none",transition:captcha.released?"left 0.15s":"none"}}>
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M8 12L11 15L16 9" stroke="#FFF" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      </div>
+
+      {/* Slider */}
+      <input type="range" min="0" max="248" value={captcha.sliderX} onChange={handleChange} onMouseUp={handleMouseUp} onTouchEnd={handleMouseUp}
+        style={{width:"100%",accentColor:P.teal,cursor:"grab"}} />
+
+      {/* Status / accuracy display */}
+      <div style={{fontSize:8.5,color:statusColor,marginTop:6,fontWeight:600,fontFamily:"'DM Sans',monospace"}}>{statusText}</div>
+
+      {status === "captcha" && !captcha.ok && (
+        <div style={{fontSize:8,color:P.coral,marginTop:4,fontStyle:"italic"}}>Verification incomplete. Drag the green piece to align with the dashed slot, then release.</div>
+      )}
     </div>
-    {status === "captcha" && <div style={{fontSize:8.5,color:P.coral,marginTop:6,fontWeight:600}}>Incorrect answer. Please try again.</div>}
-  </div>
-);
+  );
+};
 
 // ── FORM STATUS MESSAGES ──
 const FormStatus = ({status, color}) => {
@@ -250,7 +285,13 @@ export default function App(){
   const Nav=()=>(
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",background:P.navy,position:"sticky",top:0,zIndex:10}}>
       <div onClick={()=>setPage("home")} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-        <div style={{width:28,height:28,borderRadius:7,background:P.teal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:P.white,fontFamily:"'Fraunces',serif"}}>i</div>
+        <svg width="32" height="32" viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M28 92 L28 84 L31 84 L31 76 L34 76 L34 64 C36 56 38 44 40 32 C40.5 24 41 16 42 10 L42.6 4 L42.9 2 L43.4 4 L44 10 C45 16 45.5 24 46 32 C48 44 50 56 52 64 L52 76 L55 76 L55 84 L58 84 L58 92 Z" fill={P.tealL} fillOpacity="0.2" stroke={P.tealL} strokeWidth="1.4" strokeDasharray="2,1"/>
+          <path d="M40.5 92 L41.8 22 L40.6 32 C38.5 44 36.5 56 34.5 64 L34.5 76 L31.5 76 L31.5 84 L28.7 84 L28.7 92 Z" fill={P.tealL} fillOpacity="0.55"/>
+          <path d="M45.5 92 L44.2 22 L45.4 32 C47.5 44 49.5 56 51.5 64 L51.5 76 L54.5 76 L54.5 84 L57.3 84 L57.3 92 Z" fill={P.tealL} fillOpacity="0.55"/>
+          <path d="M40.5 92 L41.8 22 L44.2 22 L45.5 92 Z" fill={P.tealL} fillOpacity="0.85"/>
+          <circle cx="43" cy="2" r="1.5" fill={P.tealL}/>
+        </svg>
         <div>
           <div style={{fontSize:12.5,fontWeight:700,color:P.white,lineHeight:1.1}}>iStructural Group Inc.</div>
           <div style={{fontSize:7,color:"#6A8CA8",letterSpacing:1.5,textTransform:"uppercase"}}>Structural Solutions | Management | AI</div>
@@ -647,11 +688,9 @@ export default function App(){
             <select required style={inputStyle} value={values.service} onChange={set("service")}>
               <option value="">Select a service...</option>
               <option>Structural Design</option>
-              <option>PT Concrete / Vertical PT</option>
               <option>Seismic & Wind Engineering</option>
               <option>Nonlinear / Thermal Analysis</option>
               <option>Third-Party Review</option>
-              <option>CSi Software Training</option>
               <option>Other / Multiple</option>
             </select>
           </div>

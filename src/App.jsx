@@ -148,7 +148,7 @@ const phases = [
   {id:"p1",label:"Phase 1",title:"Smartphone Preliminary",price:"",liability:"No liability",color:P.s3,
    items:["Free standardized forms","Guided photo protocol (far, near, nearer, nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
   {id:"p2",label:"Phase 2",title:"AI Deep Inspection",price:"",liability:"Inspection-level",color:P.s1,
-   items:["Specialist data: LiDAR, drone, thermal, GPR","Curated partner AI processing","3D digital twin and defect overlay","Severity-rated findings (ACI, Eurocode)","Detailed inspection dossier"]},
+   items:["Specialist data: LiDAR, drone, thermal, GPR","Curated partner AI processing","3D digital twin and defect overlay","Severity-rated findings (ACI, CSA, Eurocode)","Detailed inspection dossier"]},
   {id:"p3",label:"Phase 3",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
    items:["FEA (ETABS, SAP2000, CSiBridge)","Full load + capacity calculations","Repair drawings (AutoCAD, Revit)","Material specs + construction sequence","Authority submission package"]},
 ];
@@ -436,7 +436,7 @@ export default function App(){
         <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:480,lineHeight:1.6}}>Performance-based seismic design for super-tall structures exceeding 200m. Advanced nonlinear applications. CSi certified training programs.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
-        {[{n:"Seismic and Wind Engineering",d:"ASCE 41, Eurocode 8. Dynamic response, base isolation, damper design. Wind tunnel correlation. Tall and supertall structures."},
+        {[{n:"Seismic and Wind Engineering",d:"ASCE 41, NBC, Eurocode 8. Dynamic response, base isolation, damper design. Wind tunnel correlation. Tall and supertall structures."},
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s2L:"transparent",border:`1px solid ${P.s2}10`,marginBottom:5}}>
           <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{o.n}</div><div style={{fontSize:10,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
         <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginTop:16,marginBottom:8}}>Third-Party Consultancy</div>
@@ -497,6 +497,13 @@ export default function App(){
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
                 {p.items.map((it,i)=><div key={i} style={{fontSize:10,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
               </div>
+              {p.id === "p2" && (
+                <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
+                  <div style={{fontSize:8.5,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Allied Specialist Partnerships</div>
+                  <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.65}}>Phase 2 is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges Phase 2 deliverables to Phase 3 stamped engineering when required.</div>
+                  <div style={{fontSize:8.5,color:P.slate,lineHeight:1.6,marginTop:6,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -525,12 +532,13 @@ export default function App(){
           {[{id:"crack",n:"Crack & Damage Library",d:"Visual guide: crack types, spalling, delamination. Severity ratings.",s:"AI + Design",c:P.s3},
             {id:"forms",n:"Free Inspection Forms",d:"Safety pre-check, site ID, Phase 1 field form, post-disaster rapid.",s:"AI Platform",c:P.s3},
             {id:"calc",n:"Structural Calculators",d:"Beam deflection, buckling, seismic base shear, wind load. Browser-based.",s:"Design",c:P.s2},
-            {id:"software",n:"Free Software Directory",d:"Trial software downloads + free open-source alternatives.",s:"Design + Training",c:P.s2},
-            {id:"std",n:"International Standards",d:"FEMA, ACI, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO.",s:"All Services",c:P.greenD},
+            {id:"trial",n:"Trial Software",d:"Commercial trial downloads from leading vendors. 10 to 30-day trials.",s:"Design + Training",c:P.s2},
+            {id:"budget",n:"Budget-Friendly Software",d:"Free, open-source, and low-cost alternatives for students and small practices.",s:"All Services",c:P.greenD},
+            {id:"std",n:"International Standards",d:"FEMA, ACI, CSA, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO.",s:"All Services",c:P.greenD},
             {id:"pm",n:"PM Templates & Frameworks",d:"RFP templates, scope of work, risk registers, milestone tracking.",s:"Management",c:P.s1},
             {id:"ve",n:"V.E. & ROI Tools",d:"Value engineering templates, cost-benefit calculators, LEED guides.",s:"Management",c:P.s1},
             {id:"case",n:"Case Studies",d:"Anonymized Phase 1/2/3 across all 3 damage sub-markets.",s:"AI Platform",c:P.s3},
-            {id:"cert",n:"Training & Certification Links",d:"ICC, ACI, ICOMOS certs, university programs. CPD-aligned.",s:"All Services",c:P.greenD},
+            {id:"cert",n:"Training & Certification Links",d:"ICC, ACI, CSA, ICOMOS certs, university programs. CPD-aligned.",s:"All Services",c:P.greenD},
           ].map((r,i)=>{
             const active = hubTile === r.id;
             return (
@@ -587,12 +595,12 @@ export default function App(){
             </div>
           )}
 
-          {/* FREE SOFTWARE DIRECTORY (full original content + low-cost section) */}
-          {hubTile === "software" && (
+          {/* TRIAL SOFTWARE (commercial trials only) */}
+          {hubTile === "trial" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Free Software Directory</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Trial Software Downloads</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Direct links to official trial downloads from the respective software vendors. All trials require user registration on the vendor's website. iStructural Group Inc. does not host, distribute, or modify any third-party software.</div>
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Trial Software</div>
+              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Commercial Trial Downloads</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Direct links to official trial downloads from leading commercial vendors. All trials require user registration on the vendor's website. iStructural Group Inc. does not host, distribute, or modify any third-party software.</div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
                 {[
@@ -621,34 +629,36 @@ export default function App(){
                   </div>
                 ))}
               </div>
+            </div>
+          )}
 
-              {/* Sub-section: Free and Low-Cost Alternatives */}
-              <div style={{marginTop:24,paddingTop:18,borderTop:`1px solid ${P.greenD}30`}}>
-                <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Free and Low-Cost Alternatives</div>
-                <div style={{fontSize:13,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:4}}>Open-Source and Budget-Friendly Tools</div>
-                <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:12,maxWidth:760}}>Free, open-source, and educational alternatives to commercial structural software. For students, small practices, research, and budget-conscious projects.</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                  {[
-                    {n:"OpenSees",v:"UC Berkeley / PEER",d:"Nonlinear seismic, advanced research, free open-source.",url:"https://opensees.berkeley.edu/",c:P.greenD},
-                    {n:"Code_Aster + Salome-Meca",v:"Electricite de France (EDF)",d:"General FEA, mechanical, thermal. Industrial-grade open-source.",url:"https://code-aster.org/",c:P.greenD},
-                    {n:"FreeCAD with FEM",v:"The FreeCAD Project",d:"CAD plus simple FEA via FEM workbench.",url:"https://www.freecad.org/",c:P.greenD},
-                    {n:"Mastan2",v:"Cornell University",d:"2D/3D matrix analysis, learning tool.",url:"https://www.mastan2.com/",c:P.greenD},
-                    {n:"CalculiX",v:"Guido Dhondt et al.",d:"FEA solver with ABAQUS-like syntax.",url:"https://www.calculix.de/",c:P.greenD},
-                    {n:"PrePoMax",v:"Open-source community",d:"Pre/post-processor GUI for CalculiX.",url:"https://prepomax.fs.um.si/",c:P.greenD},
-                    {n:"2D Frame Analysis",v:"EngiSSol",d:"Quick 2D frame analysis. Free version available.",url:"https://www.engissol.com/",c:P.greenD},
-                    {n:"LISA-FEA",v:"Sonnenhof Holdings",d:"Low-cost general FEA, $150 one-time license.",url:"https://lisafea.com/",c:P.greenD},
-                    {n:"TRUSS4",v:"Trussplan",d:"Truss analysis and design. Free version available.",url:"https://www.fine.eu/products/truss/",c:P.greenD},
-                  ].map((s,i)=>(
-                    <div key={i} style={{padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${s.c}20`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:115}}>
-                      <div>
-                        <div style={{fontSize:10.5,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
-                        <div style={{fontSize:8,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:5}}>by {s.v}</div>
-                        <div style={{fontSize:9,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
-                      </div>
-                      <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:8,fontSize:9,fontWeight:700,color:P.white,background:s.c,padding:"4px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor &#x2197;</a>
+          {/* BUDGET-FRIENDLY SOFTWARE (free, open-source, low-cost) */}
+          {hubTile === "budget" && (
+            <div>
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Budget-Friendly Software</div>
+              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Free, Open-Source, and Low-Cost Tools</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Free, open-source, and educational alternatives to commercial structural software. For students, small practices, research, and budget-conscious projects. License terms vary by vendor (GPL, MIT, BSD, EULA); review each vendor's license before use.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                {[
+                  {n:"OpenSees",v:"UC Berkeley / PEER",d:"Nonlinear seismic, advanced research, free open-source.",url:"https://opensees.berkeley.edu/",c:P.greenD},
+                  {n:"Code_Aster + Salome-Meca",v:"Electricite de France (EDF)",d:"General FEA, mechanical, thermal. Industrial-grade open-source.",url:"https://code-aster.org/",c:P.greenD},
+                  {n:"FreeCAD with FEM",v:"The FreeCAD Project",d:"CAD plus simple FEA via FEM workbench.",url:"https://www.freecad.org/",c:P.greenD},
+                  {n:"Mastan2",v:"Cornell University",d:"2D/3D matrix analysis, learning tool.",url:"https://www.mastan2.com/",c:P.greenD},
+                  {n:"CalculiX",v:"Guido Dhondt et al.",d:"FEA solver with ABAQUS-like syntax.",url:"https://www.calculix.de/",c:P.greenD},
+                  {n:"PrePoMax",v:"Open-source community",d:"Pre/post-processor GUI for CalculiX.",url:"https://prepomax.fs.um.si/",c:P.greenD},
+                  {n:"2D Frame Analysis",v:"EngiSSol",d:"Quick 2D frame analysis. Free version available.",url:"https://www.engissol.com/",c:P.greenD},
+                  {n:"LISA-FEA",v:"Sonnenhof Holdings",d:"Low-cost general FEA, $150 one-time license.",url:"https://lisafea.com/",c:P.greenD},
+                  {n:"TRUSS4",v:"Trussplan",d:"Truss analysis and design. Free version available.",url:"https://www.fine.eu/products/truss/",c:P.greenD},
+                ].map((s,i)=>(
+                  <div key={i} style={{padding:"12px 14px",borderRadius:8,background:P.white,border:`1px solid ${s.c}20`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:130}}>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
+                      <div style={{fontSize:8,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:6}}>by {s.v}</div>
+                      <div style={{fontSize:9,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
                     </div>
-                  ))}
-                </div>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:9,fontWeight:700,color:P.white,background:s.c,padding:"5px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor &#x2197;</a>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -658,7 +668,7 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>International Standards</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Codes and Standards Quick Reference</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>FEMA, ACI, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO. Summary references and links to official sources.</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>FEMA, ACI, CSA, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO. Summary references and links to official sources.</div>
               <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
                 <strong style={{color:P.greenD}}>Coming soon.</strong> Standards summaries and links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for specific code references.
               </div>
@@ -706,7 +716,7 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Training & Certification Links</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Professional Development Resources</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ICC, ACI, ICOMOS certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ICC, ACI, CSA, ICOMOS certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
               <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
                 <strong style={{color:P.greenD}}>Coming soon.</strong> Curated certification links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for guidance on training paths.
               </div>
@@ -770,7 +780,7 @@ export default function App(){
       <HeroBg color1={P.s2}><div style={{padding:"28px 28px 24px"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Certified Training</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Training Programs</h2>
-        <p style={{fontSize:10,color:P.white+"BB",marginTop:4}}>CSiAmerica Licensed Instructor. Advanced support for international firms.</p>
+        <p style={{fontSize:10,color:P.white+"BB",marginTop:4}}>CSiAmerica Licensed Instructor since 2010. Over 1,400 engineers trained across MENA and North America. Advanced support for international firms.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
@@ -1030,7 +1040,7 @@ export default function App(){
     return (
       <form onSubmit={submit}>
         <div style={{fontSize:13,fontWeight:700,color:P.s2,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Training | CSi Licensed Instructor</div>
-        <div style={{fontSize:9.5,color:P.slate,marginBottom:14,lineHeight:1.55}}>Corporate and university training on structural analysis software. Tell us your team and software focus and we will tailor the curriculum.</div>
+        <div style={{fontSize:9.5,color:P.slate,marginBottom:14,lineHeight:1.55}}>Join over 1,400 engineers who have completed our CSi-licensed curriculum since 2010. Corporate and university training on structural analysis software, tailored to your team and software focus.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div>
             <label style={labelStyle}>Contact Name *</label>

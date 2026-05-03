@@ -146,7 +146,7 @@ const tC={"Damage AI":P.coral,Platform:P.teal,Adjacent:P.gold,Processing:P.s1,Ha
 
 // ── PHASES (restructured: 2 phases + optional AI Deep Inspection escalation) ──
 const phases = [
-  {id:"p1",label:"Phase 1",title:"Smartphone Preliminary",price:"",liability:"No liability",color:P.s3,
+  {id:"p1",label:"Phase 1",title:"Preliminary Advisory",price:"",liability:"No liability",color:P.s3,
    items:["Free standardized forms","Guided photo protocol (far, near, nearer, nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
   {id:"p2",label:"Phase 2",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
    items:["FEA (ETABS, SAP2000, CSiBridge)","Full load + capacity calculations","Repair drawings (AutoCAD, Revit)","Material specs + construction sequence","Authority submission package"]},
@@ -154,7 +154,8 @@ const phases = [
 
 // ── OPTIONAL AI DEEP INSPECTION (escalation, available on engineer's decision) ──
 const aiDeepInspection = {
-  title:"AI Deep Inspection (Optional Escalation)",
+  title:"Conditional Escalation (Selected cases, on engineer's decision)",
+  subtitle:"AI Deep Inspection capability",
   liability:"Inspection-level",
   items:["Specialist data: LiDAR, drone, thermal, GPR","Curated partner AI processing","3D digital twin and defect overlay","Severity-rated findings (ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode)","Detailed inspection dossier"],
 };
@@ -461,7 +462,7 @@ export default function App(){
             <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase"}}>Structural Assessment Platform</div>
           </div>
           <div style={{fontSize:11,color:P.slate,fontStyle:"italic",fontFamily:"'Fraunces',serif",marginBottom:10}}>AI-Augmented when needed</div>
-          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from smartphone preliminary advisory through full stamped engineering with FEA, repair drawings, and authority submission. AI Deep Inspection available as an optional escalation on engineer's decision.</div>
+          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from preliminary advisory through full stamped engineering with FEA, repair drawings, and authority submission. AI Deep Inspection available as a conditional escalation on engineer's decision.</div>
 
           {/* Phase tabs */}
           <div style={{display:"flex",gap:5,marginBottom:12}}>
@@ -478,13 +479,13 @@ export default function App(){
             </div>
           )}
 
-          {/* Optional AI Deep Inspection callout (always visible below active phase) */}
+          {/* Conditional Escalation callout (AI Deep Inspection, always visible below active phase) */}
           <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-              <span style={{fontSize:8,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Optional Escalation</span>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+              <span style={{fontSize:8,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Conditional Escalation</span>
               <span style={{fontSize:11,fontWeight:700,color:P.s3,fontFamily:"'Fraunces',serif"}}>{aiDeepInspection.title}</span>
             </div>
-            <div style={{fontSize:9.5,color:P.slate,marginBottom:8,fontStyle:"italic"}}>Available on engineer's decision for selected cases. {aiDeepInspection.liability}.</div>
+            <div style={{fontSize:9.5,color:P.slate,marginBottom:8,fontStyle:"italic"}}>{aiDeepInspection.subtitle}. {aiDeepInspection.liability}.</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:10}}>
               {aiDeepInspection.items.map((it,i)=><div key={i} style={{fontSize:9.5,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:P.s3,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
             </div>
@@ -536,7 +537,7 @@ export default function App(){
         <div onClick={()=>setPage("s2")} style={{padding:"14px 18px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
           <div>
             <div style={{fontSize:9,fontWeight:700,letterSpacing:1.6,color:P.s2,textTransform:"uppercase",marginBottom:4}}>Looking for Structural Assessment?</div>
-            <div style={{fontSize:11,color:P.charcoal,lineHeight:1.5}}>The AI-Augmented Structural Assessment Platform is now part of Design Services. See <strong style={{color:P.s2}}>Design &gt; Structural Assessment Platform</strong> for Phase 1 (Smartphone Preliminary), Phase 2 (Stamped Engineering), and optional AI Deep Inspection escalation.</div>
+            <div style={{fontSize:11,color:P.charcoal,lineHeight:1.5}}>The AI-Augmented Structural Assessment Platform is now part of Design Services. See <strong style={{color:P.s2}}>Design &gt; Structural Assessment Platform</strong> for Phase 1 (Preliminary Advisory), Phase 2 (Stamped Engineering), and optional AI Deep Inspection escalation.</div>
           </div>
           <div style={{fontSize:11,fontWeight:700,color:P.white,background:P.s2,padding:"7px 14px",borderRadius:7,whiteSpace:"nowrap"}}>Go to Design &#8594;</div>
         </div>
@@ -920,7 +921,7 @@ export default function App(){
               <option>Seismic & Wind Engineering</option>
               <option>Nonlinear / Thermal Analysis</option>
               <option>Third-Party Review</option>
-              <option>Structural Assessment Platform | Phase 1 (Smartphone Preliminary)</option>
+              <option>Structural Assessment Platform | Phase 1 (Preliminary Advisory)</option>
               <option>Structural Assessment Platform | Phase 2 (Stamped Engineering)</option>
               <option>Other / Multiple</option>
             </select>
@@ -981,16 +982,10 @@ export default function App(){
       <form onSubmit={submit}>
         <div style={{fontSize:13,fontWeight:700,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>AI & Technology | Start a Project</div>
         <div style={{fontSize:10,color:P.slate,marginBottom:12,lineHeight:1.6}}>AI literacy workshop, tool integration, or structural assessment platform. Select your path below.</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8,marginBottom:12}}>
           <div style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${P.s3b}20`,background:P.s3bL}}>
-            <div style={{fontSize:8,fontWeight:700,color:P.white,background:P.s3b,padding:"2px 8px",borderRadius:10,display:"inline-block"}}>Part A</div>
-            <div style={{fontSize:11,fontWeight:700,color:P.s3b,marginTop:4}}>AI Literacy & Readiness</div>
-            <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>AI 101 workshops, readiness assessment, tool selection, implementation support.</div>
-          </div>
-          <div style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${P.s3}20`,background:P.s3L}}>
-            <div style={{fontSize:8,fontWeight:700,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,display:"inline-block"}}>Part B</div>
-            <div style={{fontSize:11,fontWeight:700,color:P.s3,marginTop:4}}>AI Structural Assessment</div>
-            <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>Phase 1 (Smartphone), Phase 2 (AI Deep Inspection), Phase 3 (Stamped Engineering).</div>
+            <div style={{fontSize:11,fontWeight:700,color:P.s3b}}>AI Literacy & Readiness</div>
+            <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>AI 101 workshops, readiness assessment, tool selection, implementation support. For structural assessment requests, see the Design Inquiry intake form.</div>
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -1006,9 +1001,10 @@ export default function App(){
             <label style={labelStyle}>Service Path *</label>
             <select required style={inputStyle} value={values.part} onChange={set("part")}>
               <option value="">Select your path...</option>
-              <option>Part A | AI Literacy: AI 101 Workshop</option>
-              <option>Part A | AI Literacy: Readiness Assessment</option>
-              <option>Part A | AI Literacy: Tool Selection & Integration</option>
+              <option>AI Literacy: AI 101 Workshop</option>
+              <option>AI Literacy: Readiness Assessment</option>
+              <option>AI Literacy: Tool Selection & Integration</option>
+              <option>Implementation Support</option>
               <option>Cross-reference: Structural Assessment Platform | see Design intake</option>
             </select>
           </div>

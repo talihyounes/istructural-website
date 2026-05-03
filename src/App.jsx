@@ -149,7 +149,7 @@ const phases = [
   {id:"p1",label:"Phase 1",title:"Preliminary Advisory",price:"",liability:"No liability",color:P.s3,
    items:["Free standardized forms","Guided photo protocol (far, near, nearer, nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
   {id:"p2",label:"Phase 2",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
-   items:["FEA (ETABS, SAP2000, CSiBridge)","Full load + capacity calculations","Repair drawings (AutoCAD, Revit)","Material specs + construction sequence","Authority submission package"]},
+   items:["Finite Element Modeling","Full load and capacity calculations","Repair drawings and 3D modeling","Material specifications and construction sequence","Authority submission package"]},
 ];
 
 // ── OPTIONAL AI DEEP INSPECTION (escalation, available on engineer's decision) ──
@@ -277,6 +277,7 @@ export default function App(){
   const [trainingSw,setTrainingSw]=useState("");
   const [hubTile,setHubTile]=useState(null);
   const [showAll,setShowAll]=useState(false);
+  const [sapOpen,setSapOpen]=useState(false);
 
   const filteredP = useMemo(()=>{
     let f=allProjects;
@@ -447,57 +448,62 @@ export default function App(){
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s2L:"transparent",border:`1px solid ${P.s2}10`,marginBottom:5}}>
           <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{o.n}</div><div style={{fontSize:10,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
         <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginTop:16,marginBottom:8}}>Third-Party Consultancy</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-          {[{t:"High-Rise",i:["Lateral stability","Shortening vertical elements","Human response"]},{t:"Bridges",i:["Alternative concepts (V.E.)","Design details + verification","Stage modelling"]},{t:"Irregular",i:["Rotated/twisted buildings","Vibration analysis","Thermal design","Transfer structures"]}].map((c,i)=>
-            <div key={i} style={{padding:"10px 12px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+          {[{t:"High-Rise",i:["Lateral stability","Shortening vertical elements","Human response"]},
+            {t:"Bridges",i:["Alternative concepts (V.E.)","Design details + verification","Stage modelling"]},
+            {t:"Irregular",i:["Rotated/twisted buildings","Vibration analysis","Thermal design","Transfer structures"]},
+            {t:"Structural Assessment Platform",i:["Phase 1: Preliminary Advisory","Phase 2: Stamped Engineering","Conditional Escalation: AI Deep Inspection"],expandable:true}
+          ].map((c,i)=>(
+            <div key={i} onClick={c.expandable ? ()=>setSapOpen(!sapOpen) : undefined} style={{padding:"10px 12px",borderRadius:8,background:c.expandable && sapOpen ? P.s2+"20" : P.s2L,border:`1px solid ${c.expandable && sapOpen ? P.s2+"60" : P.s2+"15"}`,cursor:c.expandable?"pointer":"default",transition:"all 0.2s"}}>
               <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:4}}>{c.t}</div>
               {c.i.map((x,j)=><div key={j} style={{fontSize:9,color:P.slate,padding:"1px 0"}}>+ {x}</div>)}
-            </div>)}
+              {c.expandable && <div style={{fontSize:8,color:P.s2,marginTop:6,fontWeight:700}}>{sapOpen ? "▾ Click to close" : "▸ Click to view phases and escalation"}</div>}
+            </div>
+          ))}
         </div>
 
-        {/* ═══ STRUCTURAL ASSESSMENT PLATFORM (moved from AI page) ═══ */}
-        <div style={{marginTop:18,padding:"18px 20px",borderRadius:12,background:P.s2L,border:`1px solid ${P.s2}25`}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-            <div style={{fontSize:9,fontWeight:700,color:P.white,background:P.s2,padding:"3px 10px",borderRadius:10,letterSpacing:1}}>NEW</div>
-            <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase"}}>Structural Assessment Platform</div>
-          </div>
-          <div style={{fontSize:11,color:P.slate,fontStyle:"italic",fontFamily:"'Fraunces',serif",marginBottom:10}}>AI-Augmented when needed</div>
-          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from preliminary advisory through full stamped engineering with FEA, repair drawings, and authority submission. AI Deep Inspection available as a conditional escalation on engineer's decision.</div>
+        {/* ═══ STRUCTURAL ASSESSMENT PLATFORM EXPANDED PANEL (toggled by 4th card) ═══ */}
+        {sapOpen && (
+          <div style={{marginTop:14,padding:"18px 20px",borderRadius:12,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+            <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Structural Assessment Platform</div>
+            <div style={{fontSize:11,color:P.slate,fontStyle:"italic",fontFamily:"'Fraunces',serif",marginBottom:10}}>AI-Augmented when needed</div>
+            <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from preliminary advisory through full stamped engineering with finite element modeling, repair drawings, and authority submission. AI Deep Inspection available as a conditional escalation on engineer's decision.</div>
 
-          {/* Phase tabs */}
-          <div style={{display:"flex",gap:5,marginBottom:12}}>
-            {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
-          </div>
+            {/* Phase tabs */}
+            <div style={{display:"flex",gap:5,marginBottom:12}}>
+              {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
+            </div>
 
-          {/* Active phase content */}
-          {phases.filter(p=>p.id===aPhase).map(p=>
-            <div key={p.id}>
-              <div style={{fontSize:10,color:P.slate,marginBottom:8}}>{[p.price,p.liability].filter(Boolean).join(" | ")}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                {p.items.map((it,i)=><div key={i} style={{fontSize:10,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+            {/* Active phase content */}
+            {phases.filter(p=>p.id===aPhase).map(p=>
+              <div key={p.id}>
+                <div style={{fontSize:10,color:P.slate,marginBottom:8}}>{[p.price,p.liability].filter(Boolean).join(" | ")}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                  {p.items.map((it,i)=><div key={i} style={{fontSize:10,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+                </div>
+              </div>
+            )}
+
+            {/* Conditional Escalation callout */}
+            <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:8,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Conditional Escalation</span>
+                <span style={{fontSize:11,fontWeight:700,color:P.s3,fontFamily:"'Fraunces',serif"}}>{aiDeepInspection.title}</span>
+              </div>
+              <div style={{fontSize:9.5,color:P.slate,marginBottom:8,fontStyle:"italic"}}>{aiDeepInspection.subtitle}. {aiDeepInspection.liability}.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:10}}>
+                {aiDeepInspection.items.map((it,i)=><div key={i} style={{fontSize:9.5,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:P.s3,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+              </div>
+
+              {/* Allied Specialist Partnerships disclaimer */}
+              <div style={{marginTop:10,padding:"10px 12px",borderRadius:6,background:P.white,borderLeft:`2px dashed ${P.s3}`}}>
+                <div style={{fontSize:8,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:5}}>Allied Specialist Partnerships</div>
+                <div style={{fontSize:9,color:P.charcoal,lineHeight:1.65}}>AI Deep Inspection is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges the inspection deliverables to Phase 2 stamped engineering when required.</div>
+                <div style={{fontSize:8,color:P.slate,lineHeight:1.6,marginTop:5,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
               </div>
             </div>
-          )}
-
-          {/* Conditional Escalation callout (AI Deep Inspection, always visible below active phase) */}
-          <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-              <span style={{fontSize:8,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Conditional Escalation</span>
-              <span style={{fontSize:11,fontWeight:700,color:P.s3,fontFamily:"'Fraunces',serif"}}>{aiDeepInspection.title}</span>
-            </div>
-            <div style={{fontSize:9.5,color:P.slate,marginBottom:8,fontStyle:"italic"}}>{aiDeepInspection.subtitle}. {aiDeepInspection.liability}.</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:10}}>
-              {aiDeepInspection.items.map((it,i)=><div key={i} style={{fontSize:9.5,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:P.s3,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
-            </div>
-
-            {/* Allied Specialist Partnerships disclaimer (preserved exactly) */}
-            <div style={{marginTop:10,padding:"10px 12px",borderRadius:6,background:P.white,borderLeft:`2px dashed ${P.s3}`}}>
-              <div style={{fontSize:8,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:5}}>Allied Specialist Partnerships</div>
-              <div style={{fontSize:9,color:P.charcoal,lineHeight:1.65}}>AI Deep Inspection is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges the inspection deliverables to Phase 2 stamped engineering when required.</div>
-              <div style={{fontSize:8,color:P.slate,lineHeight:1.6,marginTop:5,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
-            </div>
           </div>
-        </div>
+        )}
 
         <div onClick={()=>{setPage("start");setSTab("s2");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
       </div>

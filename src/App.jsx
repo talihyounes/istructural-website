@@ -144,14 +144,20 @@ const partners = [
 ];
 const tC={"Damage AI":P.coral,Platform:P.teal,Adjacent:P.gold,Processing:P.s1,Hardware:P.charcoal,Service:P.s2,Enterprise:P.navy};
 
+// ── PHASES (restructured: 2 phases + optional AI Deep Inspection escalation) ──
 const phases = [
   {id:"p1",label:"Phase 1",title:"Smartphone Preliminary",price:"",liability:"No liability",color:P.s3,
    items:["Free standardized forms","Guided photo protocol (far, near, nearer, nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
-  {id:"p2",label:"Phase 2",title:"AI Deep Inspection",price:"",liability:"Inspection-level",color:P.s1,
-   items:["Specialist data: LiDAR, drone, thermal, GPR","Curated partner AI processing","3D digital twin and defect overlay","Severity-rated findings (ACI, CSA, Eurocode)","Detailed inspection dossier"]},
-  {id:"p3",label:"Phase 3",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
+  {id:"p2",label:"Phase 2",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
    items:["FEA (ETABS, SAP2000, CSiBridge)","Full load + capacity calculations","Repair drawings (AutoCAD, Revit)","Material specs + construction sequence","Authority submission package"]},
 ];
+
+// ── OPTIONAL AI DEEP INSPECTION (escalation, available on engineer's decision) ──
+const aiDeepInspection = {
+  title:"AI Deep Inspection (Optional Escalation)",
+  liability:"Inspection-level",
+  items:["Specialist data: LiDAR, drone, thermal, GPR","Curated partner AI processing","3D digital twin and defect overlay","Severity-rated findings (ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode)","Detailed inspection dossier"],
+};
 
 // ── SHARED STYLES ──
 const inputStyle = {
@@ -360,7 +366,7 @@ export default function App(){
           {key:"s2",title:"Design Services & Consultancy",color:P.s2,bg:P.s2L,tag:"Engineering precision for structures that endure",
            items:["Seismic and Wind Engineering","Third-Party Review and Verification","Training (CSi Licensed)"]},
           {key:"s3",title:"AI & Technology Services",color:P.s3,bg:P.s3L,tag:"From AI literacy to stamped engineering drawings",
-           items:["AI Literacy and Organizational Readiness (AI 101)","Tool Integration and Process Automation","AI Structural Assessment Platform (3-Phase)","Knowledge Hub (free resources for all)","Curated AI Inspection Partner Network"]},
+           items:["AI Literacy and Organizational Readiness (AI 101)","Tool Integration and Process Automation","AI Readiness Assessment","Knowledge Hub (free resources for all)","Cross-link: Structural Assessment Platform under Design"]},
         ].map((s,i)=>(
           <div key={s.key} onClick={()=>setPage(s.key)} style={{padding:"24px 20px 20px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=s.bg;e.currentTarget.style.borderBottom=`3px solid ${s.color}`;}}
@@ -447,6 +453,51 @@ export default function App(){
               {c.i.map((x,j)=><div key={j} style={{fontSize:9,color:P.slate,padding:"1px 0"}}>+ {x}</div>)}
             </div>)}
         </div>
+
+        {/* ═══ STRUCTURAL ASSESSMENT PLATFORM (moved from AI page) ═══ */}
+        <div style={{marginTop:18,padding:"18px 20px",borderRadius:12,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+            <div style={{fontSize:9,fontWeight:700,color:P.white,background:P.s2,padding:"3px 10px",borderRadius:10,letterSpacing:1}}>NEW</div>
+            <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase"}}>Structural Assessment Platform</div>
+          </div>
+          <div style={{fontSize:11,color:P.slate,fontStyle:"italic",fontFamily:"'Fraunces',serif",marginBottom:10}}>AI-Augmented when needed</div>
+          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from smartphone preliminary advisory through full stamped engineering with FEA, repair drawings, and authority submission. AI Deep Inspection available as an optional escalation on engineer's decision.</div>
+
+          {/* Phase tabs */}
+          <div style={{display:"flex",gap:5,marginBottom:12}}>
+            {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
+          </div>
+
+          {/* Active phase content */}
+          {phases.filter(p=>p.id===aPhase).map(p=>
+            <div key={p.id}>
+              <div style={{fontSize:10,color:P.slate,marginBottom:8}}>{[p.price,p.liability].filter(Boolean).join(" | ")}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                {p.items.map((it,i)=><div key={i} style={{fontSize:10,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+              </div>
+            </div>
+          )}
+
+          {/* Optional AI Deep Inspection callout (always visible below active phase) */}
+          <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              <span style={{fontSize:8,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Optional Escalation</span>
+              <span style={{fontSize:11,fontWeight:700,color:P.s3,fontFamily:"'Fraunces',serif"}}>{aiDeepInspection.title}</span>
+            </div>
+            <div style={{fontSize:9.5,color:P.slate,marginBottom:8,fontStyle:"italic"}}>Available on engineer's decision for selected cases. {aiDeepInspection.liability}.</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:10}}>
+              {aiDeepInspection.items.map((it,i)=><div key={i} style={{fontSize:9.5,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:P.s3,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+            </div>
+
+            {/* Allied Specialist Partnerships disclaimer (preserved exactly) */}
+            <div style={{marginTop:10,padding:"10px 12px",borderRadius:6,background:P.white,borderLeft:`2px dashed ${P.s3}`}}>
+              <div style={{fontSize:8,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:5}}>Allied Specialist Partnerships</div>
+              <div style={{fontSize:9,color:P.charcoal,lineHeight:1.65}}>AI Deep Inspection is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges the inspection deliverables to Phase 2 stamped engineering when required.</div>
+              <div style={{fontSize:8,color:P.slate,lineHeight:1.6,marginTop:5,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
+            </div>
+          </div>
+        </div>
+
         <div onClick={()=>{setPage("start");setSTab("s2");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
       </div>
     </div>
@@ -458,13 +509,12 @@ export default function App(){
       <HeroBg color1={P.s3}><div style={{padding:"32px 28px 28px"}}>
         <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 03</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>AI & Technology Services</h2>
-        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:500,lineHeight:1.6}}>Two integrated offerings: AI Literacy and Organizational Readiness for any industry, plus the AI Structural Assessment Platform for damage inspection and engineering design.</p>
+        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:500,lineHeight:1.6}}>AI Literacy and Organizational Readiness for any industry. For AI-Augmented structural assessment, see Design Services & Consultancy.</p>
       </div></HeroBg>
 
       <div style={{padding:"20px 24px 0"}}>
         <div style={{padding:"18px 20px",borderRadius:12,background:P.s3bL,border:`1px solid ${P.s3b}20`,marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <div style={{fontSize:9,fontWeight:700,color:P.white,background:P.s3b,padding:"3px 10px",borderRadius:10}}>Part A</div>
             <div style={{fontSize:14,fontWeight:800,color:P.s3b,fontFamily:"'Fraunces',serif"}}>AI Literacy & Organizational Readiness</div>
           </div>
           <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Eradicating AI illiteracy across your organization. From AI 101 fundamentals through readiness assessment to hands-on tool integration | tailored to your industry, your team, and your workflows.</div>
@@ -481,33 +531,16 @@ export default function App(){
         </div>
       </div>
 
+      {/* Cross-reference: Structural Assessment Platform moved to Design page */}
       <div style={{padding:"0 24px"}}>
-        <div style={{padding:"18px 20px",borderRadius:12,background:P.s3L,border:`1px solid ${P.s3}20`,marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <div style={{fontSize:9,fontWeight:700,color:P.white,background:P.s3,padding:"3px 10px",borderRadius:10}}>Part B</div>
-            <div style={{fontSize:14,fontWeight:800,color:P.s3,fontFamily:"'Fraunces',serif"}}>AI Structural Assessment Platform</div>
+        <div onClick={()=>setPage("s2")} style={{padding:"14px 18px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+          <div>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:1.6,color:P.s2,textTransform:"uppercase",marginBottom:4}}>Looking for Structural Assessment?</div>
+            <div style={{fontSize:11,color:P.charcoal,lineHeight:1.5}}>The AI-Augmented Structural Assessment Platform is now part of Design Services. See <strong style={{color:P.s2}}>Design &gt; Structural Assessment Platform</strong> for Phase 1 (Smartphone Preliminary), Phase 2 (Stamped Engineering), and optional AI Deep Inspection escalation.</div>
           </div>
-          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>3-phase AI-powered platform: from smartphone preliminary through deep AI inspection to full stamped engineering with FEA, repair drawings, and authority submission.</div>
-          <div style={{display:"flex",gap:5,marginBottom:12}}>
-            {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
-          </div>
-          {phases.filter(p=>p.id===aPhase).map(p=>
-            <div key={p.id}>
-              <div style={{fontSize:10,color:P.slate,marginBottom:8}}>{[p.price,p.liability].filter(Boolean).join(" | ")}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                {p.items.map((it,i)=><div key={i} style={{fontSize:10,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
-              </div>
-              {p.id === "p2" && (
-                <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
-                  <div style={{fontSize:8.5,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Allied Specialist Partnerships</div>
-                  <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.65}}>Phase 2 is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges Phase 2 deliverables to Phase 3 stamped engineering when required.</div>
-                  <div style={{fontSize:8.5,color:P.slate,lineHeight:1.6,marginTop:6,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
-                </div>
-              )}
-            </div>
-          )}
+          <div style={{fontSize:11,fontWeight:700,color:P.white,background:P.s2,padding:"7px 14px",borderRadius:7,whiteSpace:"nowrap"}}>Go to Design &#8594;</div>
         </div>
-        <div onClick={()=>{setPage("start");setSTab("s3");}} style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Inquiry &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s3");}} style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Literacy Inquiry &#8594;</div>
       </div>
 
     </div>
@@ -534,11 +567,11 @@ export default function App(){
             {id:"calc",n:"Structural Calculators",d:"Beam deflection, buckling, seismic base shear, wind load. Browser-based.",s:"Design",c:P.s2},
             {id:"trial",n:"Trial Software",d:"Commercial trial downloads from leading vendors. 10 to 30-day trials.",s:"Design + Training",c:P.s2},
             {id:"budget",n:"Budget-Friendly Software",d:"Free, open-source, and low-cost alternatives for students and small practices.",s:"All Services",c:P.greenD},
-            {id:"std",n:"International Standards",d:"FEMA, ACI, CSA, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO.",s:"All Services",c:P.greenD},
+            {id:"std",n:"International Standards",d:"ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode. Plus ASCE, ICOMOS, ISO references.",s:"All Services",c:P.greenD},
             {id:"pm",n:"PM Templates & Frameworks",d:"RFP templates, scope of work, risk registers, milestone tracking.",s:"Management",c:P.s1},
             {id:"ve",n:"V.E. & ROI Tools",d:"Value engineering templates, cost-benefit calculators, LEED guides.",s:"Management",c:P.s1},
             {id:"case",n:"Case Studies",d:"Anonymized Phase 1/2/3 across all 3 damage sub-markets.",s:"AI Platform",c:P.s3},
-            {id:"cert",n:"Training & Certification Links",d:"ICC, ACI, CSA, ICOMOS certs, university programs. CPD-aligned.",s:"All Services",c:P.greenD},
+            {id:"cert",n:"Training & Certification Links",d:"ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certs and university programs. CPD-aligned.",s:"All Services",c:P.greenD},
           ].map((r,i)=>{
             const active = hubTile === r.id;
             return (
@@ -615,6 +648,7 @@ export default function App(){
                   {n:"ADAPT-PT/RC",v:"RISA Tech, Inc.",t:"10-day trial",d:"Post-tensioned beam and slab design.",url:"https://risa.com/products/adapt-pt-rc",c:P.s2},
                   {n:"RISA-3D",v:"RISA Tech, Inc.",t:"10-day trial",d:"3D analysis and design, integrates with RISAFloor.",url:"https://risa.com/products/risa-3d",c:P.s2},
                   {n:"RISAFloor",v:"RISA Tech, Inc.",t:"10-day trial",d:"Multi-story building gravity systems and floor design.",url:"https://risa.com/products/risafloor",c:P.s2},
+                  {n:"DeepEX",v:"Deep Excavation LLC",t:"30-day trial",d:"Deep excavation, retaining walls, sheet piles, anchored walls. Geotechnical and structural integrated.",url:"https://www.deepexcavation.com/en/downloads",c:P.s1},
                 ].map((s,i)=>(
                   <div key={i} style={{padding:"12px 14px",borderRadius:8,background:P.white,border:`1px solid ${s.c}20`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:130}}>
                     <div>
@@ -642,6 +676,7 @@ export default function App(){
                 {[
                   {n:"OpenSees",v:"UC Berkeley / PEER",d:"Nonlinear seismic, advanced research, free open-source.",url:"https://opensees.berkeley.edu/",c:P.greenD},
                   {n:"Code_Aster + Salome-Meca",v:"Electricite de France (EDF)",d:"General FEA, mechanical, thermal. Industrial-grade open-source.",url:"https://code-aster.org/",c:P.greenD},
+                  {n:"STRES Software",v:"STRES",d:"Reinforced concrete design tools. Slabs Expert, Strut-and-Tie, deep beams. ACI 318-19.",url:"https://stres-software.com/",c:P.greenD},
                   {n:"FreeCAD with FEM",v:"The FreeCAD Project",d:"CAD plus simple FEA via FEM workbench.",url:"https://www.freecad.org/",c:P.greenD},
                   {n:"Mastan2",v:"Cornell University",d:"2D/3D matrix analysis, learning tool.",url:"https://www.mastan2.com/",c:P.greenD},
                   {n:"CalculiX",v:"Guido Dhondt et al.",d:"FEA solver with ABAQUS-like syntax.",url:"https://www.calculix.de/",c:P.greenD},
@@ -668,7 +703,7 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>International Standards</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Codes and Standards Quick Reference</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>FEMA, ACI, CSA, ASCE, Eurocode, ICOMOS, World Bank, USGS, ISO. Summary references and links to official sources.</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode. Plus ASCE 7/41, ICOMOS, World Bank, USGS, ISO references. Summary cards and links to official sources.</div>
               <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
                 <strong style={{color:P.greenD}}>Coming soon.</strong> Standards summaries and links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for specific code references.
               </div>
@@ -716,7 +751,7 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Training & Certification Links</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Professional Development Resources</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ICC, ACI, CSA, ICOMOS certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
               <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
                 <strong style={{color:P.greenD}}>Coming soon.</strong> Curated certification links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for guidance on training paths.
               </div>
@@ -885,6 +920,8 @@ export default function App(){
               <option>Seismic & Wind Engineering</option>
               <option>Nonlinear / Thermal Analysis</option>
               <option>Third-Party Review</option>
+              <option>Structural Assessment Platform | Phase 1 (Smartphone Preliminary)</option>
+              <option>Structural Assessment Platform | Phase 2 (Stamped Engineering)</option>
               <option>Other / Multiple</option>
             </select>
           </div>
@@ -972,10 +1009,7 @@ export default function App(){
               <option>Part A | AI Literacy: AI 101 Workshop</option>
               <option>Part A | AI Literacy: Readiness Assessment</option>
               <option>Part A | AI Literacy: Tool Selection & Integration</option>
-              <option>Part B | Phase 1: Smartphone Preliminary (no liability)</option>
-              <option>Part B | Phase 2: AI Deep Inspection</option>
-              <option>Part B | Phase 3: Stamped Engineering Report</option>
-              <option>Part B | Full 3-Phase Assessment</option>
+              <option>Cross-reference: Structural Assessment Platform | see Design intake</option>
             </select>
           </div>
           <div>

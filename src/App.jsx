@@ -148,7 +148,7 @@ const tC={"Damage AI":P.coral,Platform:P.teal,Adjacent:P.gold,Processing:P.s1,Ha
 const phases = [
   {id:"p1",label:"Phase 1",title:"Preliminary Advisory",price:"",liability:"No liability",color:P.s3,
    items:["Free standardized forms","Guided photo protocol (far, near, nearer, nearest)","AI preliminary advisory report","Optional engineer review (add-on)","Disclaimer: AI output only"]},
-  {id:"p2",label:"Phase 2",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.redD,
+  {id:"p2",label:"Phase 2",title:"Stamped Engineering",price:"",liability:"Full PE stamp + PI",color:P.s2,
    items:["Finite Element Modeling","Full load and capacity calculations","Repair drawings and 3D modeling","Material specifications and construction sequence","Authority submission package"]},
 ];
 
@@ -324,7 +324,7 @@ export default function App(){
         </div>
         {[{t:"Management",i:["Project Management","Business Strategy","Risk & Financial","Value Engineering"]},
           {t:"Design",i:["Structural Design","PT Concrete","Seismic & Wind","Third-Party Review","Training"]},
-          {t:"AI & Technology",i:["AI Literacy & Readiness","AI Assessment Platform","Phase 1/2/3","Start a Project"]},
+          {t:"AI & Technology",i:["AI Literacy & Readiness","Implementation Support","Start a Project"]},
           {t:"Resources",i:["Knowledge Hub","Projects","Gallery","Contact"]},
         ].map(c=><div key={c.t}><div style={{fontSize:9,fontWeight:700,color:P.tealL,marginBottom:5}}>{c.t}</div>{c.i.map(x=><div key={x} style={{fontSize:8,color:"#7A96AE",padding:"1px 0",cursor:"pointer"}}>{x}</div>)}</div>)}
       </div>
@@ -451,15 +451,33 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
           {[{t:"High-Rise",i:["Lateral stability","Shortening vertical elements","Human response"]},
             {t:"Bridges",i:["Alternative concepts (V.E.)","Design details + verification","Stage modelling"]},
-            {t:"Irregular",i:["Rotated/twisted buildings","Vibration analysis","Thermal design","Transfer structures"]},
-            {t:"Structural Assessment Platform",i:["Phase 1: Preliminary Advisory","Phase 2: Stamped Engineering","Conditional Escalation: AI Deep Inspection"],expandable:true}
+            {t:"Irregular",i:["Rotated/twisted buildings","Vibration analysis","Thermal design","Long spans","Transfer structures"]},
           ].map((c,i)=>(
-            <div key={i} onClick={c.expandable ? ()=>setSapOpen(!sapOpen) : undefined} style={{padding:"10px 12px",borderRadius:8,background:c.expandable && sapOpen ? P.s2+"20" : P.s2L,border:`1px solid ${c.expandable && sapOpen ? P.s2+"60" : P.s2+"15"}`,cursor:c.expandable?"pointer":"default",transition:"all 0.2s"}}>
+            <div key={i} style={{padding:"10px 12px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`}}>
               <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:4}}>{c.t}</div>
               {c.i.map((x,j)=><div key={j} style={{fontSize:9,color:P.slate,padding:"1px 0"}}>+ {x}</div>)}
-              {c.expandable && <div style={{fontSize:8,color:P.s2,marginTop:6,fontWeight:700}}>{sapOpen ? "▾ Click to close" : "▸ Click to view phases and escalation"}</div>}
             </div>
           ))}
+
+          {/* 4th CARD: STRUCTURAL ASSESSMENT PLATFORM (consistent outer frame, distinction lives INSIDE) */}
+          <div onClick={()=>setSapOpen(!sapOpen)}
+               style={{padding:"10px 12px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}>
+
+            {/* Title - same size/weight as other 3 cards */}
+            <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:6}}>Structural Assessment Platform</div>
+
+            {/* 3 softened pastel chips inside (internal distinction without alarming colors) */}
+            <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
+              <span style={{fontSize:7.5,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s3+"20",color:P.s3,letterSpacing:0.2,border:`1px solid ${P.s3}40`}}>Phase 1</span>
+              <span style={{fontSize:7.5,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s2+"20",color:P.s2,letterSpacing:0.2,border:`1px solid ${P.s2}40`}}>Phase 2</span>
+              <span style={{fontSize:7.5,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s3+"10",color:P.s3,border:`1px dashed ${P.s3}60`,letterSpacing:0.2}}>Conditional Escalation</span>
+            </div>
+
+            {/* Compact button at bottom */}
+            <div style={{marginTop:4,padding:"5px 10px",background:P.s2,color:P.white,borderRadius:5,fontSize:8.5,fontWeight:700,textAlign:"center",letterSpacing:0.3}}>
+              {sapOpen ? "▾ Hide Full Phases and Escalation" : "▸ View Full Phases and Escalation"}
+            </div>
+          </div>
         </div>
 
         {/* ═══ STRUCTURAL ASSESSMENT PLATFORM EXPANDED PANEL (toggled by 4th card) ═══ */}

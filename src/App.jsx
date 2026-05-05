@@ -169,6 +169,13 @@ const inputStyle = {
 };
 const textareaStyle = {...inputStyle,resize:"vertical",minHeight:72};
 const labelStyle = {fontSize:9,fontWeight:600,color:P.slate,marginBottom:2,display:"block",letterSpacing:0.3};
+
+// ── A11Y HELPER: add keyboard activation (Enter/Space) to non-button clickables ──
+const kbd = (handler) => ({
+  role: "button",
+  tabIndex: 0,
+  onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handler(e); } },
+});
 const submitStyle = (color) => ({
   marginTop:12,background:color,color:P.white,padding:"10px 20px",
   borderRadius:8,fontSize:11,fontWeight:700,textAlign:"center",
@@ -293,7 +300,7 @@ export default function App(){
 
   const Nav=()=>(
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",background:P.navy,position:"sticky",top:0,zIndex:10}}>
-      <div onClick={()=>setPage("home")} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+      <div onClick={()=>setPage("home")} {...kbd(()=>setPage("home"))} aria-label="Home" style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
         <svg width="32" height="32" viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
           <path d="M28 92 L28 84 L31 84 L31 76 L34 76 L34 64 C36 56 38 44 40 32 C40.5 24 41 16 42 10 L42.6 4 L42.9 2 L43.4 4 L44 10 C45 16 45.5 24 46 32 C48 44 50 56 52 64 L52 76 L55 76 L55 84 L58 84 L58 92 Z" fill={P.tealL} fillOpacity="0.2" stroke={P.tealL} strokeWidth="1.4" strokeDasharray="2,1"/>
           <path d="M40.5 92 L41.8 22 L40.6 32 C38.5 44 36.5 56 34.5 64 L34.5 76 L31.5 76 L31.5 84 L28.7 84 L28.7 92 Z" fill={P.tealL} fillOpacity="0.55"/>
@@ -308,9 +315,9 @@ export default function App(){
       </div>
       <div style={{display:"flex",alignItems:"center",gap:2}}>
         {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>
-          <div key={n.id} onClick={()=>setPage(n.id)} style={{padding:"4px 8px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
+          <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
         )}
-        <div onClick={()=>setPage("start")} style={{marginLeft:4,background:P.teal,color:P.white,padding:"5px 11px",borderRadius:7,fontSize:9.5,fontWeight:700,cursor:"pointer"}}>Start a Project</div>
+        <div onClick={()=>setPage("start")} {...kbd(()=>setPage("start"))} aria-label="Start a Project" style={{marginLeft:4,background:P.teal,color:P.white,padding:"5px 11px",borderRadius:7,fontSize:9.5,fontWeight:700,cursor:"pointer"}}>Start a Project</div>
       </div>
     </div>
   );
@@ -353,9 +360,9 @@ export default function App(){
           <h1 style={{fontFamily:"'Fraunces',serif",fontSize:32,fontWeight:800,color:P.white,lineHeight:1.15,margin:0}}>Engineering intelligence<br/>for the built world</h1>
           <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.7,marginTop:12,maxWidth:500}}>iStructural Group Inc. has championed advanced structural engineering for complex and unconventional projects for over two decades. Hybrid structural systems, structural forensics, seismic and wind engineering, and finite element modeling | now powered by AI-driven assessment and next-generation digital tools.</p>
           <div style={{display:"flex",gap:8,marginTop:18}}>
-            <div onClick={()=>setPage("s1")} style={{background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Management</div>
-            <div onClick={()=>setPage("s2")} style={{background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Design & Consultancy</div>
-            <div onClick={()=>setPage("s3")} style={{background:P.teal,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>AI & Technology</div>
+            <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management page" style={{background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Management</div>
+            <div onClick={()=>setPage("s2")} {...kbd(()=>setPage("s2"))} aria-label="Open Design and Consultancy page" style={{background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Design & Consultancy</div>
+            <div onClick={()=>setPage("s3")} {...kbd(()=>setPage("s3"))} aria-label="Open AI and Technology page" style={{background:P.teal,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>AI & Technology</div>
           </div>
         </div>
       </HeroBg>
@@ -370,7 +377,7 @@ export default function App(){
           {key:"s3",title:"AI & Technology Services",color:P.s3,bg:P.s3L,tag:"From AI literacy to stamped engineering drawings",
            items:["AI Literacy and Organizational Readiness (AI 101)","Tool Integration and Process Automation","AI Readiness Assessment","Knowledge Hub (free resources for all)","Cross-link: Structural Assessment Platform under Design"]},
         ].map((s,i)=>(
-          <div key={s.key} onClick={()=>setPage(s.key)} style={{padding:"24px 20px 20px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
+          <div key={s.key} onClick={()=>setPage(s.key)} {...kbd(()=>setPage(s.key))} aria-label={`Open ${s.title}`} style={{padding:"24px 20px 20px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=s.bg;e.currentTarget.style.borderBottom=`3px solid ${s.color}`;}}
             onMouseLeave={e=>{e.currentTarget.style.background=P.white;e.currentTarget.style.borderBottom="3px solid transparent";}}>
             <div style={{fontSize:13,fontWeight:700,color:s.color,marginTop:0}}>{s.title}</div>
@@ -395,7 +402,7 @@ export default function App(){
         </div>
       </div>
 
-      <div onClick={()=>setPage("hub")} style={{padding:"16px 24px",background:P.greenD+"08",borderTop:`1px solid ${P.greenD}15`,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
+      <div onClick={()=>setPage("hub")} {...kbd(()=>setPage("hub"))} aria-label="Open Knowledge Hub" style={{padding:"16px 24px",background:P.greenD+"08",borderTop:`1px solid ${P.greenD}15`,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
         <div>
           <div style={{fontSize:11,fontWeight:700,color:P.greenD}}>Knowledge Hub | Free for every engineer, architect, safety officer, and developers</div>
           <div style={{fontSize:9,color:P.slate,marginTop:2}}>Forms, crack library, calculators, software directory, standards, management templates</div>
@@ -430,7 +437,7 @@ export default function App(){
           {n:"ROI & Investment Analysis",d:"Lifecycle cost analysis, capital allocation. LEED certification pathway support."}
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s1L:"transparent",border:`1px solid ${P.s1}10`,marginBottom:5}}>
           <div style={{fontSize:11,fontWeight:700,color:P.s1}}>{o.n}</div><div style={{fontSize:10,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
-        <div onClick={()=>{setPage("start");setSTab("s1");}} style={{marginTop:14,background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Management Inquiry &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s1");}} {...kbd(()=>{setPage("start");setSTab("s1");})} aria-label="Start a Management Inquiry" style={{marginTop:14,background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Management Inquiry &#8594;</div>
       </div>
     </div>
   );
@@ -460,7 +467,7 @@ export default function App(){
           ))}
 
           {/* 4th CARD: STRUCTURAL ASSESSMENT PLATFORM (consistent outer frame, distinction lives INSIDE) */}
-          <div onClick={()=>setSapOpen(!sapOpen)}
+          <div onClick={()=>setSapOpen(!sapOpen)} {...kbd(()=>setSapOpen(!sapOpen))} aria-expanded={sapOpen} aria-label="Toggle Structural Assessment Platform details"
                style={{padding:"10px 12px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}>
 
             {/* Title - same size/weight as other 3 cards */}
@@ -489,7 +496,7 @@ export default function App(){
 
             {/* Phase tabs */}
             <div style={{display:"flex",gap:5,marginBottom:12}}>
-              {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
+              {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} {...kbd(()=>setAPhase(p.id))} role="tab" aria-selected={aPhase===p.id} aria-label={`${p.label}: ${p.title}`} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
             </div>
 
             {/* Active phase content */}
@@ -523,7 +530,7 @@ export default function App(){
           </div>
         )}
 
-        <div onClick={()=>{setPage("start");setSTab("s2");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s2");}} {...kbd(()=>{setPage("start");setSTab("s2");})} aria-label="Start a Design Inquiry" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
       </div>
     </div>
   );
@@ -558,14 +565,14 @@ export default function App(){
 
       {/* Cross-reference: Structural Assessment Platform moved to Design page */}
       <div style={{padding:"0 24px"}}>
-        <div onClick={()=>setPage("s2")} style={{padding:"14px 18px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div onClick={()=>setPage("s2")} {...kbd(()=>setPage("s2"))} aria-label="Go to Design page for Structural Assessment Platform" style={{padding:"14px 18px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
           <div>
             <div style={{fontSize:9,fontWeight:700,letterSpacing:1.6,color:P.s2,textTransform:"uppercase",marginBottom:4}}>Looking for Structural Assessment?</div>
             <div style={{fontSize:11,color:P.charcoal,lineHeight:1.5}}>The AI-Augmented Structural Assessment Platform is now part of Design Services. See <strong style={{color:P.s2}}>Design &gt; Structural Assessment Platform</strong> for Phase 1 (Preliminary Advisory), Phase 2 (Stamped Engineering), and optional AI Deep Inspection escalation.</div>
           </div>
           <div style={{fontSize:11,fontWeight:700,color:P.white,background:P.s2,padding:"7px 14px",borderRadius:7,whiteSpace:"nowrap"}}>Go to Design &#8594;</div>
         </div>
-        <div onClick={()=>{setPage("start");setSTab("s3");}} style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Literacy Inquiry &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s3");}} {...kbd(()=>{setPage("start");setSTab("s3");})} aria-label="Start an AI Literacy Inquiry" style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Literacy Inquiry &#8594;</div>
       </div>
 
     </div>
@@ -579,39 +586,73 @@ export default function App(){
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Knowledge Hub</h2>
         <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:460,lineHeight:1.6}}>The most comprehensive free structural, engineering, and management resource online. For engineers, architects, students, safety officers, clients, and government officials.</p>
       </div></HeroBg>
-      <div style={{padding:"6px 24px 4px",background:P.sand,display:"flex",gap:5}}>
-        {[{l:"Management",c:P.s1},{l:"Design & Engineering",c:P.s2},{l:"AI Platform",c:P.s3}].map(t=>
-          <span key={t.l} style={{fontSize:8.5,fontWeight:600,padding:"3px 9px",borderRadius:6,background:t.c+"15",color:t.c,border:`1px solid ${t.c}25`}}>{t.l} Resources</span>)}
-      </div>
 
-      {/* ═══ KNOWLEDGE HUB CATEGORY TILES (CLICKABLE ACCORDION) ═══ */}
-      <div style={{padding:"14px 24px"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
-          {[{id:"crack",n:"Crack & Damage Library",d:"Visual guide: crack types, spalling, delamination. Severity ratings.",s:"AI + Design",c:P.s3},
-            {id:"forms",n:"Free Inspection Forms",d:"Safety pre-check, site ID, Phase 1 field form, post-disaster rapid.",s:"AI Platform",c:P.s3},
-            {id:"calc",n:"Structural Calculators",d:"Beam deflection, buckling, seismic base shear, wind load. Browser-based.",s:"Design",c:P.s2},
-            {id:"trial",n:"Trial Software",d:"Commercial trial downloads from leading vendors. 10 to 30-day trials.",s:"Design + Training",c:P.s2},
-            {id:"budget",n:"Budget-Friendly Software",d:"Free, open-source, and low-cost alternatives for students and small practices.",s:"All Services",c:P.greenD},
-            {id:"std",n:"International Standards",d:"ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode. Plus ASCE, ICOMOS, ISO references.",s:"All Services",c:P.greenD},
-            {id:"pm",n:"PM Templates & Frameworks",d:"RFP templates, scope of work, risk registers, milestone tracking.",s:"Management",c:P.s1},
-            {id:"ve",n:"V.E. & ROI Tools",d:"Value engineering templates, cost-benefit calculators, LEED guides.",s:"Management",c:P.s1},
-            {id:"case",n:"Case Studies",d:"Anonymized Phase 1/2/3 across all 3 damage sub-markets.",s:"AI Platform",c:P.s3},
-            {id:"cert",n:"Training & Certification Links",d:"ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certs and university programs. CPD-aligned.",s:"All Services",c:P.greenD},
-          ].map((r,i)=>{
-            const active = hubTile === r.id;
-            return (
-              <div key={i} onClick={()=>setHubTile(active?null:r.id)} style={{padding:"10px 12px",borderRadius:8,background:active?r.c+"15":r.c+"06",border:`1px solid ${active?r.c+"60":r.c+"12"}`,cursor:"pointer",transition:"all 0.2s",boxShadow:active?`0 2px 8px ${r.c}25`:"none"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div style={{fontSize:10,fontWeight:700,color:r.c}}>{r.n}</div>
-                  <span style={{fontSize:7,fontWeight:600,padding:"1px 5px",borderRadius:8,background:r.c+"12",color:r.c,whiteSpace:"nowrap"}}>{r.s}</span>
-                </div>
-                <div style={{fontSize:8.5,color:P.slate,marginTop:3,lineHeight:1.5}}>{r.d}</div>
-                <div style={{fontSize:8,color:r.c,marginTop:6,fontWeight:700}}>{active ? "▾ Click to close" : "▸ Click to open"}</div>
+      {/* ═══ KNOWLEDGE HUB CATEGORY TILES (3 BANDS) ═══ */}
+      {(() => {
+        const allTiles = {
+          forms:   {id:"forms",n:"Free Inspection Forms",d:"Safety pre-check, site ID, Phase 1 field form, post-disaster rapid.",s:"AI Platform",c:P.s3},
+          crack:   {id:"crack",n:"Crack & Damage Library",d:"Visual guide: crack types, spalling, delamination. Severity ratings.",s:"AI + Design",c:P.s3},
+          pm:      {id:"pm",n:"PM Templates & Frameworks",d:"RFP templates, scope of work, risk registers, milestone tracking.",s:"Management",c:P.s1},
+          ve:      {id:"ve",n:"V.E. & ROI Tools",d:"Value engineering templates, cost-benefit calculators, LEED guides.",s:"Management",c:P.s1},
+          calc:    {id:"calc",n:"Structural Calculators",d:"Beam deflection, buckling, seismic base shear, wind load. Browser-based.",s:"Design",c:P.s2},
+          trial:   {id:"trial",n:"Trial Software",d:"Commercial trial downloads from leading vendors. 10 to 30-day trials.",s:"Design + Training",c:P.s2},
+          budget:  {id:"budget",n:"Budget-Friendly Software",d:"Free, open-source, and low-cost alternatives for students and small practices.",s:"All Services",c:P.greenD},
+          std:     {id:"std",n:"International Standards",d:"ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode. Plus ASCE, ICOMOS, ISO references.",s:"All Services",c:P.greenD},
+          cert:    {id:"cert",n:"Training & Certification Links",d:"PMI, ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certs and university programs. CPD-aligned.",s:"All Services",c:P.greenD},
+        };
+        const bands = [
+          {key:"docs", code:"DOC", title:"Documents, Forms and Templates", subtitle:"Static deliverables to download, fill, or copy.", items:[allTiles.forms, allTiles.crack, allTiles.pm, allTiles.ve]},
+          {key:"tools",code:"TLS", title:"Calculators, Spreadsheets and Software", subtitle:"Interactive and computational tools to run or install.", items:[allTiles.calc, allTiles.trial, allTiles.budget]},
+          {key:"refs", code:"REF", title:"Standards, Training and External Links", subtitle:"Outbound references to authoritative third parties.", items:[allTiles.std, allTiles.cert]},
+        ];
+        const Tile = ({r,i}) => {
+          const active = hubTile === r.id;
+          return (
+            <div key={i} onClick={()=>setHubTile(active?null:r.id)} {...kbd(()=>setHubTile(active?null:r.id))} aria-expanded={active} aria-label={`${active?"Close":"Open"} ${r.n}`} style={{padding:"10px 12px",borderRadius:8,background:active?r.c+"15":r.c+"06",border:`1px solid ${active?r.c+"60":r.c+"12"}`,cursor:"pointer",transition:"all 0.2s",boxShadow:active?`0 2px 8px ${r.c}25`:"none"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div style={{fontSize:10,fontWeight:700,color:r.c}}>{r.n}</div>
+                <span style={{fontSize:7,fontWeight:600,padding:"1px 5px",borderRadius:8,background:r.c+"12",color:r.c,whiteSpace:"nowrap"}}>{r.s}</span>
               </div>
-            );
-          })}
-        </div>
-      </div>
+              <div style={{fontSize:8.5,color:P.slate,marginTop:3,lineHeight:1.5}}>{r.d}</div>
+              <div style={{fontSize:8,color:r.c,marginTop:6,fontWeight:700}}>{active ? "▾ Click to close" : "▸ Click to open"}</div>
+            </div>
+          );
+        };
+        return (
+          <div style={{padding:"14px 24px"}}>
+            {bands.map((b,bi)=>(
+              <div key={b.key} style={{marginBottom:14}}>
+                {/* ── BAND HEADER (engineering section divider, integrated) ── */}
+                <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px 10px 14px",borderRadius:9,background:P.sand,border:`1px solid ${P.charcoal}14`,borderLeft:`4px solid ${P.greenD}`,marginBottom:8}}>
+
+                  {/* Code mark — confident square block, sand-integrated */}
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:42,height:38,padding:"0 8px",background:P.greenD+"10",border:`1px solid ${P.greenD}40`,borderRadius:5}}>
+                    <span style={{fontFamily:"'SF Mono','Menlo','Consolas',monospace",fontSize:11,fontWeight:800,letterSpacing:2,color:P.greenD,textTransform:"uppercase",lineHeight:1}}>{b.code}</span>
+                  </div>
+
+                  {/* Title block */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'SF Mono','Menlo','Consolas',monospace",fontSize:7,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:2}}>{`Section · 0${bi+1} of 03`}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",lineHeight:1.2}}>{b.title}</div>
+                    <div style={{fontSize:8.5,color:P.slate,marginTop:2,lineHeight:1.4}}>{b.subtitle}</div>
+                  </div>
+
+                  {/* Count chip — informative but quiet */}
+                  <div style={{display:"flex",alignItems:"baseline",gap:4,padding:"4px 9px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}1A`,whiteSpace:"nowrap"}}>
+                    <span style={{fontFamily:"'Fraunces',serif",fontSize:13,fontWeight:800,color:P.charcoal,lineHeight:1}}>{b.items.length}</span>
+                    <span style={{fontSize:7.5,fontWeight:600,color:P.slate,letterSpacing:0.5}}>resources</span>
+                  </div>
+                </div>
+
+                {/* ── TILE GRID ── */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+                  {b.items.map((r,i)=><Tile key={r.id} r={r} i={`${b.key}-${i}`} />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ═══ EXPANDED CONTENT PANEL (shows content of selected tile) ═══ */}
       {hubTile && (
@@ -759,24 +800,12 @@ export default function App(){
             </div>
           )}
 
-          {/* CASE STUDIES */}
-          {hubTile === "case" && (
-            <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Case Studies</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Anonymized Project Examples</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Anonymized Phase 1, Phase 2, Phase 3 case studies across post-natural disaster, post-conflict, and heritage sub-markets.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.s3}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.s3}}>Coming soon.</strong> Case study summaries will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.s3,fontWeight:700}}>info@istructgroup.com</a> for specific case studies.
-              </div>
-            </div>
-          )}
-
           {/* TRAINING & CERT LINKS */}
           {hubTile === "cert" && (
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Training & Certification Links</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Professional Development Resources</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>PMI (PMP and program management), ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
               <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
                 <strong style={{color:P.greenD}}>Coming soon.</strong> Curated certification links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for guidance on training paths.
               </div>
@@ -813,11 +842,11 @@ export default function App(){
       <div style={{padding:"10px 24px 6px",background:P.sand,display:"flex",gap:16,alignItems:"center",borderBottom:"1px solid #e0e0e0",flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
           <span style={{fontSize:9,color:P.slate,fontWeight:600}}>Type:</span>
-          {cats.map(c=><div key={c} onClick={()=>{setPCat(c);setShowAll(false);}} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pCat===c?P.charcoal:"transparent",color:pCat===c?P.white:P.slate,border:`1px solid ${pCat===c?P.charcoal:"#ccc"}`}}>{c}</div>)}
+          {cats.map(c=><div key={c} onClick={()=>{setPCat(c);setShowAll(false);}} {...kbd(()=>{setPCat(c);setShowAll(false);})} aria-pressed={pCat===c} aria-label={`Filter category: ${c}`} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pCat===c?P.charcoal:"transparent",color:pCat===c?P.white:P.slate,border:`1px solid ${pCat===c?P.charcoal:"#ccc"}`}}>{c}</div>)}
         </div>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
           <span style={{fontSize:9,color:P.slate,fontWeight:600}}>Region:</span>
-          {regions.map(r=><div key={r} onClick={()=>{setPReg(r);setShowAll(false);}} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pReg===r?P.charcoal:"transparent",color:pReg===r?P.white:P.slate,border:`1px solid ${pReg===r?P.charcoal:"#ccc"}`}}>{r}</div>)}
+          {regions.map(r=><div key={r} onClick={()=>{setPReg(r);setShowAll(false);}} {...kbd(()=>{setPReg(r);setShowAll(false);})} aria-pressed={pReg===r} aria-label={`Filter region: ${r}`} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pReg===r?P.charcoal:"transparent",color:pReg===r?P.white:P.slate,border:`1px solid ${pReg===r?P.charcoal:"#ccc"}`}}>{r}</div>)}
         </div>
       </div>
       <div style={{padding:"8px 24px"}}>
@@ -829,7 +858,7 @@ export default function App(){
             <span style={{fontSize:8.5,color:P.slate,textAlign:"right"}}>{p.r}</span>
           </div>
         ))}
-        {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
+        {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} {...kbd(()=>setShowAll(true))} aria-label="Show more projects" style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
       </div>
     </div>
   );
@@ -845,14 +874,14 @@ export default function App(){
       <div style={{padding:"18px 24px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
           {[{n:"ETABS",d:"Multi-story building. Lateral systems, P-delta, response spectrum.",sw:"ETABS (CSi)"},{n:"SAP2000",d:"General purpose. Linear/nonlinear, static/dynamic.",sw:"SAP2000 (CSi)"},{n:"CSiBridge",d:"Bridge modeling, staging, tendon layout, seismic.",sw:"CSiBridge (CSi)"},{n:"SAFE",d:"Slab and foundation. PT and RC. FEA + strip design.",sw:"SAFE (CSi)"},{n:"RAM Concept",d:"PT slab specialist. Tendon profiling, load balancing.",sw:"RAM Concept (Bentley Systems)"},{n:"ADAPT PT",d:"PT analysis. Continuous beam, one-way slab.",sw:"ADAPT PT (RISA Tech)"},{n:"Others",d:"Other third-party software. Specify on request.",sw:"Other"}].map((s,i)=>
-            <div key={i} onClick={()=>{setPage("start");setSTab("s4");setTrainingSw(s.sw);}} style={{padding:"12px 14px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}
+            <div key={i} onClick={()=>{setPage("start");setSTab("s4");setTrainingSw(s.sw);}} {...kbd(()=>{setPage("start");setSTab("s4");setTrainingSw(s.sw);})} aria-label={`Request training for ${s.n}`} style={{padding:"12px 14px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}
               onMouseEnter={e=>{e.currentTarget.style.background=P.s2+"15";}}
               onMouseLeave={e=>{e.currentTarget.style.background=P.s2L;}}>
               <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{s.n}</div>
               <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>{s.d}</div>
             </div>)}
         </div>
-        <div onClick={()=>{setPage("start");setSTab("s4");}} style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s4");}} {...kbd(()=>{setPage("start");setSTab("s4");})} aria-label="Request Training" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
       </div>
     </div>
   );
@@ -871,15 +900,15 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
           <div>
             <label style={labelStyle}>Company / Organization *</label>
-            <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. ABC Developments" />
+            <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. ABC Developments" aria-label="Company or organization" />
           </div>
           <div>
             <label style={labelStyle}>Project Name & Location *</label>
-            <input required style={inputStyle} value={values.project} onChange={set("project")} placeholder="e.g. Tower A, Dubai" />
+            <input required style={inputStyle} value={values.project} onChange={set("project")} placeholder="e.g. Tower A, Dubai" aria-label="Project name and location" />
           </div>
           <div>
             <label style={labelStyle}>Service Required *</label>
-            <select required style={inputStyle} value={values.service} onChange={set("service")}>
+            <select required style={inputStyle} value={values.service} onChange={set("service")} aria-label="Service required">
               <option value="">Select a service...</option>
               <option>Project & Construction Management</option>
               <option>Business Strategy & Growth</option>
@@ -891,23 +920,23 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Budget Range (optional)</label>
-            <input style={inputStyle} value={values.budget} onChange={set("budget")} placeholder="e.g. USD 50K–200K" />
+            <input style={inputStyle} value={values.budget} onChange={set("budget")} placeholder="e.g. USD 50K–200K" aria-label="Budget range" />
           </div>
           <div>
             <label style={labelStyle}>Timeline / Urgency</label>
-            <input style={inputStyle} value={values.timeline} onChange={set("timeline")} placeholder="e.g. Start Q3 2026" />
+            <input style={inputStyle} value={values.timeline} onChange={set("timeline")} placeholder="e.g. Start Q3 2026" aria-label="Timeline or urgency" />
           </div>
           <div>
             <label style={labelStyle}>Contact Name *</label>
-            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" />
+            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Contact name" />
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Email Address *</label>
-            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" />
+            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Brief Description *</label>
-            <textarea required style={textareaStyle} value={values.description} onChange={set("description")} placeholder="Describe your project, current challenges, and what you need from iStructural..." />
+            <textarea required style={textareaStyle} value={values.description} onChange={set("description")} placeholder="Describe your project, current challenges, and what you need from iStructural..." aria-label="Brief description" />
           </div>
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
@@ -931,15 +960,15 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
           <div>
             <label style={labelStyle}>Company / Organization *</label>
-            <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. XYZ Engineering" />
+            <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. XYZ Engineering" aria-label="Company or organization" />
           </div>
           <div>
             <label style={labelStyle}>Project Name & Location *</label>
-            <input required style={inputStyle} value={values.project} onChange={set("project")} placeholder="e.g. Bridge X, Riyadh" />
+            <input required style={inputStyle} value={values.project} onChange={set("project")} placeholder="e.g. Bridge X, Riyadh" aria-label="Project name and location" />
           </div>
           <div>
             <label style={labelStyle}>Service Type *</label>
-            <select required style={inputStyle} value={values.service} onChange={set("service")}>
+            <select required style={inputStyle} value={values.service} onChange={set("service")} aria-label="Service required">
               <option value="">Select a service...</option>
               <option>Structural Design</option>
               <option>Seismic & Wind Engineering</option>
@@ -952,7 +981,7 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Structure Type *</label>
-            <select required style={inputStyle} value={values.structure} onChange={set("structure")}>
+            <select required style={inputStyle} value={values.structure} onChange={set("structure")} aria-label="Structure type">
               <option value="">Select type...</option>
               <option>High-rise building (&gt;10 floors)</option>
               <option>Low/mid-rise building</option>
@@ -964,11 +993,11 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Approximate Size / Height / Span</label>
-            <input style={inputStyle} value={values.size} onChange={set("size")} placeholder="e.g. 42 floors, 160m height" />
+            <input style={inputStyle} value={values.size} onChange={set("size")} placeholder="e.g. 42 floors, 160m height" aria-label="Approximate size, height, or span" />
           </div>
           <div>
             <label style={labelStyle}>Existing Drawings Available?</label>
-            <select style={inputStyle} value={values.drawings} onChange={set("drawings")}>
+            <select style={inputStyle} value={values.drawings} onChange={set("drawings")} aria-label="Existing drawings available">
               <option value="">Select...</option>
               <option>Yes | full set available</option>
               <option>Yes | partial drawings</option>
@@ -977,15 +1006,15 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Contact Name *</label>
-            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" />
+            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Contact name" />
           </div>
           <div>
             <label style={labelStyle}>Email Address *</label>
-            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" />
+            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Special Requirements / Notes</label>
-            <textarea style={textareaStyle} value={values.requirements} onChange={set("requirements")} placeholder="Standards, code jurisdiction, specific challenges, delivery timeline..." />
+            <textarea style={textareaStyle} value={values.requirements} onChange={set("requirements")} placeholder="Standards, code jurisdiction, specific challenges, delivery timeline..." aria-label="Special requirements or notes" />
           </div>
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
@@ -1015,15 +1044,15 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
           <div>
             <label style={labelStyle}>Company / Organization *</label>
-            <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. City of Toronto" />
+            <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. City of Toronto" aria-label="Company or organization" />
           </div>
           <div>
             <label style={labelStyle}>Project Name or Workshop Topic *</label>
-            <input required style={inputStyle} value={values.topic} onChange={set("topic")} placeholder="e.g. Bridge inspection, AI readiness" />
+            <input required style={inputStyle} value={values.topic} onChange={set("topic")} placeholder="e.g. Bridge inspection, AI readiness" aria-label="Project name or workshop topic" />
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Service Path *</label>
-            <select required style={inputStyle} value={values.part} onChange={set("part")}>
+            <select required style={inputStyle} value={values.part} onChange={set("part")} aria-label="Service path">
               <option value="">Select your path...</option>
               <option>AI Literacy: AI 101 Workshop</option>
               <option>AI Literacy: Readiness Assessment</option>
@@ -1034,7 +1063,7 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Asset Type (if Part B)</label>
-            <select style={inputStyle} value={values.assetType} onChange={set("assetType")}>
+            <select style={inputStyle} value={values.assetType} onChange={set("assetType")} aria-label="Asset type">
               <option value="">Select if applicable...</option>
               <option>Residential building</option>
               <option>Commercial building</option>
@@ -1047,7 +1076,7 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Damage Type (if Part B)</label>
-            <select style={inputStyle} value={values.damageType} onChange={set("damageType")}>
+            <select style={inputStyle} value={values.damageType} onChange={set("damageType")} aria-label="Damage type">
               <option value="">Select if applicable...</option>
               <option>Post-earthquake / seismic</option>
               <option>Post-conflict / blast damage</option>
@@ -1059,19 +1088,19 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Project Location</label>
-            <input style={inputStyle} value={values.location} onChange={set("location")} placeholder="City, country" />
+            <input style={inputStyle} value={values.location} onChange={set("location")} placeholder="City, country" aria-label="Project location" />
           </div>
           <div>
             <label style={labelStyle}>Contact Name *</label>
-            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" />
+            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Contact name" />
           </div>
           <div>
             <label style={labelStyle}>Email Address *</label>
-            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" />
+            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Additional Notes</label>
-            <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Any relevant context: urgency, team size, existing data, preferred language (EN/FR/AR)..." />
+            <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Any relevant context: urgency, team size, existing data, preferred language (EN/FR/AR)..." aria-label="Additional notes" />
           </div>
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
@@ -1098,19 +1127,19 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div>
             <label style={labelStyle}>Contact Name *</label>
-            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" />
+            <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Contact name" />
           </div>
           <div>
             <label style={labelStyle}>Email Address *</label>
-            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" />
+            <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
           </div>
           <div>
             <label style={labelStyle}>Company / Organization</label>
-            <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="Optional" />
+            <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="Optional" aria-label="Company or organization (optional)" />
           </div>
           <div>
             <label style={labelStyle}>Team Size *</label>
-            <select required style={inputStyle} value={values.teamSize} onChange={set("teamSize")}>
+            <select required style={inputStyle} value={values.teamSize} onChange={set("teamSize")} aria-label="Team size">
               <option value="">Select team size...</option>
               <option>1 to 5</option>
               <option>6 to 10</option>
@@ -1121,7 +1150,7 @@ export default function App(){
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Software Program (primary focus) *</label>
-            <select required style={inputStyle} value={values.software} onChange={set("software")}>
+            <select required style={inputStyle} value={values.software} onChange={set("software")} aria-label="Software for training">
               <option value="">Select software...</option>
               <option>ETABS (CSi)</option>
               <option>SAP2000 (CSi)</option>
@@ -1136,17 +1165,17 @@ export default function App(){
             <>
               <div>
                 <label style={labelStyle}>Other Software Name *</label>
-                <input required={showOther} style={inputStyle} value={values.otherSwName} onChange={set("otherSwName")} placeholder="e.g. STAAD.Pro, Tekla, Robot..." />
+                <input required={showOther} style={inputStyle} value={values.otherSwName} onChange={set("otherSwName")} placeholder="e.g. STAAD.Pro, Tekla, Robot..." aria-label="Other software name" />
               </div>
               <div>
                 <label style={labelStyle}>Software Company *</label>
-                <input required={showOther} style={inputStyle} value={values.otherSwCompany} onChange={set("otherSwCompany")} placeholder="e.g. Bentley Systems, Trimble, Autodesk..." />
+                <input required={showOther} style={inputStyle} value={values.otherSwCompany} onChange={set("otherSwCompany")} placeholder="e.g. Bentley Systems, Trimble, Autodesk..." aria-label="Other software vendor" />
               </div>
             </>
           )}
           <div>
             <label style={labelStyle}>Training Format *</label>
-            <select required style={inputStyle} value={values.format} onChange={set("format")}>
+            <select required style={inputStyle} value={values.format} onChange={set("format")} aria-label="Training format">
               <option value="">Select format...</option>
               <option>In-person</option>
               <option>Online live</option>
@@ -1155,11 +1184,11 @@ export default function App(){
           </div>
           <div>
             <label style={labelStyle}>Preferred Dates / Timing</label>
-            <input style={inputStyle} value={values.dates} onChange={set("dates")} placeholder="e.g. Q3 2026, weekends only..." />
+            <input style={inputStyle} value={values.dates} onChange={set("dates")} placeholder="e.g. Q3 2026, weekends only..." aria-label="Preferred training dates" />
           </div>
           <div style={{gridColumn:"1 / -1"}}>
             <label style={labelStyle}>Additional Notes</label>
-            <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Skill levels, learning objectives, certifications needed, language preference (EN/FR/AR)..." />
+            <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Skill levels, learning objectives, certifications needed, language preference (EN/FR/AR)..." aria-label="Training notes" />
           </div>
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
@@ -1179,7 +1208,7 @@ export default function App(){
       </div>
       <div style={{display:"flex",gap:0,borderBottom:"1px solid #e0e0e0"}}>
         {[{id:"s1",l:"Management & Business",c:P.s1},{id:"s2",l:"Design & Consultancy",c:P.s2},{id:"s3",l:"AI & Technology",c:P.s3},{id:"s4",l:"Training",c:P.s2}].map(t=>
-          <div key={t.id} onClick={()=>setSTab(t.id)} style={{flex:1,padding:"10px 14px",textAlign:"center",cursor:"pointer",borderBottom:sTab===t.id?`3px solid ${t.c}`:"3px solid transparent",background:sTab===t.id?t.c+"08":"transparent",fontSize:10.5,fontWeight:sTab===t.id?700:500,color:sTab===t.id?t.c:P.slate,transition:"all 0.2s"}}>{t.l}</div>)}
+          <div key={t.id} onClick={()=>setSTab(t.id)} {...kbd(()=>setSTab(t.id))} role="tab" aria-selected={sTab===t.id} aria-label={t.l} style={{flex:1,padding:"10px 14px",textAlign:"center",cursor:"pointer",borderBottom:sTab===t.id?`3px solid ${t.c}`:"3px solid transparent",background:sTab===t.id?t.c+"08":"transparent",fontSize:10.5,fontWeight:sTab===t.id?700:500,color:sTab===t.id?t.c:P.slate,transition:"all 0.2s"}}>{t.l}</div>)}
       </div>
       <div style={{padding:"20px 24px"}}>
         {sTab==="s1" && <S1Form />}
@@ -1205,6 +1234,8 @@ export default function App(){
             <div style={{fontSize:11,fontWeight:700,color:P.charcoal}}>{c.t}</div>
             <div style={{fontSize:9.5,color:P.slate,marginTop:5,lineHeight:1.6}}>{c.d}</div>
             <div onClick={()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s1":i===2?"s4":"s1");}}}
+              {...kbd(()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s1":i===2?"s4":"s1");}})}
+              aria-label={c.a}
               style={{marginTop:10,fontSize:10,fontWeight:700,color:c.c,cursor:"pointer"}}>{c.a} &#8594;</div>
           </div>)}
       </div>
@@ -1220,6 +1251,12 @@ export default function App(){
         button:hover { opacity: 0.9; }
         button:disabled { opacity: 0.6; cursor: default; }
         * { box-sizing: border-box; }
+        /* A11Y: visible focus ring for keyboard users on all interactive elements */
+        :focus { outline: none; }
+        :focus-visible { outline: 2px solid #0A7C6E; outline-offset: 2px; border-radius: 4px; }
+        [role="button"]:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid #0A7C6E; outline-offset: 2px; }
+        /* A11Y: visually-hidden helper for screen readers */
+        .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
       `}</style>
       <Nav/>
       {page==="home"&&<HomePage/>}

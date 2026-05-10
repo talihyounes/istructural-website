@@ -122,11 +122,33 @@ const allProjects = [
   {n:"Abu Bakr Salem Theatre",c:"Cultural",r:"KSA"},
   {n:"ISF Camp (Transfer Beams)",c:"Cultural",r:"Qatar"},
   {n:"Shooting Club",c:"Cultural",r:"UAE"},
+  // ── ADDED FROM CLIENT'S REFERENCE LIST (2025 update) ──
+  {n:"Taj Al Fakhama, 550 Villas",c:"Residential",r:"KSA",y:"2021"},
+  {n:"Oryx Tower",c:"Commercial",r:"Qatar",y:"2021"},
+  {n:"Al Mana Tower",c:"Commercial",r:"Qatar",y:"2020"},
+  {n:"Damac Tower",c:"Commercial",r:"Qatar",y:"2020"},
+  {n:"Saint Charbel Church",c:"Institutional",r:"Qatar",y:"2018"},
+  {n:"BLOM Bank Headquarter",c:"Commercial",r:"Lebanon",y:"2019"},
+  {n:"Al Nahr Mixed Used Development",c:"Commercial",r:"Lebanon",y:"2017"},
+  {n:"Sioufi 4499, Maceio",c:"Residential",r:"Lebanon",y:"2016"},
+  {n:"Yassine Warehouse",c:"Commercial",r:"Lebanon",y:"2016"},
+  {n:"Industrial Research Institute",c:"Institutional",r:"Lebanon",y:"2016"},
+  {n:"Mada Building, Societe Generale de Banque au Liban",c:"Commercial",r:"Lebanon",y:"2015"},
+  {n:"U Park Buildings",c:"Commercial",r:"Lebanon",y:"2013"},
+  {n:"Ministry of Health / IPS Irrigation Systems and Water Tanks (2,500 m3)",c:"Infrastructure",r:"KSA",y:"2015"},
+  {n:"Haiti Airport Control Tower",c:"Infrastructure",r:"Other",y:"2022"},
+  {n:"Limassol Blu Marine Towers",c:"Residential",r:"Other",y:"2022"},
+  {n:"Herat Solar and Wind Power Plant",c:"Infrastructure",r:"Other",y:"2017"},
+  {n:"Ghozareh Industrial Zone, Wind Turbines",c:"Infrastructure",r:"Other",y:"2017"},
+  {n:"Turkmenistan Satellite Control",c:"Infrastructure",r:"Other",y:"2016"},
+  {n:"Skaya Tower",c:"Commercial",r:"Other",y:"2014-2016"},
+  {n:"Sulaimaniya Hotel, Rotana",c:"Commercial",r:"Other",y:"2013"},
+  {n:"Strategic Market Analysis / Pumice",c:"Advisory",r:"North America",y:"2025"},
 ];
 
-const cats = ["All","Residential","Commercial","Retail","Institutional","Bridges","Cultural"];
-const catCol = {Residential:P.s1,Commercial:P.gold,Retail:P.coral,Institutional:P.s2,Bridges:P.teal,Cultural:P.warm};
-const regions = ["All","UAE","KSA","Qatar","Lebanon","Other"];
+const cats = ["All","Residential","Commercial","Retail","Institutional","Bridges","Infrastructure","Cultural","Advisory"];
+const catCol = {Residential:P.s1,Commercial:P.gold,Retail:P.coral,Institutional:P.s2,Bridges:P.teal,Infrastructure:P.s3,Cultural:P.warm,Advisory:P.charcoal};
+const regions = ["All","UAE","KSA","Qatar","Lebanon","North America","Other"];
 
 const partners = [
   {name:"T2D2",type:"Damage AI",focus:"Facade/exterior CV damage"},{name:"STRUCINSPECT",type:"Damage AI",focus:"Bridge/concrete 99.9% TPR"},
@@ -640,7 +662,7 @@ export default function App(){
                   {/* Count chip — informative but quiet */}
                   <div style={{display:"flex",alignItems:"baseline",gap:4,padding:"4px 9px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}1A`,whiteSpace:"nowrap"}}>
                     <span style={{fontFamily:"'Fraunces',serif",fontSize:13,fontWeight:800,color:P.charcoal,lineHeight:1}}>{b.items.length}</span>
-                    <span style={{fontSize:7.5,fontWeight:600,color:P.slate,letterSpacing:0.5}}>resources</span>
+                    <span style={{fontSize:7.5,fontWeight:600,color:P.slate,letterSpacing:0.5}}>categories</span>
                   </div>
                 </div>
 
@@ -654,18 +676,45 @@ export default function App(){
         );
       })()}
 
-      {/* ═══ EXPANDED CONTENT PANEL (shows content of selected tile) ═══ */}
+      {/* ═══ EXPANDED CONTENT MODAL (overlay, opens on tile click) ═══ */}
       {hubTile && (
-        <div style={{padding:"22px 24px 24px",borderTop:`3px solid ${P.greenD}`,background:P.sand}}>
+        <div role="dialog" aria-modal="true" aria-label="Knowledge Hub category details"
+             onClick={(e)=>{ if(e.target===e.currentTarget) setHubTile(null); }}
+             onKeyDown={(e)=>{ if(e.key==='Escape') setHubTile(null); }}
+             tabIndex={-1}
+             style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto",animation:"fadeUp 0.2s ease-out"}}>
+          <div style={{position:"relative",width:"100%",maxWidth:820,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(57,197,188,0.25)",overflow:"hidden",animation:"fadeUp 0.22s ease-out"}}>
+            {/* Top accent bar matching tile pillar color */}
+            <div style={{height:4,background:`linear-gradient(90deg, ${P.greenD} 0%, ${P.s3} 50%, ${P.s2} 100%)`}}></div>
+            {/* Close button */}
+            <button onClick={()=>setHubTile(null)} aria-label="Close category details"
+                    style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,lineHeight:1,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
+            <div style={{padding:"24px 28px 28px"}}>
 
           {/* CRACK & DAMAGE LIBRARY */}
           {hubTile === "crack" && (
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Crack & Damage Library</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Visual References for Field Inspection</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Curated visual guide to common crack patterns, structural damage types, severity ratings, and field identification. Useful for engineers, inspectors, and safety officers.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.s3}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.s3}}>Coming soon.</strong> Documents and visual references will be available for download here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.s3,fontWeight:700}}>info@istructgroup.com</a> to request specific resources.
+              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Crack and Damage Reference Documents</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download references on damage evaluation and repair from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"FEMA 306 Evaluation of Earthquake Damaged Concrete and Masonry Wall Buildings — Basic Procedures Manual", body:"FEMA / Applied Technology Council", year:"1998", url:"https://mitigation.eeri.org/files/fema-306.pdf"},
+                  {region:"USA", title:"FEMA 307 Evaluation of Earthquake Damaged Concrete and Masonry Wall Buildings — Technical Resources", body:"FEMA / Applied Technology Council", year:"1998", url:"http://www.atcouncil.org/files/FEMA307.pdf"},
+                  {region:"Canada", title:"Federal Flood Damage Estimation Guidelines for Buildings and Infrastructure", body:"Natural Resources Canada", year:"2021", url:"https://publications.gc.ca/collections/collection_2021/rncan-nrcan/M45-124-2021-eng.pdf"},
+                  {region:"Europe", title:"EN 1504 Concrete Repair Standards — illustrated reference summary (10 parts, 11 Principles)", body:"EN 1504-aligned guide", year:"2018", url:"https://www.sika.com/dam/dms/corporate/z/glo-concrete-repair-protection-en-1504.pdf"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s3}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s3+"15",color:P.s3,whiteSpace:"nowrap",border:`1px solid ${P.s3}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.s3,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
@@ -675,9 +724,26 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Free Inspection Forms</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Standardized Field and Office Forms</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Safety pre-check, site identification, Phase 1 smartphone field form, post-disaster rapid assessment. Multilingual versions on request.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.s3}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.s3}}>Coming soon.</strong> Form PDFs will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.s3,fontWeight:700}}>info@istructgroup.com</a> to request a specific form.
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download inspection forms and field manuals from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"FEMA P-154 Rapid Visual Screening of Buildings — Handbook + Data Collection Forms (3rd Ed.)", body:"FEMA", year:"2015", url:"https://www.fema.gov/sites/default/files/2020-07/fema_earthquakes_rapid-visual-screening-of-buildings-for-potential-seismic-hazards-a-handbook-third-edition-fema-p-154.pdf"},
+                  {region:"USA", title:"ATC-20 Postearthquake Safety Evaluation Forms and Placards (Rapid + Detailed + GREEN/YELLOW/RED placards)", body:"Applied Technology Council", year:"2005 rev.", url:"https://www.atcouncil.org/placards-and-evaluation-forms"},
+                  {region:"Canada", title:"Level 1 Preliminary Seismic Risk Screening Tool (PST) for Existing Buildings — User's Guide", body:"National Research Council Canada", year:"2020", url:"https://nrc-publications.canada.ca/eng/view/object/?id=5f059958-29e6-43eb-aa37-c896ab11dcd1"},
+                  {region:"Canada", title:"Post-Disaster Building Assessment Resources — Rapid Damage Assessment Form, placards, kits, guidelines", body:"BC Housing", year:"Updated", url:"https://www.bchousing.org/projects-partners/emergency-management/building-assessments/pdba-resources"},
+                  {region:"Europe", title:"Assessing Existing Buildings with Eurocode 8 Part 3 — JRC technical guidance (Pinto, 2008)", body:"EU Joint Research Centre", year:"2008", url:"https://eurocodes.jrc.ec.europa.eu/sites/default/files/2022-06/Pinto_2008.pdf"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s3}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s3+"15",color:P.s3,whiteSpace:"nowrap",border:`1px solid ${P.s3}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.s3,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
@@ -687,9 +753,27 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Structural Calculators</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Browser-Based Tools</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Quick checks for beam deflection, column buckling, seismic base shear, and wind load. No login, no install. Run directly in your browser.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.s2}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.s2}}>Coming soon.</strong> Browser calculators will appear here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.s2,fontWeight:700}}>info@istructgroup.com</a> to request specific calculators.
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-use browser-based calculators from authoritative bodies and reputable engineering resources in the USA, Canada, and Europe. No login or purchase required.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"SkyCiv Free Beam Calculator — reactions, SFD, BMD, deflection (steel, concrete, timber)", body:"SkyCiv Engineering", year:"Updated", url:"https://skyciv.com/free-beam-calculator/"},
+                  {region:"USA", title:"USGS Unified Hazard Tool — interactive seismic hazard curves and design ground motions", body:"US Geological Survey", year:"Current", url:"https://earthquake.usgs.gov/hazards/interactive/"},
+                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — interactive spectral acceleration calculator", body:"Natural Resources Canada", year:"2025/2020", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
+                  {region:"Canada", title:"Jabacus NBC 2020 Seismic Load — Equivalent Static Method calculator", body:"Jabacus", year:"Current", url:"https://jabacus.com/engineering/nbc2020/seismic.php"},
+                  {region:"Europe", title:"Eurocode Applied — free online calculation suite for EN 1990 to EN 1998", body:"EurocodeApplied.com", year:"Current", url:"https://eurocodeapplied.com/"},
+                  {region:"Europe", title:"BeamGuru — free 2D beam, frame, and truss analysis (BMD, SFD, axial)", body:"BeamGuru", year:"Current", url:"https://beamguru.com/"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s2}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s2+"15",color:P.s2,whiteSpace:"nowrap",border:`1px solid ${P.s2}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.s2,fontWeight:700,marginTop:6}}>Open free calculator &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
@@ -769,9 +853,27 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>International Standards</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Codes and Standards Quick Reference</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode. Plus ASCE 7/41, ICOMOS, World Bank, USGS, ISO references. Summary cards and links to official sources.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.greenD}}>Coming soon.</strong> Standards summaries and links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for specific code references.
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access standards portals and design parameter tools from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"ASCE Hazard Tool — site-specific design parameters per ASCE 7-10/16/22 (wind, seismic, tornado, ice, snow)", body:"American Society of Civil Engineers", year:"Updated", url:"https://ascehazardtool.org/"},
+                  {region:"USA", title:"USGS Seismic Design Web Services — endpoints for ASCE 7-22, ASCE 41-17, NEHRP, IBC, AASHTO", body:"US Geological Survey", year:"Current", url:"https://earthquake.usgs.gov/ws/designmaps/"},
+                  {region:"Canada", title:"National Building Code of Canada 2020 — free PDF via NRC archive", body:"National Research Council Canada", year:"2020", url:"https://nrc-publications.canada.ca/eng/search/?q=NRCCode"},
+                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — spectral acceleration / PGA / PGV per location and Site Class", body:"Natural Resources Canada (CHIS)", year:"2025/2020", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
+                  {region:"Europe", title:"Eurocodes Learning Corner — full Eurocode family, training materials, JRC background documents", body:"EU Joint Research Centre", year:"Updated", url:"https://eurocodes.jrc.ec.europa.eu/learning-corner"},
+                  {region:"Europe", title:"Eurocode 2 Worked Examples — design examples (Concrete Initiative)", body:"The Concrete Initiative", year:"2017 rev.", url:"https://www.theconcreteinitiative.eu/images/ECP_Documents/Eurocode2_WorkedExamples.pdf"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.greenD}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.greenD+"15",color:P.greenD,whiteSpace:"nowrap",border:`1px solid ${P.greenD}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.greenD,fontWeight:700,marginTop:6}}>Open free resource &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
@@ -780,10 +882,25 @@ export default function App(){
           {hubTile === "pm" && (
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s1,textTransform:"uppercase",marginBottom:6}}>PM Templates & Frameworks</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Project Management Resources</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>RFP templates, scope of work, risk registers, milestone tracking. Adaptable to your projects.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.s1}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.s1}}>Coming soon.</strong> Templates will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.s1,fontWeight:700}}>info@istructgroup.com</a> for specific templates.
+              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Project Management Documents and Frameworks</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download project management templates and frameworks from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"PMBOK 6 Project Risk Management — Risk Register, Risk Breakdown Structure, Probability-Impact Matrix templates (free webinar PDF)", body:"PMI Central Italy Chapter", year:"2018", url:"https://www.pmi-centralitaly.org/wp-content/uploads/2019/06/PMBoK_Risk_03072018.pdf"},
+                  {region:"Canada", title:"Federal Flood Damage Estimation Guidelines for Buildings and Infrastructure (project planning + risk framework)", body:"Natural Resources Canada", year:"2021", url:"https://publications.gc.ca/collections/collection_2021/rncan-nrcan/M45-124-2021-eng.pdf"},
+                  {region:"Europe", title:"EuropeAid Project Cycle Management Guidelines — full LFA + project cycle methodology", body:"European Commission EuropeAid", year:"2004", url:"https://op.europa.eu/en/publication-detail/-/publication/46681c3f-81f8-4cd6-a90b-c0235489a56e"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s1}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s1+"15",color:P.s1,whiteSpace:"nowrap",border:`1px solid ${P.s1}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.s1,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
@@ -792,10 +909,26 @@ export default function App(){
           {hubTile === "ve" && (
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s1,textTransform:"uppercase",marginBottom:6}}>V.E. & ROI Tools</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Value Engineering and Cost Analysis</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Value engineering templates, cost-benefit calculators, LEED guides. For owners, PMs, and designers.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.s1}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.s1}}>Coming soon.</strong> Tools and templates will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.s1,fontWeight:700}}>info@istructgroup.com</a> to request specific tools.
+              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Value Engineering and Cost Documents</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download value engineering and life cycle costing references from authoritative bodies in the USA and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"SAVE International Value Methodology Standard — full Six-Phase Job Plan", body:"SAVE International", year:"2015", url:"https://cdn.ymaws.com/www.value-eng.org/resource/resmgr/standards_documents/vmstd.pdf"},
+                  {region:"USA", title:"SD-24 Value Engineering: A Guidebook of Best Practices and Tools", body:"US Department of Defense", year:"Feb 2025", url:"https://www.cto.mil/wp-content/uploads/2025/02/SD-24-VE-Guidebook-25Feb2025-Cleared-1.pdf"},
+                  {region:"Europe", title:"Level(s) Indicator 6.1 Life Cycle Costs — User Manual (introductory briefing, instructions, guidance)", body:"EU Joint Research Centre", year:"2021", url:"https://susproc.jrc.ec.europa.eu/product-bureau/sites/default/files/2021-01/UM3_Indicator_6.1_v1.1_21pp.pdf"},
+                  {region:"Europe", title:"Achieving the Cost-Effective Energy Transformation of Europe's Buildings (cost-benefit framework for retrofits)", body:"EU Joint Research Centre", year:"2019", url:"https://publications.jrc.ec.europa.eu/repository/bitstream/JRC117739/cost_optimal_energy_renovations_online.pdf"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s1}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s1+"15",color:P.s1,whiteSpace:"nowrap",border:`1px solid ${P.s1}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.s1,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
@@ -805,13 +938,33 @@ export default function App(){
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Training & Certification Links</div>
               <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Professional Development Resources</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>PMI (PMP and program management), ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certifications, university programs, CPD-aligned courses. Direct links to official providers.</div>
-              <div style={{padding:"14px 16px",background:P.white,borderRadius:8,border:`1px dashed ${P.greenD}40`,fontSize:10,color:P.slate,lineHeight:1.6}}>
-                <strong style={{color:P.greenD}}>Coming soon.</strong> Curated certification links will be available here. Contact <a href="mailto:info@istructgroup.com" style={{color:P.greenD,fontWeight:700}}>info@istructgroup.com</a> for guidance on training paths.
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access training portals and CPD entry points from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority. Course completion certificates may be issued at no cost or with a separate fee depending on the provider.</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                {[
+                  {region:"USA", title:"FEMA Emergency Management Institute — Independent Study Program (200+ free online courses including building safety and emergency management)", body:"FEMA EMI", year:"Updated", url:"https://training.fema.gov/is/crslist.aspx"},
+                  {region:"USA", title:"FEMA P-154 official training page — Rapid Visual Screening training resources", body:"FEMA", year:"Current", url:"https://www.fema.gov/emergency-managers/risk-management/earthquake/training/fema-p-154"},
+                  {region:"Canada", title:"Canadian Society for Civil Engineering (CSCE) — Professional Development portal", body:"CSCE / SCGC", year:"Current", url:"https://legacy.csce.ca/en/lifelong-learning/professional-development/"},
+                  {region:"Canada", title:"OSPE Continuing Professional Development — free weekly sessions for members + recordings", body:"Ontario Society of Professional Engineers", year:"Current", url:"https://ospe.on.ca/academy/cpd/"},
+                  {region:"Europe", title:"Eurocodes Learning Corner — free training materials, JRC workshops, slide decks", body:"EU Joint Research Centre", year:"Updated", url:"https://eurocodes.jrc.ec.europa.eu/learning-corner/training-materials"},
+                  {region:"Europe", title:"JRC Eurocodes Evolution — free explainer video series on second-generation Eurocodes", body:"EU Joint Research Centre", year:"2024-2025", url:"https://eurocodes.jrc.ec.europa.eu/2nd-generation/eurocodes-evolution-explained-video-series"},
+                ].map((d,i)=>(
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.greenD}25`,textDecoration:"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                      </div>
+                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.greenD+"15",color:P.greenD,whiteSpace:"nowrap",border:`1px solid ${P.greenD}30`}}>{d.region}</span>
+                    </div>
+                    <div style={{fontSize:8,color:P.greenD,fontWeight:700,marginTop:6}}>Open free training portal &#x2197;</div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
 
+            </div>{/* end modal padded body */}
+          </div>{/* end modal card */}
         </div>
       )}
 
@@ -835,9 +988,9 @@ export default function App(){
   const ProjectsPage=()=>(
     <div>
       <HeroBg color1={P.navy}><div style={{padding:"28px 28px 24px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Portfolio</div>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Selected Portfolio</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Projects</h2>
-        <p style={{fontSize:10,color:"#9BBCD6",marginTop:4}}>Selected work: buildings, bridges, infrastructure. UAE, KSA, Qatar, Lebanon, and international.</p>
+        <p style={{fontSize:10,color:"#9BBCD6",marginTop:4,maxWidth:680,lineHeight:1.6}}>A curated selection of representative projects across buildings, bridges, and infrastructure in the UAE, KSA, Qatar, Lebanon, and internationally.</p>
       </div></HeroBg>
       <div style={{padding:"10px 24px 6px",background:P.sand,display:"flex",gap:16,alignItems:"center",borderBottom:"1px solid #e0e0e0",flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>

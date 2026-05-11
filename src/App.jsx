@@ -312,7 +312,7 @@ export default function App(){
     let f=allProjects;
     if(pCat!=="All")f=f.filter(p=>p.c===pCat);
     if(pReg!=="All"){
-      if(pReg==="Other")f=f.filter(p=>!["UAE","KSA","Qatar","Lebanon"].includes(p.r));
+      if(pReg==="Other")f=f.filter(p=>!["UAE","KSA","Qatar","Lebanon","North America"].includes(p.r));
       else f=f.filter(p=>p.r===pReg);
     }
     return f;
@@ -752,16 +752,43 @@ export default function App(){
           {hubTile === "calc" && (
             <div>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Structural Calculators</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Browser-Based Tools</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-use browser-based calculators from authoritative bodies and reputable engineering resources in the USA, Canada, and Europe. No login or purchase required.</div>
+              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Browser-Based Tools by Material and Load</div>
+              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-use browser-based calculators from authoritative bodies and reputable 3rd-party-endorsed engineering resources in the USA, Canada, and Europe. Organized by material system (Reinforced Concrete, Post-Tensioned, Steel, Composite, Wood, Aluminum) and by load type (Wind, Seismic). No login or purchase required.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
-                  {region:"USA", title:"SkyCiv Free Beam Calculator — reactions, SFD, BMD, deflection (steel, concrete, timber)", body:"SkyCiv Engineering", year:"Live · 2026", url:"https://skyciv.com/free-beam-calculator/"},
-                  {region:"USA", title:"USGS Unified Hazard Tool — interactive seismic hazard curves and design ground motions", body:"US Geological Survey", year:"Live · 2026", url:"https://earthquake.usgs.gov/hazards/interactive/"},
-                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — interactive spectral acceleration calculator", body:"Natural Resources Canada", year:"2025", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
-                  {region:"Canada", title:"Jabacus NBC 2020 Seismic Load — Equivalent Static Method calculator", body:"Jabacus", year:"Live · 2026", url:"https://jabacus.com/engineering/nbc2020/seismic.php"},
-                  {region:"Europe", title:"Eurocode Applied — free online calculation suite for EN 1990 to EN 1998", body:"EurocodeApplied.com", year:"Live · 2026", url:"https://eurocodeapplied.com/"},
-                  {region:"Europe", title:"BeamGuru — free 2D beam, frame, and truss analysis (BMD, SFD, axial)", body:"BeamGuru", year:"Live · 2026", url:"https://beamguru.com/"},
+                  // ── Reinforced Concrete ──
+                  {region:"USA", title:"Reinforced Concrete — Beam Design Calculator (ACI 318-19)", body:"CalcTree", year:"Live · 2026", url:"https://www.calctree.com/templates/concrete-beam"},
+                  {region:"USA / Europe", title:"Reinforced Concrete — Section Design Calculator (ACI 318 / EC2)", body:"CalcForge", year:"Live · 2026", url:"https://calcforge.com/concrete/1"},
+                  {region:"Europe", title:"Reinforced Concrete — RC Slab / Beam / Column Suite (Eurocode 2)", body:"EurocodeApplied EN 1992", year:"Live · 2026", url:"https://eurocodeapplied.com/design/en1992"},
+                  {region:"Canada", title:"Reinforced Concrete — CSA A23.3 Concrete Slab Calculator", body:"SkyCiv", year:"Live · 2026", url:"https://skyciv.com/free-tools/"},
+                  // ── Post-Tensioned ──
+                  {region:"USA", title:"Post-Tensioned — PT Concrete Slab Calculator (ACI 318-19)", body:"ConcreteMetric", year:"Live · 2026", url:"https://concretemetric.com/calculators/post-tension-slab-calculator/"},
+                  {region:"USA", title:"Post-Tensioned — PT Design Spreadsheets (One-Way Beam / Slab + Two-Way Slabs)", body:"PDH Online", year:"Live · 2026", url:"https://pdhonline.com/courses/s133/s133.htm"},
+                  // ── Steel ──
+                  {region:"USA", title:"Steel — Beam and Column Design Calculator (AISC 360-16/22)", body:"CalcTree", year:"Live · 2026", url:"https://www.calctree.com/templates/steel-section"},
+                  {region:"USA / Europe / Canada", title:"Steel — Free Column Capacity Calculator (AISC 360, EN 1993, CSA S16)", body:"SteelCalculator.app", year:"Live · 2026", url:"https://steelcalculator.app/tools/column-capacity/"},
+                  {region:"Europe", title:"Steel — Eurocode 3 Beam and Column Design", body:"SkyCiv", year:"Live · 2026", url:"https://skyciv.com/free-tools/"},
+                  // ── Composite ──
+                  {region:"USA", title:"Composite — Steel-Concrete Composite Beam (AISC 360-22)", body:"SteelCalculator.app", year:"Live · 2026", url:"https://steelcalculator.app/tools/composite-design/"},
+                  {region:"USA / Europe", title:"Composite — Composite Beam Calculator (AISC 360 + EN 1994 + IS 11384)", body:"ToolsRail", year:"Live · 2026", url:"https://www.toolsrail.com/civil/composite-beam-calculator.php"},
+                  // ── Wood / Timber ──
+                  {region:"USA", title:"Wood / Timber — Steel and Wood Beam Calculator (AISC + NDS)", body:"WebStructural", year:"Live · 2026", url:"https://webstructural.com/beam-designer.html"},
+                  {region:"Europe", title:"Wood / Timber — Eurocode 5 Timber Beam Design", body:"CalcTree", year:"Live · 2026", url:"https://www.calctree.com/templates/timber-beam"},
+                  {region:"Canada", title:"Wood / Timber — CSA O86-14 Canadian Wood Beam Calculator", body:"SkyCiv", year:"Live · 2026", url:"https://skyciv.com/quick-calculators/canadian-wood-beam-design/"},
+                  // ── Aluminum ──
+                  {region:"USA / Europe / Canada", title:"Aluminum — Beam Capacity Calculator (ADM + EN 1999 + CSA 157)", body:"SkyCiv", year:"Live · 2026", url:"https://skyciv.com/quick-calculators/aluminum-beam-capacity-calculator/"},
+                  // ── Wind ──
+                  {region:"USA / Europe / Canada", title:"Wind Load — Wind Calculator (ASCE 7-22, EN 1991-1-4, NBCC 2020)", body:"SkyCiv", year:"Live · 2026", url:"https://skyciv.com/wind-load-calculator/"},
+                  // ── Seismic ──
+                  {region:"Canada", title:"Seismic Load — NBCC 2020 Equivalent Static Method Calculator", body:"Jabacus", year:"Live · 2026", url:"https://jabacus.com/engineering/nbc2020/seismic.php"},
+                  {region:"Canada", title:"Seismic Hazard — NBC 2020 Seismic Hazard Tool (spectral acceleration, PGA, PGV per location)", body:"Natural Resources Canada (CHIS)", year:"2025", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
+                  {region:"USA", title:"Seismic Hazard — USGS Unified Hazard Tool (interactive hazard curves and design ground motions)", body:"US Geological Survey", year:"Live · 2026", url:"https://earthquake.usgs.gov/hazards/interactive/"},
+                  {region:"USA", title:"Seismic Design Parameters — USGS Design Web Services (ASCE 7, ASCE 41, NEHRP, IBC, AASHTO)", body:"US Geological Survey", year:"Live · 2026", url:"https://earthquake.usgs.gov/ws/designmaps/"},
+                  {region:"USA", title:"Wind / Snow / Seismic — ASCE Hazard Tool (site-specific design parameters per ASCE 7-10/16/22)", body:"American Society of Civil Engineers", year:"Live · 2026", url:"https://ascehazardtool.org/"},
+                  // ── General-purpose analysis (kept from original list) ──
+                  {region:"USA / Europe / Canada", title:"Beam Analysis — SkyCiv Free Beam Calculator (reactions, SFD, BMD, deflection)", body:"SkyCiv Engineering", year:"Live · 2026", url:"https://skyciv.com/free-beam-calculator/"},
+                  {region:"Europe", title:"Beam / Frame / Truss Analysis — BeamGuru (2D, BMD, SFD, axial)", body:"BeamGuru", year:"Live · 2026", url:"https://beamguru.com/"},
+                  {region:"Europe", title:"Multi-Code Suite — Eurocode 2/3/4/5/7/8 calculations (EN 1990–EN 1998)", body:"EurocodeApplied.com", year:"Live · 2026", url:"https://eurocodeapplied.com/"},
                 ].map((d,i)=>(
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s2}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>

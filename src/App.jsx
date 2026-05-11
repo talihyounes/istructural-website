@@ -307,6 +307,11 @@ export default function App(){
   const [hubTile,setHubTile]=useState(null);
   const [showAll,setShowAll]=useState(false);
   const [sapOpen,setSapOpen]=useState(false);
+  const [mobileNavOpen,setMobileNavOpen]=useState(false);
+  const [showSearch,setShowSearch]=useState(false);
+  const [searchQ,setSearchQ]=useState("");
+  const [selectedProj,setSelectedProj]=useState(null);
+  const [projSearchQ,setProjSearchQ]=useState("");
 
   const filteredP = useMemo(()=>{
     let f=allProjects;
@@ -315,8 +320,12 @@ export default function App(){
       if(pReg==="Other")f=f.filter(p=>!["UAE","KSA","Qatar","Lebanon","North America"].includes(p.r));
       else f=f.filter(p=>p.r===pReg);
     }
+    if(projSearchQ.trim()){
+      const q=projSearchQ.toLowerCase();
+      f=f.filter(p=>(p.n||"").toLowerCase().includes(q)||(p.c||"").toLowerCase().includes(q)||(p.r||"").toLowerCase().includes(q)||(p.country||"").toLowerCase().includes(q));
+    }
     return f;
-  },[pCat,pReg]);
+  },[pCat,pReg,projSearchQ]);
 
   const displayed = showAll?filteredP:filteredP.slice(0,20);
 
@@ -335,11 +344,26 @@ export default function App(){
           <div style={{fontSize:7,color:"#6A8CA8",letterSpacing:1.5,textTransform:"uppercase"}}>Structural Solutions | Management | AI</div>
         </div>
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:2}}>
+      {/* Desktop nav tabs (≥720px) */}
+      <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:2}}>
         {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>
           <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
         )}
+        {/* Search icon */}
+        <div onClick={()=>setShowSearch(true)} {...kbd(()=>setShowSearch(true))} aria-label="Search the site" title="Search resources and projects" style={{marginLeft:6,width:28,height:28,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.tealL} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
         <div onClick={()=>setPage("start")} {...kbd(()=>setPage("start"))} aria-label="Start a Project" style={{marginLeft:4,background:P.teal,color:P.white,padding:"5px 11px",borderRadius:7,fontSize:9.5,fontWeight:700,cursor:"pointer"}}>Start a Project</div>
+      </div>
+
+      {/* Mobile nav controls (<720px) */}
+      <div className="nav-mobile" style={{display:"none",alignItems:"center",gap:8}}>
+        <div onClick={()=>setShowSearch(true)} {...kbd(()=>setShowSearch(true))} aria-label="Search the site" style={{width:32,height:32,borderRadius:7,border:`1px solid ${P.tealL}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.tealL} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        <div onClick={()=>setMobileNavOpen(true)} {...kbd(()=>setMobileNavOpen(true))} aria-label="Open menu" aria-expanded={mobileNavOpen} style={{width:32,height:32,borderRadius:7,background:P.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={P.white} strokeWidth="2.6" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </div>
       </div>
     </div>
   );
@@ -1038,14 +1062,24 @@ export default function App(){
         </div>
       </div>
       <div style={{padding:"8px 24px"}}>
-        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Filter by Type and Region above.</div>
+        {/* Search box + result count */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 240px",background:P.white,border:`1px solid ${P.charcoal}1A`,borderRadius:8,padding:"6px 10px"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.slate} strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input value={projSearchQ} onChange={(e)=>{setProjSearchQ(e.target.value);setShowAll(false);}} placeholder="Search projects by name, type, region, country..." aria-label="Search projects" style={{border:"none",outline:"none",fontSize:11,flex:1,fontFamily:"inherit",color:P.charcoal,background:"transparent"}} />
+            {projSearchQ && <button onClick={()=>setProjSearchQ("")} aria-label="Clear search" style={{border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:P.slate,padding:0,fontFamily:"inherit"}}>×</button>}
+          </div>
+          <div style={{fontSize:9,color:P.slate,whiteSpace:"nowrap"}}>{filteredP.length} {filteredP.length===1?"project":"projects"} shown</div>
+        </div>
+        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Click a project for details. Filter by Type and Region above.</div>
         {displayed.map((p,i)=>(
-          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 130px 110px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center"}}>
+          <div key={i} onClick={()=>setSelectedProj(p)} {...kbd(()=>setSelectedProj(p))} aria-label={`Open details for ${p.n}`} style={{display:"grid",gridTemplateColumns:"1fr 130px 110px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center",cursor:"pointer",transition:"background 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.background=P.teal+"08";}} onMouseLeave={e=>{e.currentTarget.style.background=i%2===0?"#f8f9fa":"transparent";}}>
             <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.4}}>{p.n}</div>
             <span style={{fontSize:7.5,fontWeight:600,padding:"2px 5px",borderRadius:5,background:(catCol[p.c]||P.slate)+"12",color:catCol[p.c]||P.slate,textAlign:"center"}}>{p.c}</span>
             <span style={{fontSize:8.5,color:P.slate,textAlign:"right",whiteSpace:"nowrap"}}>{p.country || p.r}</span>
           </div>
         ))}
+        {displayed.length===0 && <div style={{padding:"24px 0",fontSize:11,color:P.slate,textAlign:"center",fontStyle:"italic"}}>No projects match your search. Try clearing filters or simplifying the query.</div>}
         {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} {...kbd(()=>setShowAll(true))} aria-label="Show more projects" style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
       </div>
     </div>
@@ -1435,6 +1469,12 @@ export default function App(){
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@700;800&display=swap" rel="stylesheet"/>
       <style>{`
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+        /* Responsive nav: hide desktop tabs and show hamburger under 880px */
+        @media (max-width: 880px){
+          .nav-desktop{display:none !important;}
+          .nav-mobile{display:flex !important;}
+        }
         input:focus, textarea:focus, select:focus { border-color: #0A7C6E !important; box-shadow: 0 0 0 2px #0A7C6E18; }
         button:hover { opacity: 0.9; }
         button:disabled { opacity: 0.6; cursor: default; }
@@ -1457,6 +1497,127 @@ export default function App(){
       {page==="start"&&<StartPage/>}
       {page==="contact"&&<ContactPage/>}
       <Footer/>
+
+      {/* ═══ MOBILE NAV DRAWER ═══ */}
+      {mobileNavOpen && (
+        <div role="dialog" aria-modal="true" aria-label="Site navigation"
+             onClick={(e)=>{ if(e.target===e.currentTarget) setMobileNavOpen(false); }}
+             style={{position:"fixed",inset:0,zIndex:1100,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)"}}>
+          <div style={{position:"absolute",top:0,right:0,height:"100vh",width:"min(86vw,340px)",background:P.navy,boxShadow:"-10px 0 40px rgba(0,0,0,0.5)",padding:"20px 18px",animation:"slideInRight 0.22s ease-out",display:"flex",flexDirection:"column",gap:6}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
+              <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:16,fontWeight:700,fontFamily:"inherit"}}>×</button>
+            </div>
+            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>(
+              <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
+            ))}
+            <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ GLOBAL SEARCH OVERLAY ═══ */}
+      {showSearch && (() => {
+        const q = searchQ.trim().toLowerCase();
+        const projHits = q ? allProjects.filter(p=>(p.n||"").toLowerCase().includes(q)||(p.c||"").toLowerCase().includes(q)||(p.r||"").toLowerCase().includes(q)||(p.country||"").toLowerCase().includes(q)).slice(0,10) : [];
+        const pages = [
+          {id:"home",l:"Home",d:"Overview, three pillars, AI assessment"},
+          {id:"s1",l:"Management & Business Support",d:"V.E., ROI, risk, strategy"},
+          {id:"s2",l:"Design Services & Consultancy",d:"High-rise, bridges, irregular, structural assessment"},
+          {id:"s3",l:"AI & Technology Services",d:"AI literacy, readiness, implementation"},
+          {id:"hub",l:"Knowledge Hub",d:"Free documents, calculators, standards, training links"},
+          {id:"projects",l:"Projects",d:"Selected portfolio across MENA, Europe and beyond"},
+          {id:"training",l:"Training Programs",d:"CSi licensed training, MENA and North America"},
+          {id:"contact",l:"Contact",d:"Reach iStructural Group Inc."},
+        ];
+        const pageHits = q ? pages.filter(p=>p.l.toLowerCase().includes(q)||p.d.toLowerCase().includes(q)) : pages;
+        return (
+        <div role="dialog" aria-modal="true" aria-label="Site search"
+             onClick={(e)=>{ if(e.target===e.currentTarget) setShowSearch(false); }}
+             onKeyDown={(e)=>{ if(e.key==='Escape'){setShowSearch(false);setSearchQ("");} }}
+             style={{position:"fixed",inset:0,zIndex:1050,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"60px 16px",overflowY:"auto"}}>
+          <div style={{width:"100%",maxWidth:640,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55)",overflow:"hidden",animation:"fadeUp 0.2s ease-out"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",background:P.white,borderBottom:`1px solid ${P.charcoal}1A`}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={P.slate} strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input autoFocus value={searchQ} onChange={(e)=>setSearchQ(e.target.value)} placeholder="Search pages, projects, resources..." aria-label="Site search input" style={{flex:1,border:"none",outline:"none",fontSize:13,background:"transparent",fontFamily:"inherit",color:P.charcoal}} />
+              <button onClick={()=>{setShowSearch(false);setSearchQ("");}} aria-label="Close search" style={{width:28,height:28,borderRadius:7,background:"transparent",border:`1px solid ${P.charcoal}25`,cursor:"pointer",fontSize:14,color:P.charcoal,fontWeight:700,fontFamily:"inherit"}}>×</button>
+            </div>
+            <div style={{padding:"14px 16px",maxHeight:"60vh",overflowY:"auto"}}>
+              <div style={{fontSize:8,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:8}}>{q ? `Pages (${pageHits.length})` : "Browse pages"}</div>
+              {pageHits.length===0 && <div style={{fontSize:10,color:P.slate,fontStyle:"italic",padding:"6px 0"}}>No page matches.</div>}
+              {pageHits.map(p=>(
+                <div key={p.id} onClick={()=>{setPage(p.id);setShowSearch(false);setSearchQ("");}} {...kbd(()=>{setPage(p.id);setShowSearch(false);setSearchQ("");})} style={{padding:"9px 11px",borderRadius:7,cursor:"pointer",marginBottom:4,background:P.white,border:`1px solid ${P.charcoal}10`}}>
+                  <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal}}>{p.l}</div>
+                  <div style={{fontSize:8.5,color:P.slate,marginTop:1}}>{p.d}</div>
+                </div>
+              ))}
+              {q && (
+                <>
+                  <div style={{fontSize:8,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",margin:"14px 0 8px"}}>Projects ({projHits.length})</div>
+                  {projHits.length===0 && <div style={{fontSize:10,color:P.slate,fontStyle:"italic",padding:"6px 0"}}>No project matches.</div>}
+                  {projHits.map((p,i)=>(
+                    <div key={i} onClick={()=>{setSelectedProj(p);setShowSearch(false);setSearchQ("");}} {...kbd(()=>{setSelectedProj(p);setShowSearch(false);setSearchQ("");})} style={{padding:"8px 11px",borderRadius:7,cursor:"pointer",marginBottom:4,background:P.white,border:`1px solid ${P.s2}15`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6}}>
+                      <div style={{fontSize:10,color:P.charcoal,flex:1}}>{p.n}</div>
+                      <span style={{fontSize:7.5,fontWeight:600,padding:"1px 6px",borderRadius:5,background:(catCol[p.c]||P.slate)+"15",color:catCol[p.c]||P.slate}}>{p.c}</span>
+                      <span style={{fontSize:8,color:P.slate,whiteSpace:"nowrap"}}>{p.country||p.r}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              {!q && (
+                <div style={{fontSize:9,color:P.slate,marginTop:14,padding:"10px 12px",background:P.white,borderRadius:7,border:`1px dashed ${P.charcoal}1F`,lineHeight:1.6}}>
+                  Tip: type a project name, region, code (ACI, Eurocode, CSA), or topic. Press Esc to close.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* ═══ PROJECT DETAIL MODAL ═══ */}
+      {selectedProj && (
+        <div role="dialog" aria-modal="true" aria-label="Project details"
+             onClick={(e)=>{ if(e.target===e.currentTarget) setSelectedProj(null); }}
+             onKeyDown={(e)=>{ if(e.key==='Escape') setSelectedProj(null); }}
+             tabIndex={-1}
+             style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto"}}>
+          <div style={{position:"relative",width:"100%",maxWidth:560,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55)",overflow:"hidden",animation:"fadeUp 0.22s ease-out"}}>
+            <div style={{height:4,background:catCol[selectedProj.c]||P.teal}}></div>
+            <button onClick={()=>setSelectedProj(null)} aria-label="Close project details" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
+            <div style={{padding:"24px 28px 26px"}}>
+              <div style={{fontSize:8,fontWeight:700,letterSpacing:2.5,color:catCol[selectedProj.c]||P.slate,textTransform:"uppercase",marginBottom:6}}>{selectedProj.c} · Project</div>
+              <div style={{fontFamily:"'Fraunces',serif",fontSize:17,fontWeight:800,color:P.charcoal,lineHeight:1.25,marginBottom:14}}>{selectedProj.n}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+                <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
+                  <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Type</div>
+                  <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.c}</div>
+                </div>
+                <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
+                  <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Region</div>
+                  <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.r}</div>
+                </div>
+                {selectedProj.country && (
+                  <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
+                    <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Country</div>
+                    <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.country}</div>
+                  </div>
+                )}
+                {selectedProj.y && (
+                  <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
+                    <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Year</div>
+                    <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.y}</div>
+                  </div>
+                )}
+              </div>
+              <div style={{padding:"12px 14px",background:P.white,borderRadius:8,border:`1px dashed ${P.charcoal}25`,fontSize:9.5,color:P.slate,lineHeight:1.6}}>
+                Detailed project information, scope, role, and deliverables are shared under NDA per engagement. Contact <a href="mailto:info@istructgroup.com" style={{color:P.teal,fontWeight:700}}>info@istructgroup.com</a> to request specifics.
+              </div>
+              <div onClick={()=>{setSelectedProj(null);setPage("start");setSTab("s2");}} {...kbd(()=>{setSelectedProj(null);setPage("start");setSTab("s2");})} aria-label="Discuss a similar project" style={{marginTop:14,background:P.teal,color:P.white,padding:"10px 18px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Discuss a Similar Project →</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

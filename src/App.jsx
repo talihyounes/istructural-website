@@ -31,7 +31,7 @@ const P = {
 const allProjects = [
   // Residential & Hotel (26)
   {n:"Muntazah Building (3B+GF+7+Roof+URoof), V.E. on structural elements",c:"Residential",r:"Qatar"},
-  {n:"Specialized Thermal Analysis and Design of PT slabs",c:"Residential",r:"Iraq"},
+  {n:"Specialized Thermal Analysis and Design of Post-Tensioned Concrete Slabs",c:"Residential",r:"Other",country:"Iraq"},
   {n:"Six Buildings of B+G+3, plus Luxury Club House",c:"Residential",r:"Qatar"},
   {n:"Structural Assessment report for existing building subject to excessive slab deflection",c:"Residential",r:"Lebanon"},
   {n:"Irregular U Shape Luxury Buildings (Two), with Seismic Joints (B3+GF+12)",c:"Residential",r:"Lebanon"},
@@ -57,18 +57,18 @@ const allProjects = [
   {n:"G+4+Roof, Nahda 2",c:"Residential",r:"UAE"},
   {n:"G+12+Roof, Nahda 2",c:"Residential",r:"UAE"},
   // Offices & Commercial (28)
-  {n:"Jeddah Industrial City",c:"Commercial",r:"KSA"},
+  {n:"Jeddah Industrial City",c:"Infrastructure",r:"KSA"},
   {n:"MISK Peninsula",c:"Commercial",r:"KSA"},
   {n:"MISK Foundation Center",c:"Commercial",r:"KSA"},
   {n:"King Salman Park",c:"Commercial",r:"KSA"},
   {n:"Cultural Square Park",c:"Commercial",r:"KSA"},
-  {n:"BCP Tower (Banque Centrale Populaire)",c:"Commercial",r:"Morocco"},
-  {n:"Al Majed Tower (4B+G+25+P)",c:"Commercial",r:"UAE"},
+  {n:"BCP Tower (Banque Centrale Populaire)",c:"Commercial",r:"Other",country:"Morocco"},
+  {n:"Al Majed Tower (4B+G+25+P)",c:"Commercial",r:"Qatar"},
   {n:"Entisar Tower / Level 54 (Vibration analysis)",c:"Commercial",r:"UAE"},
   {n:"D.F.C.M. (Transfer Beams)",c:"Commercial",r:"Qatar"},
   {n:"Lusail Tower (2B+G+34)",c:"Commercial",r:"Qatar"},
   {n:"ENBD Tower (3B+GF+18)",c:"Commercial",r:"UAE"},
-  {n:"Specialized Thermal Analysis and Design of PT slabs",c:"Commercial",r:"Qatar"},
+  {n:"Specialized Thermal Analysis and Design of Post-Tensioned Concrete Slabs",c:"Commercial",r:"Qatar"},
   {n:"Barwa Financial District (9 Towers and 1 Hotel)",c:"Commercial",r:"Qatar"},
   {n:"Yabes Towers (Admin 3B+G+42 and Hotel 3B+G+18)",c:"Commercial",r:"KSA"},
   {n:"Tamani Tower (B+G+19)",c:"Commercial",r:"UAE"},
@@ -84,12 +84,12 @@ const allProjects = [
   {n:"Indigo Tower, Jumeirah Lake",c:"Commercial",r:"UAE"},
   {n:"Reef Tower, Jumeirah Lake",c:"Commercial",r:"UAE"},
   {n:"Emirates Industrial Bank Headquarter, Deira",c:"Commercial",r:"UAE"},
-  {n:"Amlak Tower",c:"Commercial",r:"Kuwait"},
+  {n:"Amlak Tower",c:"Commercial",r:"Other",country:"Kuwait"},
   // Retail (4)
   {n:"Dubai Mall, Business Bay",c:"Retail",r:"UAE"},
   {n:"Dubai Marina Mall, J.B.R.",c:"Retail",r:"UAE"},
   {n:"Landmark Building Mall",c:"Retail",r:"UAE"},
-  {n:"COOP Supermarket, Oman-Hatta",c:"Retail",r:"Oman"},
+  {n:"COOP Supermarket, Oman-Hatta",c:"Retail",r:"Other",country:"Oman"},
   // Social / University / Hospital (11)
   {n:"IMC Medical College",c:"Institutional",r:"KSA"},
   {n:"Tabuk Administration Building (Irregular shape two interconnected)",c:"Institutional",r:"KSA"},
@@ -136,18 +136,18 @@ const allProjects = [
   {n:"Mada Building, Societe Generale de Banque au Liban",c:"Commercial",r:"Lebanon",y:"2015"},
   {n:"U Park Buildings",c:"Commercial",r:"Lebanon",y:"2013"},
   {n:"Ministry of Health / IPS Irrigation Systems and Water Tanks (2,500 m3)",c:"Infrastructure",r:"KSA",y:"2015"},
-  {n:"Haiti Airport Control Tower",c:"Infrastructure",r:"Other",y:"2022"},
-  {n:"Limassol Blu Marine Towers",c:"Residential",r:"Other",y:"2022"},
-  {n:"Herat Solar and Wind Power Plant",c:"Infrastructure",r:"Other",y:"2017"},
-  {n:"Ghozareh Industrial Zone, Wind Turbines",c:"Infrastructure",r:"Other",y:"2017"},
-  {n:"Turkmenistan Satellite Control",c:"Infrastructure",r:"Other",y:"2016"},
-  {n:"Skaya Tower",c:"Commercial",r:"Other",y:"2014-2016"},
-  {n:"Sulaimaniya Hotel, Rotana",c:"Commercial",r:"Other",y:"2013"},
-  {n:"Strategic Market Analysis / Pumice",c:"Advisory",r:"North America",y:"2025"},
+  {n:"Haiti Airport Control Tower",c:"Infrastructure",r:"Other",country:"Haiti",y:"2022"},
+  {n:"Limassol Blue Marine Towers",c:"Residential",r:"Other",country:"Cyprus",y:"2022"},
+  {n:"Herat Solar and Wind Power Plant",c:"Infrastructure",r:"Other",country:"Afghanistan",y:"2017"},
+  {n:"Ghozareh Industrial Zone, Wind Turbines",c:"Infrastructure",r:"Other",country:"Afghanistan",y:"2017"},
+  {n:"Turkmenistan Satellite Control",c:"Infrastructure",r:"Other",country:"Turkmenistan",y:"2016"},
+  {n:"Skaya Tower",c:"Commercial",r:"Other",country:"Syria",y:"2014-2016"},
+  {n:"Sulaimaniya Hotel, Rotana",c:"Commercial",r:"Other",country:"Iraq",y:"2013"},
+  {n:"Market Analysis",c:"Business Development",r:"North America",country:"USA & Canada",y:"2025"},
 ];
 
-const cats = ["All","Residential","Commercial","Retail","Institutional","Bridges","Infrastructure","Cultural","Advisory"];
-const catCol = {Residential:P.s1,Commercial:P.gold,Retail:P.coral,Institutional:P.s2,Bridges:P.teal,Infrastructure:P.s3,Cultural:P.warm,Advisory:P.charcoal};
+const cats = ["All","Residential","Commercial","Retail","Institutional","Bridges","Infrastructure","Cultural","Business Development"];
+const catCol = {Residential:P.s1,Commercial:P.gold,Retail:P.coral,Institutional:P.s2,Bridges:P.teal,Infrastructure:P.s3,Cultural:P.warm,"Business Development":P.charcoal};
 const regions = ["All","UAE","KSA","Qatar","Lebanon","North America","Other"];
 
 const partners = [
@@ -699,8 +699,8 @@ export default function App(){
               <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download references on damage evaluation and repair from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
-                  {region:"USA", title:"FEMA 306 Evaluation of Earthquake Damaged Concrete and Masonry Wall Buildings — Basic Procedures Manual", body:"FEMA / Applied Technology Council", year:"1998", url:"https://mitigation.eeri.org/files/fema-306.pdf"},
-                  {region:"USA", title:"FEMA 307 Evaluation of Earthquake Damaged Concrete and Masonry Wall Buildings — Technical Resources", body:"FEMA / Applied Technology Council", year:"1998", url:"http://www.atcouncil.org/files/FEMA307.pdf"},
+                  {region:"USA", title:"FEMA P-2018 Seismic Evaluation of Older Concrete Buildings for Earthquake Damage", body:"FEMA", year:"2018", url:"https://www.fema.gov/sites/default/files/2020-08/fema_seismic-eval-older-concrete-buildings_p-2018.pdf"},
+                  {region:"USA", title:"FEMA P-58-1 Seismic Performance Assessment of Buildings — Vol. 1 Methodology (2nd Edition)", body:"FEMA / Applied Technology Council", year:"2019", url:"https://www.usrc.org/wp-content/uploads/FEMA_P-58-1-SE_Volume1_Methodology.pdf"},
                   {region:"Canada", title:"Federal Flood Damage Estimation Guidelines for Buildings and Infrastructure", body:"Natural Resources Canada", year:"2021", url:"https://publications.gc.ca/collections/collection_2021/rncan-nrcan/M45-124-2021-eng.pdf"},
                   {region:"Europe", title:"EN 1504 Concrete Repair Standards — illustrated reference summary (10 parts, 11 Principles)", body:"EN 1504-aligned guide", year:"2018", url:"https://www.sika.com/dam/dms/corporate/z/glo-concrete-repair-protection-en-1504.pdf"},
                 ].map((d,i)=>(
@@ -728,10 +728,10 @@ export default function App(){
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"FEMA P-154 Rapid Visual Screening of Buildings — Handbook + Data Collection Forms (3rd Ed.)", body:"FEMA", year:"2015", url:"https://www.fema.gov/sites/default/files/2020-07/fema_earthquakes_rapid-visual-screening-of-buildings-for-potential-seismic-hazards-a-handbook-third-edition-fema-p-154.pdf"},
-                  {region:"USA", title:"ATC-20 Postearthquake Safety Evaluation Forms and Placards (Rapid + Detailed + GREEN/YELLOW/RED placards)", body:"Applied Technology Council", year:"2005 rev.", url:"https://www.atcouncil.org/placards-and-evaluation-forms"},
+                  {region:"USA", title:"FEMA P-2055 Post-Disaster Building Safety Evaluation Guidance", body:"FEMA", year:"2019", url:"https://www.fema.gov/sites/default/files/2020-07/fema_p-2055_post-disaster_buildingsafety_evaluation_2019.pdf"},
                   {region:"Canada", title:"Level 1 Preliminary Seismic Risk Screening Tool (PST) for Existing Buildings — User's Guide", body:"National Research Council Canada", year:"2020", url:"https://nrc-publications.canada.ca/eng/view/object/?id=5f059958-29e6-43eb-aa37-c896ab11dcd1"},
-                  {region:"Canada", title:"Post-Disaster Building Assessment Resources — Rapid Damage Assessment Form, placards, kits, guidelines", body:"BC Housing", year:"Updated", url:"https://www.bchousing.org/projects-partners/emergency-management/building-assessments/pdba-resources"},
-                  {region:"Europe", title:"Assessing Existing Buildings with Eurocode 8 Part 3 — JRC technical guidance (Pinto, 2008)", body:"EU Joint Research Centre", year:"2008", url:"https://eurocodes.jrc.ec.europa.eu/sites/default/files/2022-06/Pinto_2008.pdf"},
+                  {region:"Canada", title:"Post-Disaster Building Assessment Resources — Rapid Damage Assessment Form, placards, kits, guidelines", body:"BC Housing", year:"2022", url:"https://www.bchousing.org/projects-partners/emergency-management/building-assessments/pdba-resources"},
+                  {region:"Europe", title:"Second-Generation Eurocodes Workshop — training materials (key changes and benefits through design examples)", body:"EU Joint Research Centre", year:"2025", url:"https://eurocodes.jrc.ec.europa.eu/news/now-available-training-materials-second-generation-eurocodes-workshop-3-5-june-2025"},
                 ].map((d,i)=>(
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s3}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
@@ -756,12 +756,12 @@ export default function App(){
               <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-use browser-based calculators from authoritative bodies and reputable engineering resources in the USA, Canada, and Europe. No login or purchase required.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
-                  {region:"USA", title:"SkyCiv Free Beam Calculator — reactions, SFD, BMD, deflection (steel, concrete, timber)", body:"SkyCiv Engineering", year:"Updated", url:"https://skyciv.com/free-beam-calculator/"},
-                  {region:"USA", title:"USGS Unified Hazard Tool — interactive seismic hazard curves and design ground motions", body:"US Geological Survey", year:"Current", url:"https://earthquake.usgs.gov/hazards/interactive/"},
-                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — interactive spectral acceleration calculator", body:"Natural Resources Canada", year:"2025/2020", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
-                  {region:"Canada", title:"Jabacus NBC 2020 Seismic Load — Equivalent Static Method calculator", body:"Jabacus", year:"Current", url:"https://jabacus.com/engineering/nbc2020/seismic.php"},
-                  {region:"Europe", title:"Eurocode Applied — free online calculation suite for EN 1990 to EN 1998", body:"EurocodeApplied.com", year:"Current", url:"https://eurocodeapplied.com/"},
-                  {region:"Europe", title:"BeamGuru — free 2D beam, frame, and truss analysis (BMD, SFD, axial)", body:"BeamGuru", year:"Current", url:"https://beamguru.com/"},
+                  {region:"USA", title:"SkyCiv Free Beam Calculator — reactions, SFD, BMD, deflection (steel, concrete, timber)", body:"SkyCiv Engineering", year:"Live · 2026", url:"https://skyciv.com/free-beam-calculator/"},
+                  {region:"USA", title:"USGS Unified Hazard Tool — interactive seismic hazard curves and design ground motions", body:"US Geological Survey", year:"Live · 2026", url:"https://earthquake.usgs.gov/hazards/interactive/"},
+                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — interactive spectral acceleration calculator", body:"Natural Resources Canada", year:"2025", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
+                  {region:"Canada", title:"Jabacus NBC 2020 Seismic Load — Equivalent Static Method calculator", body:"Jabacus", year:"Live · 2026", url:"https://jabacus.com/engineering/nbc2020/seismic.php"},
+                  {region:"Europe", title:"Eurocode Applied — free online calculation suite for EN 1990 to EN 1998", body:"EurocodeApplied.com", year:"Live · 2026", url:"https://eurocodeapplied.com/"},
+                  {region:"Europe", title:"BeamGuru — free 2D beam, frame, and truss analysis (BMD, SFD, axial)", body:"BeamGuru", year:"Live · 2026", url:"https://beamguru.com/"},
                 ].map((d,i)=>(
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s2}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
@@ -856,12 +856,12 @@ export default function App(){
               <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access standards portals and design parameter tools from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
-                  {region:"USA", title:"ASCE Hazard Tool — site-specific design parameters per ASCE 7-10/16/22 (wind, seismic, tornado, ice, snow)", body:"American Society of Civil Engineers", year:"Updated", url:"https://ascehazardtool.org/"},
-                  {region:"USA", title:"USGS Seismic Design Web Services — endpoints for ASCE 7-22, ASCE 41-17, NEHRP, IBC, AASHTO", body:"US Geological Survey", year:"Current", url:"https://earthquake.usgs.gov/ws/designmaps/"},
+                  {region:"USA", title:"ASCE Hazard Tool — site-specific design parameters per ASCE 7-10/16/22 (wind, seismic, tornado, ice, snow)", body:"American Society of Civil Engineers", year:"Live · 2026", url:"https://ascehazardtool.org/"},
+                  {region:"USA", title:"USGS Seismic Design Web Services — endpoints for ASCE 7-22, ASCE 41-17, NEHRP, IBC, AASHTO", body:"US Geological Survey", year:"Live · 2026", url:"https://earthquake.usgs.gov/ws/designmaps/"},
                   {region:"Canada", title:"National Building Code of Canada 2020 — free PDF via NRC archive", body:"National Research Council Canada", year:"2020", url:"https://nrc-publications.canada.ca/eng/search/?q=NRCCode"},
-                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — spectral acceleration / PGA / PGV per location and Site Class", body:"Natural Resources Canada (CHIS)", year:"2025/2020", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
-                  {region:"Europe", title:"Eurocodes Learning Corner — full Eurocode family, training materials, JRC background documents", body:"EU Joint Research Centre", year:"Updated", url:"https://eurocodes.jrc.ec.europa.eu/learning-corner"},
-                  {region:"Europe", title:"Eurocode 2 Worked Examples — design examples (Concrete Initiative)", body:"The Concrete Initiative", year:"2017 rev.", url:"https://www.theconcreteinitiative.eu/images/ECP_Documents/Eurocode2_WorkedExamples.pdf"},
+                  {region:"Canada", title:"NBC 2020 Seismic Hazard Tool — spectral acceleration / PGA / PGV per location and Site Class", body:"Natural Resources Canada (CHIS)", year:"2025", url:"https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"},
+                  {region:"Europe", title:"Eurocodes Learning Corner — full Eurocode family, training materials, JRC background documents", body:"EU Joint Research Centre", year:"Live · 2026", url:"https://eurocodes.jrc.ec.europa.eu/learning-corner"},
+                  {region:"Europe", title:"Eurocode 2 Worked Examples — design examples (Concrete Initiative)", body:"The Concrete Initiative", year:"2017", url:"https://www.theconcreteinitiative.eu/images/ECP_Documents/Eurocode2_WorkedExamples.pdf"},
                 ].map((d,i)=>(
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.greenD}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
@@ -888,7 +888,7 @@ export default function App(){
                 {[
                   {region:"USA", title:"PMBOK 6 Project Risk Management — Risk Register, Risk Breakdown Structure, Probability-Impact Matrix templates (free webinar PDF)", body:"PMI Central Italy Chapter", year:"2018", url:"https://www.pmi-centralitaly.org/wp-content/uploads/2019/06/PMBoK_Risk_03072018.pdf"},
                   {region:"Canada", title:"Federal Flood Damage Estimation Guidelines for Buildings and Infrastructure (project planning + risk framework)", body:"Natural Resources Canada", year:"2021", url:"https://publications.gc.ca/collections/collection_2021/rncan-nrcan/M45-124-2021-eng.pdf"},
-                  {region:"Europe", title:"EuropeAid Project Cycle Management Guidelines — full LFA + project cycle methodology", body:"European Commission EuropeAid", year:"2004", url:"https://op.europa.eu/en/publication-detail/-/publication/46681c3f-81f8-4cd6-a90b-c0235489a56e"},
+                  {region:"Europe", title:"Managing an Intervention — current EU INTPA project cycle and contract management guidance portal", body:"European Commission, DG INTPA", year:"Live · 2026", url:"https://international-partnerships.ec.europa.eu/funding-and-technical-assistance/guidelines/managing-intervention_en"},
                 ].map((d,i)=>(
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s1}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
@@ -914,7 +914,7 @@ export default function App(){
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"SAVE International Value Methodology Standard — full Six-Phase Job Plan", body:"SAVE International", year:"2015", url:"https://cdn.ymaws.com/www.value-eng.org/resource/resmgr/standards_documents/vmstd.pdf"},
-                  {region:"USA", title:"SD-24 Value Engineering: A Guidebook of Best Practices and Tools", body:"US Department of Defense", year:"Feb 2025", url:"https://www.cto.mil/wp-content/uploads/2025/02/SD-24-VE-Guidebook-25Feb2025-Cleared-1.pdf"},
+                  {region:"USA", title:"SD-24 Value Engineering: A Guidebook of Best Practices and Tools", body:"US Department of Defense", year:"2025", url:"https://www.cto.mil/wp-content/uploads/2025/02/SD-24-VE-Guidebook-25Feb2025-Cleared-1.pdf"},
                   {region:"Europe", title:"Level(s) Indicator 6.1 Life Cycle Costs — User Manual (introductory briefing, instructions, guidance)", body:"EU Joint Research Centre", year:"2021", url:"https://susproc.jrc.ec.europa.eu/product-bureau/sites/default/files/2021-01/UM3_Indicator_6.1_v1.1_21pp.pdf"},
                   {region:"Europe", title:"Achieving the Cost-Effective Energy Transformation of Europe's Buildings (cost-benefit framework for retrofits)", body:"EU Joint Research Centre", year:"2019", url:"https://publications.jrc.ec.europa.eu/repository/bitstream/JRC117739/cost_optimal_energy_renovations_online.pdf"},
                 ].map((d,i)=>(
@@ -941,12 +941,12 @@ export default function App(){
               <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access training portals and CPD entry points from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority. Course completion certificates may be issued at no cost or with a separate fee depending on the provider.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
-                  {region:"USA", title:"FEMA Emergency Management Institute — Independent Study Program (200+ free online courses including building safety and emergency management)", body:"FEMA EMI", year:"Updated", url:"https://training.fema.gov/is/crslist.aspx"},
-                  {region:"USA", title:"FEMA P-154 official training page — Rapid Visual Screening training resources", body:"FEMA", year:"Current", url:"https://www.fema.gov/emergency-managers/risk-management/earthquake/training/fema-p-154"},
-                  {region:"Canada", title:"Canadian Society for Civil Engineering (CSCE) — Professional Development portal", body:"CSCE / SCGC", year:"Current", url:"https://legacy.csce.ca/en/lifelong-learning/professional-development/"},
-                  {region:"Canada", title:"OSPE Continuing Professional Development — free weekly sessions for members + recordings", body:"Ontario Society of Professional Engineers", year:"Current", url:"https://ospe.on.ca/academy/cpd/"},
-                  {region:"Europe", title:"Eurocodes Learning Corner — free training materials, JRC workshops, slide decks", body:"EU Joint Research Centre", year:"Updated", url:"https://eurocodes.jrc.ec.europa.eu/learning-corner/training-materials"},
-                  {region:"Europe", title:"JRC Eurocodes Evolution — free explainer video series on second-generation Eurocodes", body:"EU Joint Research Centre", year:"2024-2025", url:"https://eurocodes.jrc.ec.europa.eu/2nd-generation/eurocodes-evolution-explained-video-series"},
+                  {region:"USA", title:"FEMA Emergency Management Institute — Independent Study Program (200+ free online courses including building safety and emergency management)", body:"FEMA EMI", year:"Live · 2026", url:"https://training.fema.gov/is/crslist.aspx"},
+                  {region:"USA", title:"FEMA P-154 official training page — Rapid Visual Screening training resources", body:"FEMA", year:"Live · 2026", url:"https://www.fema.gov/emergency-managers/risk-management/earthquake/training/fema-p-154"},
+                  {region:"Canada", title:"Canadian Society for Civil Engineering (CSCE) — Professional Development portal", body:"CSCE / SCGC", year:"Live · 2026", url:"https://legacy.csce.ca/en/lifelong-learning/professional-development/"},
+                  {region:"Canada", title:"OSPE Continuing Professional Development — free weekly sessions for members + recordings", body:"Ontario Society of Professional Engineers", year:"Live · 2026", url:"https://ospe.on.ca/academy/cpd/"},
+                  {region:"Europe", title:"Eurocodes Learning Corner — free training materials, JRC workshops, slide decks", body:"EU Joint Research Centre", year:"Live · 2026", url:"https://eurocodes.jrc.ec.europa.eu/learning-corner/training-materials"},
+                  {region:"Europe", title:"JRC Eurocodes Evolution — free explainer video series on second-generation Eurocodes", body:"EU Joint Research Centre", year:"2025", url:"https://eurocodes.jrc.ec.europa.eu/2nd-generation/eurocodes-evolution-explained-video-series"},
                 ].map((d,i)=>(
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.greenD}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
@@ -1005,10 +1005,10 @@ export default function App(){
       <div style={{padding:"8px 24px"}}>
         <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Filter by Type and Region above.</div>
         {displayed.map((p,i)=>(
-          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 80px 50px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center"}}>
+          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 130px 110px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center"}}>
             <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.4}}>{p.n}</div>
             <span style={{fontSize:7.5,fontWeight:600,padding:"2px 5px",borderRadius:5,background:(catCol[p.c]||P.slate)+"12",color:catCol[p.c]||P.slate,textAlign:"center"}}>{p.c}</span>
-            <span style={{fontSize:8.5,color:P.slate,textAlign:"right"}}>{p.r}</span>
+            <span style={{fontSize:8.5,color:P.slate,textAlign:"right",whiteSpace:"nowrap"}}>{p.country || p.r}</span>
           </div>
         ))}
         {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} {...kbd(()=>setShowAll(true))} aria-label="Show more projects" style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}

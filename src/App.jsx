@@ -333,7 +333,7 @@ export default function App(){
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",background:P.navy,position:"sticky",top:0,zIndex:10}}>
       <div onClick={()=>setPage("home")} {...kbd(()=>setPage("home"))} aria-label="Home" style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
         {/* iStructural H4 v7 logo — exact paths from approved business card (FINAL_H4v7) */}
-        <svg width="64" height="80" viewBox="0 0 86 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <svg width="64" height="86" viewBox="0 -10 86 130" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
             <radialGradient id="navBcOcean" cx="50%" cy="35%" r="70%"><stop offset="0%" stopColor="#4AA3D9"/><stop offset="45%" stopColor="#1E5F8F"/><stop offset="85%" stopColor="#0A3556"/><stop offset="100%" stopColor="#051C2F"/></radialGradient>
             <radialGradient id="navBcAtmo" cx="50%" cy="50%" r="55%"><stop offset="80%" stopColor="#0EBEA8" stopOpacity="0"/><stop offset="92%" stopColor="#4AC8FF" stopOpacity="0.35"/><stop offset="100%" stopColor="#4AC8FF" stopOpacity="0"/></radialGradient>

@@ -331,13 +331,122 @@ export default function App(){
 
   const Nav=()=>(
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",background:P.navy,position:"sticky",top:0,zIndex:10}}>
-      <div onClick={()=>setPage("home")} {...kbd(()=>setPage("home"))} aria-label="Home" style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-        <svg width="32" height="32" viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
-          <path d="M28 92 L28 84 L31 84 L31 76 L34 76 L34 64 C36 56 38 44 40 32 C40.5 24 41 16 42 10 L42.6 4 L42.9 2 L43.4 4 L44 10 C45 16 45.5 24 46 32 C48 44 50 56 52 64 L52 76 L55 76 L55 84 L58 84 L58 92 Z" fill={P.tealL} fillOpacity="0.2" stroke={P.tealL} strokeWidth="1.4" strokeDasharray="2,1"/>
-          <path d="M40.5 92 L41.8 22 L40.6 32 C38.5 44 36.5 56 34.5 64 L34.5 76 L31.5 76 L31.5 84 L28.7 84 L28.7 92 Z" fill={P.tealL} fillOpacity="0.55"/>
-          <path d="M45.5 92 L44.2 22 L45.4 32 C47.5 44 49.5 56 51.5 64 L51.5 76 L54.5 76 L54.5 84 L57.3 84 L57.3 92 Z" fill={P.tealL} fillOpacity="0.55"/>
-          <path d="M40.5 92 L41.8 22 L44.2 22 L45.5 92 Z" fill={P.tealL} fillOpacity="0.85"/>
-          <circle cx="43" cy="2" r="1.5" fill={P.tealL}/>
+      <div onClick={()=>setPage("home")} {...kbd(()=>setPage("home"))} aria-label="Home" style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+        {/* iStructural H4 v7 logo — exact paths from approved business card (FINAL_H4v7) */}
+        <svg width="64" height="80" viewBox="0 0 86 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <radialGradient id="navBcOcean" cx="50%" cy="35%" r="70%"><stop offset="0%" stopColor="#4AA3D9"/><stop offset="45%" stopColor="#1E5F8F"/><stop offset="85%" stopColor="#0A3556"/><stop offset="100%" stopColor="#051C2F"/></radialGradient>
+            <radialGradient id="navBcAtmo" cx="50%" cy="50%" r="55%"><stop offset="80%" stopColor="#0EBEA8" stopOpacity="0"/><stop offset="92%" stopColor="#4AC8FF" stopOpacity="0.35"/><stop offset="100%" stopColor="#4AC8FF" stopOpacity="0"/></radialGradient>
+            <radialGradient id="navBcTmd" cx="40%" cy="35%" r="65%"><stop offset="0%" stopColor="#F7F5F0" stopOpacity="0.85"/><stop offset="55%" stopColor="#0EBEA8" stopOpacity="0.55"/><stop offset="100%" stopColor="#0A7C6E" stopOpacity="0.85"/></radialGradient>
+            <clipPath id="navBcTwr"><path d="M28 92 L28 84 L31 84 L31 76 L34 76 L34 64 C36 56 38 44 40 32 C40.5 24 41 16 42 10 L42.6 4 L42.9 2 L43.4 4 L44 10 C45 16 45.5 24 46 32 C48 44 50 56 52 64 L52 76 L55 76 L55 84 L58 84 L58 92 Z"/></clipPath>
+            <clipPath id="navBcGlobe"><circle cx="58" cy="-3" r="4.55"/></clipPath>
+          </defs>
+
+          {/* Smart piling baseline rails */}
+          <line x1="22" y1="92.3" x2="64" y2="92.3" stroke="#F7F5F0" strokeWidth="0.4" opacity="0.3" strokeDasharray="1.2,1"/>
+          <line x1="20" y1="99" x2="66" y2="99" stroke="#F7F5F0" strokeWidth="0.2" opacity="0.12" strokeDasharray="0.5,0.7"/>
+          <line x1="20" y1="106" x2="66" y2="106" stroke="#F7F5F0" strokeWidth="0.2" opacity="0.12" strokeDasharray="0.5,0.7"/>
+          <rect x="32" y="92" width="22" height="1.3" fill="#0A7C6E" opacity="0.55"/>
+          <line x1="32" y1="92" x2="54" y2="92" stroke="#F7F5F0" strokeWidth="0.4" opacity="0.7"/>
+          <line x1="32" y1="93.3" x2="54" y2="93.3" stroke="#F7F5F0" strokeWidth="0.3" opacity="0.5"/>
+
+          {/* 7 smart piles */}
+          <rect x="32.4" y="93.3" width="1.2" height="17.4" fill="#0A7C6E" opacity="0.6"/>
+          <circle cx="33" cy="111" r="0.6" fill="#0EBEA8"/>
+          <rect x="36.4" y="93.3" width="1.2" height="19" fill="#0A7C6E" opacity="0.6"/>
+          <circle cx="37" cy="112.6" r="0.6" fill="#0EBEA8"/>
+          <rect x="40.4" y="93.3" width="1.2" height="20" fill="#0A7C6E" opacity="0.7"/>
+          <circle cx="41" cy="113.5" r="0.7" fill="#0EBEA8"/>
+          <rect x="42.4" y="93.3" width="1.2" height="20.4" fill="#0A7C6E" opacity="0.78"/>
+          <line x1="43" y1="93.3" x2="43" y2="113.7" stroke="#0EBEA8" strokeWidth="0.4" opacity="0.7"/>
+          <circle cx="43" cy="114" r="0.9" fill="#0EBEA8"/>
+          <circle cx="43" cy="114" r="1.6" fill="none" stroke="#0EBEA8" strokeWidth="0.25" opacity="0.55"/>
+          <rect x="44.4" y="93.3" width="1.2" height="20" fill="#0A7C6E" opacity="0.7"/>
+          <circle cx="45" cy="113.5" r="0.7" fill="#0EBEA8"/>
+          <rect x="48.4" y="93.3" width="1.2" height="19" fill="#0A7C6E" opacity="0.6"/>
+          <circle cx="49" cy="112.6" r="0.6" fill="#0EBEA8"/>
+          <rect x="52.4" y="93.3" width="1.2" height="17.4" fill="#0A7C6E" opacity="0.6"/>
+          <circle cx="53" cy="111" r="0.6" fill="#0EBEA8"/>
+
+          {/* EARTH globe (upper right) */}
+          <circle cx="58" cy="-3" r="5.85" fill="url(#navBcAtmo)" opacity="0.85"/>
+          <circle cx="58" cy="-3" r="4.55" fill="url(#navBcOcean)"/>
+          <g clipPath="url(#navBcGlobe)">
+            <path d="M54.2 -5.9 Q55.0 -6.6 55.9 -6.5 Q56.6 -6.3 56.7 -5.7 Q56.3 -4.6 55.2 -4.4 Q54.1 -5.6 54.2 -5.9 Z" fill="#3E9B5F" opacity="0.92"/>
+            <path d="M58.4 -4.6 Q59.3 -4.9 59.9 -4.4 Q60.5 -3.4 60.2 -2.3 Q59.2 -1.4 58.3 -1.3 Q57.7 -2.9 58.2 -4.4 Z" fill="#3E9B5F" opacity="0.92"/>
+          </g>
+          <circle cx="58" cy="-3" r="4.55" fill="none" stroke="#F7F5F0" strokeWidth="0.85" opacity="0.85"/>
+
+          {/* Bridge deck */}
+          <line x1="0" y1="90" x2="86" y2="90" stroke="#F7F5F0" strokeWidth="0.9" opacity="0.55"/>
+          <line x1="0" y1="91.6" x2="86" y2="91.6" stroke="#F7F5F0" strokeWidth="0.55" opacity="0.4"/>
+          <line x1="0" y1="95" x2="86" y2="95" stroke="#F7F5F0" strokeWidth="0.5" opacity="0.3"/>
+
+          {/* Cable stays */}
+          <line x1="43" y1="44" x2="4" y2="88" stroke="#0EBEA8" strokeWidth="0.45" opacity="0.6"/>
+          <line x1="43" y1="48" x2="14" y2="88" stroke="#0EBEA8" strokeWidth="0.45" opacity="0.5"/>
+          <line x1="43" y1="44" x2="82" y2="88" stroke="#0EBEA8" strokeWidth="0.45" opacity="0.6"/>
+          <line x1="43" y1="48" x2="72" y2="88" stroke="#0EBEA8" strokeWidth="0.45" opacity="0.5"/>
+
+          {/* H4 v7 hybrid silhouette (dashed outline) */}
+          <path d="M28 92 L28 84 L31 84 L31 76 L34 76 L34 64 C36 56 38 44 40 32 C40.5 24 41 16 42 10 L42.6 4 L42.9 2 L43.4 4 L44 10 C45 16 45.5 24 46 32 C48 44 50 56 52 64 L52 76 L55 76 L55 84 L58 84 L58 92 Z"
+                fill="#0C1B2E" fillOpacity="0.55" stroke="#F7F5F0" strokeWidth="1.0" strokeDasharray="1.5,0.8"/>
+
+          {/* B1 left buttress */}
+          <path d="M40.5 92 L41.8 22 L40.6 32 C38.5 44 36.5 56 34.5 64 L34.5 76 L31.5 76 L31.5 84 L28.7 84 L28.7 92 Z"
+                fill="#0A7C6E" fillOpacity="0.28" stroke="#0EBEA8" strokeWidth="0.35"/>
+
+          {/* B2 right buttress */}
+          <path d="M45.5 92 L44.2 22 L45.4 32 C47.5 44 49.5 56 51.5 64 L51.5 76 L54.5 76 L54.5 84 L57.3 84 L57.3 92 Z"
+                fill="#0A7C6E" fillOpacity="0.28" stroke="#0EBEA8" strokeWidth="0.35"/>
+
+          {/* Core (tapered, top y=22) */}
+          <path d="M40.5 92 L41.8 22 L44.2 22 L45.5 92 Z"
+                fill="#0EBEA8" fillOpacity="0.32" stroke="#0EBEA8" strokeWidth="0.4"/>
+
+          {/* Setback floor lines (Burj DNA) */}
+          <g stroke="#F7F5F0" strokeWidth="0.18" opacity="0.32">
+            <line x1="28" y1="84" x2="58" y2="84"/>
+            <line x1="31" y1="76" x2="55" y2="76"/>
+            <line x1="34" y1="64" x2="52" y2="64"/>
+          </g>
+
+          {/* Mid AI horizontal zigzag */}
+          <g clipPath="url(#navBcTwr)">
+            <rect x="40" y="29.5" width="6" height="5" fill="#0A7C6E" fillOpacity="0.18"/>
+            <path d="M40.5 33 L41.5 30.5 L42.5 33 L43 30 L43.5 33 L44.5 30.5 L45.5 33"
+                  fill="none" stroke="#0EBEA8" strokeWidth="0.85" strokeLinecap="round" opacity="0.95"/>
+            <circle cx="43" cy="32" r="0.55" fill="#F7F5F0"/>
+          </g>
+
+          {/* Smart TMD */}
+          <g clipPath="url(#navBcTwr)">
+            <rect x="41.4" y="14" width="3.2" height="6" fill="#0A7C6E" fillOpacity="0.10" stroke="#0EBEA8" strokeWidth="0.18" opacity="0.5" strokeDasharray="0.5,0.4"/>
+            <circle cx="43" cy="17.6" r="1.15" fill="url(#navBcTmd)" opacity="0.9"/>
+            <circle cx="43" cy="17.6" r="1.15" fill="none" stroke="#0EBEA8" strokeWidth="0.25" opacity="0.8"/>
+            <circle cx="43" cy="17.6" r="1.7" fill="none" stroke="#0EBEA8" strokeWidth="0.18" opacity="0.55"/>
+            <line x1="43" y1="17.6" x2="41.6" y2="19.5" stroke="#0EBEA8" strokeWidth="0.3" opacity="0.7"/>
+            <line x1="43" y1="17.6" x2="44.4" y2="19.5" stroke="#0EBEA8" strokeWidth="0.3" opacity="0.7"/>
+            <circle cx="41.4" cy="15.0" r="0.18" fill="#0EBEA8"/>
+            <circle cx="41.4" cy="17.0" r="0.18" fill="#0EBEA8"/>
+            <circle cx="41.4" cy="19.0" r="0.18" fill="#0EBEA8"/>
+            <circle cx="44.6" cy="15.0" r="0.18" fill="#0EBEA8"/>
+            <circle cx="44.6" cy="17.0" r="0.18" fill="#0EBEA8"/>
+            <circle cx="44.6" cy="19.0" r="0.18" fill="#0EBEA8"/>
+          </g>
+
+          {/* Crown AI band */}
+          <g clipPath="url(#navBcTwr)">
+            <rect x="41.5" y="10" width="3" height="3.5" fill="#0A7C6E" fillOpacity="0.18"/>
+            <path d="M41.7 12.5 L42.4 11 L43 12.5 L43.6 11 L44.3 12.5"
+                  fill="none" stroke="#0EBEA8" strokeWidth="0.5" strokeLinecap="round" opacity="0.95"/>
+            <circle cx="42.4" cy="11" r="0.4" fill="#0EBEA8"/>
+            <circle cx="43.6" cy="11" r="0.4" fill="#0EBEA8"/>
+          </g>
+
+          {/* Spire beacon */}
+          <circle cx="43" cy="2" r="0.7" fill="#0EBEA8"/>
+          <circle cx="43" cy="2" r="1.3" fill="none" stroke="#0EBEA8" strokeWidth="0.2" opacity="0.55"/>
         </svg>
         <div>
           <div style={{fontSize:12.5,fontWeight:700,color:P.white,lineHeight:1.1}}>iStructural Group Inc.</div>

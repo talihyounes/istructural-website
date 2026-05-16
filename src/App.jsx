@@ -312,6 +312,7 @@ export default function App(){
   const [searchQ,setSearchQ]=useState("");
   const [selectedProj,setSelectedProj]=useState(null);
   const [projSearchQ,setProjSearchQ]=useState("");
+  const [inquiryProj,setInquiryProj]=useState(null);
 
   const filteredP = useMemo(()=>{
     let f=allProjects;
@@ -1180,12 +1181,13 @@ export default function App(){
           </div>
           <div style={{fontSize:9,color:P.slate,whiteSpace:"nowrap"}}>{filteredP.length} {filteredP.length===1?"project":"projects"} shown</div>
         </div>
-        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Click a project for details. Filter by Type and Region above.</div>
+        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Project details are shared after inquiry. Use the Inquire button on each row.</div>
         {displayed.map((p,i)=>(
-          <div key={i} onClick={()=>setSelectedProj(p)} {...kbd(()=>setSelectedProj(p))} aria-label={`Open details for ${p.n}`} style={{display:"grid",gridTemplateColumns:"1fr 130px 110px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center",cursor:"pointer",transition:"background 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.background=P.teal+"08";}} onMouseLeave={e=>{e.currentTarget.style.background=i%2===0?"#f8f9fa":"transparent";}}>
+          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 130px 110px 80px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center"}}>
             <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.4}}>{p.n}</div>
             <span style={{fontSize:7.5,fontWeight:600,padding:"2px 5px",borderRadius:5,background:(catCol[p.c]||P.slate)+"12",color:catCol[p.c]||P.slate,textAlign:"center"}}>{p.c}</span>
             <span style={{fontSize:8.5,color:P.slate,textAlign:"right",whiteSpace:"nowrap"}}>{p.country || p.r}</span>
+            <button onClick={()=>setInquiryProj(p)} {...kbd(()=>setInquiryProj(p))} aria-label={`Inquire about ${p.n}`} style={{fontSize:8.5,fontWeight:700,padding:"5px 10px",borderRadius:6,background:P.teal,color:P.white,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>Inquire →</button>
           </div>
         ))}
         {displayed.length===0 && <div style={{padding:"24px 0",fontSize:11,color:P.slate,textAlign:"center",fontStyle:"italic"}}>No projects match your search. Try clearing filters or simplifying the query.</div>}
@@ -1550,6 +1552,109 @@ export default function App(){
     </div>
   );
 
+  // ══════════════════════ PROJECT INQUIRY MODAL ══════════════════════
+  const ProjectInquiryModal = ({project, onClose}) => {
+    const captcha = useCaptcha();
+    const [status, setStatus] = useState("idle");
+    const [values, setValues] = useState({message:"", company:"", website:"", contact:"", email:"", phone:""});
+    const set = (k) => (e) => setValues({...values, [k]: e.target.value});
+
+    const nameOK = values.contact.trim().length > 1;
+    const contactOK = values.email.trim().length > 3 || values.phone.trim().length > 5;
+    const canSubmit = captcha.verified && nameOK && contactOK;
+
+    const onSubmit = async (e) => {
+      e.preventDefault();
+      if (!canSubmit) return;
+      setStatus("sending");
+      try {
+        const subject = `Project Inquiry — ${project.n}`;
+        const body = {
+          _subject: subject,
+          project_name: project.n,
+          project_type: project.c,
+          project_region: project.r,
+          project_country: project.country || "",
+          project_year: project.y || "",
+          message: values.message,
+          company: values.company,
+          website: values.website,
+          name: values.contact,
+          email: values.email,
+          phone: values.phone,
+        };
+        const res = await fetch(FORMSPREE_URL, {method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"}, body:JSON.stringify(body)});
+        if (res.ok) setStatus("success");
+        else setStatus("error");
+      } catch (err) { setStatus("error"); }
+    };
+
+    return (
+      <div role="dialog" aria-modal="true" aria-label={`Inquiry about ${project.n}`}
+           onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
+           onKeyDown={(e)=>{ if(e.key==='Escape') onClose(); }}
+           tabIndex={-1}
+           style={{position:"fixed",inset:0,zIndex:1010,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto"}}>
+        <div style={{position:"relative",width:"100%",maxWidth:580,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55)",overflow:"hidden",animation:"fadeUp 0.22s ease-out"}}>
+          <div style={{height:4,background:P.teal}}></div>
+          <button onClick={onClose} aria-label="Close inquiry" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",fontSize:16,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
+          <div style={{padding:"22px 26px 26px"}}>
+            <div style={{fontSize:8,fontWeight:700,letterSpacing:2.5,color:P.teal,textTransform:"uppercase",marginBottom:6}}>Project Inquiry</div>
+            <div style={{fontFamily:"'Fraunces',serif",fontSize:16,fontWeight:800,color:P.charcoal,lineHeight:1.25,marginBottom:6}}>{project.n}</div>
+            <div style={{fontSize:9,color:P.slate,marginBottom:12}}>{project.c} · {project.country || project.r}{project.y ? " · "+project.y : ""}</div>
+            <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px dashed ${P.teal}40`,fontSize:9.5,color:P.slate,lineHeight:1.6,marginBottom:14}}>
+              Project details, scope, role, and deliverables are shared on inquiry. Tell us what you want to know and we will respond.
+            </div>
+
+            {status === "success" ? (
+              <div style={{padding:"16px 18px",background:"#E8F7F4",borderRadius:8,border:`1px solid ${P.teal}40`,fontSize:11,color:P.charcoal,lineHeight:1.6}}>
+                <strong style={{color:P.teal}}>Inquiry received.</strong> We will reply within 1–2 business days. Thank you.
+              </div>
+            ) : (
+              <form onSubmit={onSubmit}>
+                <label style={labelStyle}>Your question or interest</label>
+                <textarea style={textareaStyle} value={values.message} onChange={set("message")} placeholder="What would you like to know about this project? (scope, role, deliverables, software, software used, schedule, lessons learned...)" aria-label="Your question or interest" />
+
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:4}}>
+                  <div>
+                    <label style={labelStyle}>Company / Organization</label>
+                    <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="Optional" aria-label="Company or organization" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Website</label>
+                    <input style={inputStyle} value={values.website} onChange={set("website")} placeholder="Optional" aria-label="Company website" />
+                  </div>
+                </div>
+
+                <label style={labelStyle}>Your Name *</label>
+                <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Your name" />
+
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div>
+                    <label style={labelStyle}>Email {!contactOK && <span style={{color:P.coral}}>*</span>}</label>
+                    <input type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone {!contactOK && <span style={{color:P.coral}}>*</span>}</label>
+                    <input style={inputStyle} value={values.phone} onChange={set("phone")} placeholder="+country code & number" aria-label="Phone number" />
+                  </div>
+                </div>
+                <div style={{fontSize:8.5,color:P.slate,marginTop:-2,marginBottom:8,fontStyle:"italic"}}>Provide at least Email or Phone so we can reply.</div>
+
+                <CaptchaBlock captcha={captcha} status={status}/>
+
+                <button type="submit" disabled={!canSubmit||status==="sending"} style={{...submitStyle(P.teal),opacity:canSubmit&&status!=="sending"?1:0.6,cursor:canSubmit&&status!=="sending"?"pointer":"not-allowed"}}>
+                  {status === "sending" ? "Sending..." : "Send Inquiry"}
+                </button>
+                <FormStatus status={status} color={P.teal}/>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ══════════════════════ CONTACT ══════════════════════
   const ContactPage=()=>(
     <div>
@@ -1727,6 +1832,9 @@ export default function App(){
           </div>
         </div>
       )}
+
+      {/* ═══ PROJECT INQUIRY MODAL ═══ */}
+      {inquiryProj && <ProjectInquiryModal project={inquiryProj} onClose={()=>setInquiryProj(null)} />}
     </div>
   );
 }

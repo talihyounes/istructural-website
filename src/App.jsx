@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 
 // ── Meta injection (for Vercel / Next.js move, use next/head instead) ──
 if (typeof document !== "undefined") {
@@ -320,6 +320,8 @@ export default function App(){
   const [accessRequest,setAccessRequest]=useState(null);  // app object when access-request form is open
   const [toolsDisclaimerOpen,setToolsDisclaimerOpen]=useState(false); // top-of-page disclaimer expand toggle
   const [toolsDisclaimerAccepted,setToolsDisclaimerAccepted]=useState(false); // checkbox above briefing form
+  const [nowTick,setNowTick]=useState(Date.now());        // 1s heartbeat so the 60 min session timer counts down live
+  useEffect(()=>{ const id=setInterval(()=>setNowTick(Date.now()),1000); return ()=>clearInterval(id); },[]);
   const [toolsSession,setToolsSession]=useState({
     userId:"default_user",                                 // dormant — single-user mode for Phase 1
     accessKey:"",                                          // currently empty until user enters key
@@ -1432,8 +1434,44 @@ export default function App(){
     },
   ];
 
-  const sessionStillValid = toolsSession.keyValidUntil && new Date(toolsSession.keyValidUntil).getTime() > Date.now();
-  const sessionMinutesLeft = sessionStillValid ? Math.max(0, Math.floor((new Date(toolsSession.keyValidUntil).getTime() - Date.now()) / 60000)) : 0;
+  // Session validity recomputes every second via nowTick so the timer is live.
+  const sessionMsLeft = toolsSession.keyValidUntil ? (new Date(toolsSession.keyValidUntil).getTime() - nowTick) : 0;
+  const sessionStillValid = sessionMsLeft > 0;
+  const sessionSecondsLeft = sessionStillValid ? Math.floor(sessionMsLeft / 1000) : 0;
+  const sessionMinutesLeft = Math.floor(sessionSecondsLeft / 60);
+  const SESSION_TOTAL_SECONDS = 60 * 60; // 60 minute slot during this transition stage
+
+  // SandTimer: a small sand-clock that drains as the 60 min session runs down.
+  // fraction = seconds remaining / total. Renders the hourglass plus mm:ss.
+  const SandTimer = ({secondsLeft, size=34, dark=false}) => {
+    const total = SESSION_TOTAL_SECONDS;
+    const frac = Math.max(0, Math.min(1, secondsLeft / total)); // 1 full, 0 empty
+    const mm = String(Math.floor(secondsLeft / 60)).padStart(2,"0");
+    const ss = String(secondsLeft % 60).padStart(2,"0");
+    const topFill = frac;          // sand still in the top bulb
+    const botFill = 1 - frac;      // sand collected in the bottom bulb
+    const glassStroke = dark ? "#9BBCD6" : P.navy;
+    const sandColor = secondsLeft <= 300 ? P.coral : P.teal; // turns coral in the last 5 minutes
+    const txtColor = dark ? P.white : P.navy;
+    return (
+      <span style={{display:"inline-flex",alignItems:"center",gap:7}}>
+        <svg width={size} height={size} viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={`Session time remaining ${mm}:${ss}`}>
+          {/* Frame caps */}
+          <rect x="4" y="1.5" width="20" height="3" rx="1.2" fill={glassStroke}/>
+          <rect x="4" y="31.5" width="20" height="3" rx="1.2" fill={glassStroke}/>
+          {/* Glass outline */}
+          <path d="M 6 4.5 L 22 4.5 L 15.4 18 L 22 31.5 L 6 31.5 L 14.6 18 Z" fill="none" stroke={glassStroke} strokeWidth="1.1" opacity="0.85"/>
+          {/* Top sand: a triangle that shrinks toward the neck as time drains */}
+          <path d={`M ${14-7*topFill} ${5} L ${14+7*topFill} ${5} L 14 ${5+12.5*topFill} Z`} fill={sandColor} opacity="0.92"/>
+          {/* Falling grain */}
+          {topFill>0 && botFill<1 && <line x1="14" y1="17" x2="14" y2="24" stroke={sandColor} strokeWidth="1" opacity="0.8"/>}
+          {/* Bottom sand: a triangle that grows from the base */}
+          <path d={`M 14 ${31 - 12.5*botFill} L ${14-7*botFill} 31 L ${14+7*botFill} 31 Z`} fill={sandColor} opacity="0.92"/>
+        </svg>
+        <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:11,fontWeight:800,color:txtColor,letterSpacing:0.5}}>{mm}:{ss}</span>
+      </span>
+    );
+  };
 
   const validateAccessKey = (k) => {
     // Phase 1: any non-empty key issued by info@istructgroup.com is accepted client-side.
@@ -1451,11 +1489,14 @@ export default function App(){
         <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Modular Apps · Secure Sessions · Free Preview</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:30,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Tools Box</h2>
         <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
-        <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap",alignItems:"center"}}>
           {sessionStillValid ? (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",color:"#7EE8DA",border:`1px solid ${P.tealL}40`,fontSize:10,fontWeight:700}}>Session active · {sessionMinutesLeft} min remaining</div>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",border:`1px solid ${P.tealL}40`,fontSize:10,fontWeight:700,color:"#7EE8DA",display:"flex",alignItems:"center",gap:8}}>
+              <span>Session active</span>
+              <SandTimer secondsLeft={sessionSecondsLeft} size={30} dark={true}/>
+            </div>
           ) : (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:10,fontWeight:700}}>No active session · Request an access key inside any app</div>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:10,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
           )}
         </div>
       </div></HeroBg>
@@ -1709,9 +1750,42 @@ export default function App(){
                     </div>
                   </div>
                   <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.55,flex:1}}>{app.shortDesc}</div>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                    <span style={{fontSize:7.5,fontWeight:700,padding:"3px 8px",borderRadius:6,background:app.iconColor+"15",color:app.iconColor,border:`1px solid ${app.iconColor}30`,textTransform:"uppercase",letterSpacing:1}}>{app.requiresKey ? "Key required" : "Open"}</span>
-                    <span style={{fontSize:9,fontWeight:700,color:app.iconColor}}>Open app &#x2197;</span>
+
+                  {/* Session status line on the card */}
+                  {app.requiresKey && (
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"6px 8px",borderRadius:7,background:sessionStillValid ? P.greenD+"12" : P.s4+"12",border:`1px solid ${sessionStillValid ? P.greenD+"35" : P.s4+"35"}`}}>
+                      {sessionStillValid ? (
+                        <>
+                          <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session live</span>
+                          <SandTimer secondsLeft={sessionSecondsLeft} size={26} dark={false}/>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{fontSize:8.5,fontWeight:700,color:P.charcoal}}>60 min key required</span>
+                          <span style={{fontSize:8,color:P.slate}}>Free  transition stage</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    {app.requiresKey && !sessionStillValid && (
+                      <button
+                        onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
+                        {...kbd(()=>setActiveApp(app))}
+                        aria-label={`Request a 60 minute key for ${app.name}`}
+                        style={{flex:1,fontSize:9.5,fontWeight:800,padding:"8px 10px",borderRadius:8,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
+                        Request 60-min key
+                      </button>
+                    )}
+                    <button
+                      onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
+                      {...kbd(()=>setActiveApp(app))}
+                      aria-label={`Open ${app.name}`}
+                      style={{flex:1,fontSize:9.5,fontWeight:800,padding:"8px 10px",borderRadius:8,background:(app.requiresKey && !sessionStillValid) ? "transparent" : app.iconColor,color:(app.requiresKey && !sessionStillValid) ? app.iconColor : P.white,border:`1px solid ${app.iconColor}`,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
+                      {sessionStillValid ? "Open app ↗" : "View details"}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -2044,14 +2118,28 @@ export default function App(){
 
             {/* I. Access key gate + intake */}
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
-              <div style={{fontSize:12,fontWeight:800,color:P.teal,marginBottom:8,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.teal,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
+                {sessionStillValid && (
+                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}35`}}>
+                    <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
+                    <SandTimer secondsLeft={sessionSecondsLeft} size={28} dark={false}/>
+                  </div>
+                )}
+              </div>
 
               {!sessionStillValid && (
                 <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`,marginBottom:10}}>
-                  <div style={{fontSize:10.5,color:P.charcoal,marginBottom:6}}>This app requires a time limited access key. Request one at <strong>info@istructgroup.com</strong>. Then paste it here to unlock the 60 minute session.</div>
+                  <div style={{fontSize:10.5,color:P.charcoal,marginBottom:8}}>This app requires a time limited access key. During this transition stage every key unlocks a free <strong>60 minute</strong> session. Request a key, then paste it here to start the countdown.</div>
+                  <a
+                    href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural Tools Box  60 minute key request  " + app.name)}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the following app on the Tools Box page.\n\nApp: " + app.name + "\nTagline: " + app.tagline + "\n\nMy details:\nFull name: \nRole / title: \nCompany / organization: \nEmail: \nPhone (optional): \n\nThank you.")}`}
+                    style={{display:"inline-block",padding:"9px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10.5,fontWeight:800,textDecoration:"none",marginBottom:10,letterSpacing:0.3}}>
+                    Request 60-min key by email
+                  </a>
+                  <div style={{fontSize:9,color:P.slate,marginBottom:8,lineHeight:1.5}}>The request goes to <strong>info@istructgroup.com</strong>. You can also use the Briefing and Access request form at the bottom of the Tools Box page.</div>
                   <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                    <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="e.g. ISG-XXXXX-XXXXX" aria-label="Access key" style={{flex:"1 1 220px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
-                    <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.teal,color:P.white,fontSize:10.5,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock Session</button>
+                    <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key  e.g. ISG-XXXXX-XXXXX" aria-label="Access key" style={{flex:"1 1 220px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
+                    <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:10.5,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
                   </div>
                   {keyError && <div style={{marginTop:6,fontSize:9.5,color:P.coral,fontWeight:600}}>{keyError}</div>}
                 </div>

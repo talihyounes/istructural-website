@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 
 // ── Meta injection (for Vercel / Next.js move, use next/head instead) ──
 if (typeof document !== "undefined") {
@@ -314,6 +314,20 @@ export default function App(){
   const [projSearchQ,setProjSearchQ]=useState("");
   const [inquiryProj,setInquiryProj]=useState(null);
 
+  // ── Tools Box Phase 1  modular apps with dormant auth/identity scaffolding ──
+  const [activeApp,setActiveApp]=useState(null);          // app object when an app modal is open
+  const [appAccessKey,setAppAccessKey]=useState("");      // user-entered access key
+  const [accessRequest,setAccessRequest]=useState(null);  // app object when access-request form is open
+  const [toolsDisclaimerOpen,setToolsDisclaimerOpen]=useState(false); // top-of-page disclaimer expand toggle
+  const [toolsDisclaimerAccepted,setToolsDisclaimerAccepted]=useState(false); // checkbox above briefing form
+  const [toolsSession,setToolsSession]=useState({
+    userId:"default_user",                                 // dormant — single-user mode for Phase 1
+    accessKey:"",                                          // currently empty until user enters key
+    keyValidUntil:null,                                    // ISO timestamp when the session expires
+    tier:"trial",                                          // dormant — Phase 2 will set free/pro/enterprise
+    entitlements:["ecios","bid"],                          // dormant — Phase 2 will gate per subscription
+  });
+
   const filteredP = useMemo(()=>{
     let f=allProjects;
     if(pCat!=="All")f=f.filter(p=>p.c===pCat);
@@ -456,7 +470,7 @@ export default function App(){
       </div>
       {/* Desktop nav tabs (≥720px) */}
       <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:2}}>
-        {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>
+        {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>
           <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
         )}
         {/* Search icon */}
@@ -1153,6 +1167,926 @@ export default function App(){
     </div>
   );
 
+  // ══════════════════════ TOOLS BOX  modular app launcher (Phase 1) ══════════════════════
+  // Phase 1 scope: launcher + 2 apps (APEX + ARGO). Auth + payments dormant.
+  // Each app entry is fully declarative; adding a new app = 1 new entry in this registry.
+  //
+  // ICON LIBRARY  reusable shapes referenced by string id from each app's "icon" field.
+  // To add a new icon: add a case below. To add a new app: set app.icon = "<id>" in the registry.
+  // For a bespoke one-off, set app.icon = {custom: <jsx>} instead.
+  const AppIcon = ({id, size=22, color="#FFFFFF", accent=null}) => {
+    const a = accent || color;
+    const s = size;
+    const half = s/2;
+    if (id && typeof id === "object" && id.custom) return id.custom;
+    switch (id) {
+      case "summit": // APEX  mountain peak with flag
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M 14 5 L 25 22 L 3 22 Z" fill={color} stroke={a} strokeWidth="0.9"/>
+            <path d="M 14 5 L 18 12 L 12 16 L 3 22 L 25 22 L 18 12 Z" fill={a} opacity="0.55"/>
+            <line x1="14" y1="5" x2="14" y2="1.5" stroke={color} strokeWidth="0.9"/>
+            <path d="M 14 1.5 L 19 3 L 14 4.2 Z" fill={a}/>
+          </svg>
+        );
+      case "compass": // ARGO  cardinal ring with rotating needle
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="14" cy="14" r="11" fill="none" stroke={color} strokeWidth="1.2"/>
+            <circle cx="14" cy="14" r="7.5" fill={a} stroke={color} strokeWidth="0.6" opacity="0.25"/>
+            <line x1="14" y1="2.5" x2="14" y2="5" stroke={color} strokeWidth="1"/>
+            <line x1="14" y1="23" x2="14" y2="25.5" stroke={color} strokeWidth="1"/>
+            <line x1="2.5" y1="14" x2="5" y2="14" stroke={color} strokeWidth="1"/>
+            <line x1="23" y1="14" x2="25.5" y2="14" stroke={color} strokeWidth="1"/>
+            <g transform="rotate(-15 14 14)">
+              <path d="M 14 7 L 16 14 L 12 14 Z" fill={color}/>
+              <path d="M 14 21 L 16 14 L 12 14 Z" fill={color} opacity="0.45"/>
+              <circle cx="14" cy="14" r="1.4" fill={a}/>
+            </g>
+          </svg>
+        );
+      case "gear":
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill={color}>
+              <rect x="12.5" y="1" width="3" height="4" rx="0.6"/>
+              <rect x="12.5" y="23" width="3" height="4" rx="0.6"/>
+              <rect x="1" y="12.5" width="4" height="3" rx="0.6"/>
+              <rect x="23" y="12.5" width="4" height="3" rx="0.6"/>
+              <rect x="3.7" y="3.7" width="3" height="3" rx="0.6" transform="rotate(-45 5.2 5.2)"/>
+              <rect x="21.3" y="3.7" width="3" height="3" rx="0.6" transform="rotate(45 22.8 5.2)"/>
+              <rect x="3.7" y="21.3" width="3" height="3" rx="0.6" transform="rotate(45 5.2 22.8)"/>
+              <rect x="21.3" y="21.3" width="3" height="3" rx="0.6" transform="rotate(-45 22.8 22.8)"/>
+            </g>
+            <circle cx="14" cy="14" r="6" fill={a} stroke={color} strokeWidth="1.2"/>
+            <circle cx="14" cy="14" r="2.4" fill={color}/>
+          </svg>
+        );
+      case "book":
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M 4 5 L 14 7 L 14 24 L 4 22 Z" fill={color} stroke={a} strokeWidth="0.8"/>
+            <path d="M 24 5 L 14 7 L 14 24 L 24 22 Z" fill={a} stroke={color} strokeWidth="0.8"/>
+            <line x1="6" y1="10" x2="12" y2="11" stroke={a} strokeWidth="0.7" opacity="0.7"/>
+            <line x1="6" y1="13" x2="12" y2="14" stroke={a} strokeWidth="0.7" opacity="0.7"/>
+            <line x1="6" y1="16" x2="12" y2="17" stroke={a} strokeWidth="0.7" opacity="0.7"/>
+            <line x1="16" y1="11" x2="22" y2="10" stroke={color} strokeWidth="0.7" opacity="0.7"/>
+            <line x1="16" y1="14" x2="22" y2="13" stroke={color} strokeWidth="0.7" opacity="0.7"/>
+            <line x1="16" y1="17" x2="22" y2="16" stroke={color} strokeWidth="0.7" opacity="0.7"/>
+          </svg>
+        );
+      case "chart":
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="14" width="4" height="10" fill={color} rx="0.7"/>
+            <rect x="12" y="9" width="4" height="15" fill={a} rx="0.7"/>
+            <rect x="20" y="4" width="4" height="20" fill={color} rx="0.7"/>
+            <line x1="3" y1="25" x2="25" y2="25" stroke={color} strokeWidth="0.9"/>
+          </svg>
+        );
+      case "lightbulb":
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M 14 3 C 8.5 3 5 7 5 12 C 5 15 7 17 9 18.5 L 9 22 L 19 22 L 19 18.5 C 21 17 23 15 23 12 C 23 7 19.5 3 14 3 Z" fill={color} stroke={a} strokeWidth="0.8"/>
+            <rect x="10" y="22.5" width="8" height="2" fill={a} rx="0.5"/>
+            <rect x="11" y="25" width="6" height="1.5" fill={a} rx="0.5"/>
+            <path d="M 11 11 L 14 14 L 17 11" fill="none" stroke={a} strokeWidth="1.1"/>
+          </svg>
+        );
+      case "shield":
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M 14 3 L 24 6 L 24 14 C 24 19 20 23.5 14 25.5 C 8 23.5 4 19 4 14 L 4 6 Z" fill={color} stroke={a} strokeWidth="0.9"/>
+            <path d="M 14 3 L 24 6 L 24 14 C 24 19 20 23.5 14 25.5 L 14 3 Z" fill={a} opacity="0.55"/>
+            <path d="M 9 13 L 13 17 L 19 10" fill="none" stroke={a} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
+      case "globe":
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="14" cy="14" r="11" fill={color} stroke={a} strokeWidth="0.9"/>
+            <ellipse cx="14" cy="14" rx="11" ry="4.5" fill="none" stroke={a} strokeWidth="0.8" opacity="0.7"/>
+            <ellipse cx="14" cy="14" rx="4.5" ry="11" fill="none" stroke={a} strokeWidth="0.8" opacity="0.7"/>
+            <line x1="3" y1="14" x2="25" y2="14" stroke={a} strokeWidth="0.7" opacity="0.7"/>
+            <line x1="14" y1="3" x2="14" y2="25" stroke={a} strokeWidth="0.7" opacity="0.7"/>
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const toolsApps = [
+    {
+      id:"ecios",
+      name:"APEX",
+      tagline:"Applied Persona and Executive eXecution",
+      category:"Career & Hiring",
+      shortDesc:"From a job description to an executive grade application package in one run. Multi vendor ATS, recruiter and hiring manager simulation, company intelligence, interview prep, advisory. Peak your application package.",
+      iconColor:P.s2,
+      iconLetter:"A",
+      icon:"summit",
+      requiresKey:true,
+      requiresEntitlement:"ecios",
+      briefing:{
+        docx:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.docx",
+        pdf:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.pdf",
+      },
+      capabilities:[
+        "Multi-vendor ATS scoring (Workday, Taleo, iCIMS, Greenhouse, Lever, Ashby, BambooHR, ADP, SuccessFactors)",
+        "Recruiter and hiring manager 6 second scan simulation",
+        "Company intelligence: mission, vision, values, leadership, employee sentiment",
+        "12 interview scenarios + STAR matrix + day of brief",
+        "Strategic advisory: Apply / Selectively / Skip + probability + salary range",
+        "Outputs: DOCX cover letter (1 A4), DOCX CV, XLSX scorecard, PDF full report",
+      ],
+      phases:[
+        {n:1, name:"ATS Intelligence", get:"Score / 100 across 11 ATS engines + 5 angle consensus"},
+        {n:2, name:"Recruiter and HM Simulation", get:"6 second scan, hiring psychology, AI detection"},
+        {n:3, name:"Company Intelligence", get:"Mission, vision, values, leadership, employee sentiment, news"},
+        {n:4, name:"Interview Intelligence", get:"12 scenario answers, mock simulator, day of brief"},
+        {n:5, name:"Strategic Advisory", get:"Apply yes / no, probability, salary range"},
+        {n:6, name:"Report Exports", get:"DOCX cover letter, DOCX CV, XLSX scorecard, PDF full report"},
+        {n:7, name:"Automation", get:"Save, reuse, batch, schedule, log"},
+        {n:8, name:"AI Optimization", get:"Continuous improvement, gap closure"},
+      ],
+      shortcuts:[
+        {k:"A", a:"Full APEX run, all 8 phases", t:"green"},
+        {k:"A quick", a:"ATS + decision only", t:"blue"},
+        {k:"A cover", a:"Cover letter only", t:"blue"},
+        {k:"A cv", a:"CV optimization only", t:"blue"},
+        {k:"A interview", a:"Interview prep only (Phase 4)", t:"blue"},
+        {k:"A mock", a:"Mock interview simulator (Phase 4 D2)", t:"blue"},
+        {k:"A company", a:"Company intelligence only (Phase 3)", t:"blue"},
+        {k:"A brief", a:"Day of interview brief", t:"blue"},
+        {k:"A batch", a:"Multi JD batch", t:"yellow"},
+        {k:"A reuse", a:"Reuse last saved CV + cover letter", t:"green"},
+        {k:"A help", a:"Show the 2 page capabilities briefing", t:"green"},
+        {k:"A report", a:"Regenerate full report from last run", t:"green"},
+      ],
+      outputs:[
+        {file:"Cover Letter", fmt:"DOCX, 1 A4 page", what:"Executive tone, JD tailored, target company only"},
+        {file:"CV", fmt:"DOCX, ATS optimized", what:"Single column, no images, no tables"},
+        {file:"ATS Scorecard", fmt:"XLSX, 8 worksheets", what:"Per vendor scores, keyword heatmap, gaps, Q and A bank"},
+        {file:"Full Report", fmt:"PDF", what:"All 8 phases, charts, tables, references with dates"},
+        {file:"Full Report (editable)", fmt:"DOCX", what:"Same content in Word for editing or sharing"},
+        {file:"Day of Brief", fmt:"DOCX, 1 page", what:"Generated after the interview is scheduled"},
+      ],
+      tips:[
+        {tip:"Upload your latest CV verbatim, do not pre filter", why:"The engine needs raw signal"},
+        {tip:"Upload at least one reference cover letter", why:"Style anchor improves the final letter"},
+        {tip:"Use real numbers (team size, budget, scope) in your CV", why:"Hiring manager lens rewards specificity"},
+        {tip:"Run J batch for multiple JDs", why:"Compare in one consolidated XLSX"},
+        {tip:"Run J mock 48 hours before an interview", why:"Mock simulator with rubric scoring"},
+        {tip:"Save versions of your CV per role family", why:"Library reuse cuts run time in half"},
+        {tip:"Re run J after any CV edit", why:"Track ATS score delta in optimization log"},
+      ],
+      boundaries:[
+        {will:"Invent experience you do not have", why:"Hard anti hallucination rule"},
+        {will:"Copy past employer or client names into new cover letters", why:"Sanitization on ingest"},
+        {will:"Promise an interview or an offer", why:"Probability is a model, not a guarantee"},
+        {will:"Provide legal or immigration advice", why:"Out of scope"},
+        {will:"Share your data outside this project", why:"Confidentiality enforced"},
+      ],
+      bars:[
+        {label:"Pass ATS screen", pct:80},
+        {label:"Recruiter screen pass", pct:75},
+        {label:"HM interview pass", pct:65},
+        {label:"Final round pass", pct:50},
+        {label:"Offer received", pct:40},
+      ],
+      intakeFields:[
+        {key:"cv",label:"Your CV / Resume",type:"textarea",required:true,placeholder:"Paste the full text of your CV here. The engine needs raw signal, do not pre filter."},
+        {key:"refLetter",label:"Reference Cover Letter (optional, used for style anchors only)",type:"textarea",required:false,placeholder:"Optional. Company names will be stripped on ingest."},
+        {key:"jd",label:"Target Job Description",type:"textarea",required:true,placeholder:"Paste the job description text or a URL."},
+      ],
+    },
+    {
+      id:"bid",
+      name:"ARGO",
+      tagline:"Adaptive Risk and Go Orchestrator",
+      category:"Business & Strategy",
+      shortDesc:"Convert any RFP, scope note, or project description into a structured GO / CONDITIONAL GO / NO-GO decision with delivery model ranking, commercial strategy, risk math, and win probability. Chart the bid. Decide the journey.",
+      iconColor:P.s1,
+      iconLetter:"A",
+      icon:"compass",
+      requiresKey:true,
+      requiresEntitlement:"bid",
+      capabilities:[
+        "Technical analysis, constructability, interface dependencies",
+        "Delivery model ranking: DBB / DB / CMAR / EPC / Progressive DB / Alliance",
+        "Commercial model evaluation: Lump Sum / Hourly / Hybrid / Retainer",
+        "Risk math (Probability x Impact x Detectability) across 8 categories",
+        "Historical analogy + procurement psychology + win probability",
+        "Outputs: 4 page Executive Decision Dashboard, GO/NO-GO with justification",
+      ],
+      phases:[
+        {n:1, name:"Project Intake", get:"Scope, sector, delivery context, constraints"},
+        {n:2, name:"Technical Analysis", get:"Constructability, interface dependencies, complexity"},
+        {n:3, name:"Delivery Model Ranking", get:"DBB / DB / CMAR / EPC / Progressive DB / Alliance"},
+        {n:4, name:"Commercial Model Evaluation", get:"Lump Sum / Hourly / Hybrid / Retainer"},
+        {n:5, name:"Risk Math", get:"P x I x D across 8 categories"},
+        {n:6, name:"Procurement Psychology", get:"Owner posture, scoring lens, incumbent advantage"},
+        {n:7, name:"Win Probability", get:"Historical analogy + capability fit + competitive density"},
+        {n:8, name:"Decision Dashboard", get:"GO / CONDITIONAL GO / NO-GO with justification"},
+      ],
+      shortcuts:[
+        {k:"R", a:"Full ARGO run, all 8 phases", t:"green"},
+        {k:"R quick", a:"GO / NO-GO call only", t:"blue"},
+        {k:"R risk", a:"Risk math only (Phase 5)", t:"blue"},
+        {k:"R commercial", a:"Commercial model evaluation (Phase 4)", t:"blue"},
+        {k:"R delivery", a:"Delivery model ranking (Phase 3)", t:"blue"},
+        {k:"R win", a:"Win probability only (Phase 7)", t:"blue"},
+        {k:"R compare", a:"Multi opportunity batch comparison", t:"yellow"},
+        {k:"R reuse", a:"Reuse last project context", t:"green"},
+      ],
+      outputs:[
+        {file:"Executive Decision Dashboard", fmt:"PDF, 4 pages", what:"GO / CONDITIONAL GO / NO-GO with full justification"},
+        {file:"Risk Register", fmt:"XLSX", what:"8 risk categories with P x I x D scoring"},
+        {file:"Delivery + Commercial Memo", fmt:"DOCX", what:"Model ranking and commercial strategy rationale"},
+        {file:"Win Probability Note", fmt:"DOCX, 1 page", what:"Probability, competitive density, historical analogy"},
+      ],
+      tips:[
+        {tip:"Paste the full RFP if available, not a summary", why:"Scoring criteria and clauses drive the model rankings"},
+        {tip:"List known competitors if you can", why:"Competitive density tightens win probability"},
+        {tip:"State your firm's relevant past projects briefly", why:"Historical analogy improves the call"},
+        {tip:"Flag any non-negotiable constraints", why:"Avoids CONDITIONAL GO with false confidence"},
+      ],
+      boundaries:[
+        {will:"Promise a contract award", why:"Probability is a model, not a guarantee"},
+        {will:"Estimate fixed bid pricing", why:"Pricing requires firm-specific cost data"},
+        {will:"Provide legal opinion on contract terms", why:"Out of scope, route to counsel"},
+        {will:"Share your project data outside this project", why:"Confidentiality enforced"},
+      ],
+      bars:[
+        {label:"Technical fit", pct:75},
+        {label:"Commercial fit", pct:65},
+        {label:"Risk acceptable", pct:60},
+        {label:"Win probability", pct:45},
+      ],
+      intakeFields:[
+        {key:"projectDesc",label:"Project Description / Scope",type:"textarea",required:true,placeholder:"Describe the project: sector, scale, delivery context, known constraints."},
+        {key:"rfp",label:"RFP Text / Email Exchange (optional)",type:"textarea",required:false,placeholder:"Paste relevant procurement signals, deadlines, scoring criteria."},
+        {key:"constraints",label:"Known Constraints",type:"textarea",required:false,placeholder:"Budget, timeline, regulatory, stakeholder, geographic."},
+      ],
+    },
+  ];
+
+  const sessionStillValid = toolsSession.keyValidUntil && new Date(toolsSession.keyValidUntil).getTime() > Date.now();
+  const sessionMinutesLeft = sessionStillValid ? Math.max(0, Math.floor((new Date(toolsSession.keyValidUntil).getTime() - Date.now()) / 60000)) : 0;
+
+  const validateAccessKey = (k) => {
+    // Phase 1: any non-empty key issued by info@istructgroup.com is accepted client-side.
+    // Format expected: ISG-XXXXX-XXXXX (8-15 chars total). This is a soft check. Phase 2 moves validation server-side.
+    return typeof k === "string" && k.trim().length >= 6;
+  };
+  const grantSession = (k, durationMinutes=60) => {
+    setToolsSession(s => ({...s, accessKey:k, keyValidUntil:new Date(Date.now() + durationMinutes*60000).toISOString()}));
+  };
+
+  const ToolsPage = () => (
+    <div>
+      {/* HERO: Tools Box */}
+      <HeroBg color1={P.navy} color2={P.navyM}><div style={{padding:"44px 28px 36px"}}>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Modular Apps · Secure Sessions · Free Preview</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:30,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Tools Box</h2>
+        <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
+        <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap"}}>
+          {sessionStillValid ? (
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",color:"#7EE8DA",border:`1px solid ${P.tealL}40`,fontSize:10,fontWeight:700}}>Session active · {sessionMinutesLeft} min remaining</div>
+          ) : (
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:10,fontWeight:700}}>No active session · Request an access key inside any app</div>
+          )}
+        </div>
+      </div></HeroBg>
+
+      {/* ═══ TOP-OF-PAGE DISCLAIMER  covers current and future apps ═══ */}
+      <div style={{padding:"10px 24px",background:P.navy,borderTop:`1px solid ${P.tealL}30`,borderBottom:`1px solid ${P.tealL}30`}}>
+        <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+          <span style={{fontSize:8,fontWeight:800,padding:"3px 8px",borderRadius:4,background:P.coral+"25",color:"#FFD1C9",border:`1px solid ${P.coral}60`,letterSpacing:1.5,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer  Please Read</span>
+          <div style={{flex:1,minWidth:240,fontSize:10,color:"#CFE0F0",lineHeight:1.55}}>
+            Informational and decision-support use only. No professional advice. No guarantee. Confidentiality enforced. Apps may change at any time. By using any app you accept the terms.
+          </div>
+          <button onClick={()=>setToolsDisclaimerOpen(v=>!v)} {...kbd(()=>setToolsDisclaimerOpen(v=>!v))} aria-expanded={toolsDisclaimerOpen} aria-label="Toggle full disclaimer text" style={{padding:"4px 10px",borderRadius:6,background:"transparent",color:P.tealL,border:`1px solid ${P.tealL}40`,fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>
+            {toolsDisclaimerOpen ? "Hide full terms" : "Read full terms"}
+          </button>
+        </div>
+        {toolsDisclaimerOpen && (
+          <div style={{maxWidth:1100,margin:"10px auto 4px",padding:"12px 14px",borderRadius:8,background:P.navyM,border:`1px solid ${P.tealL}30`,fontSize:10,color:"#E2EBF5",lineHeight:1.7}}>
+            <strong style={{color:P.tealL}}>Important disclaimer covering this page and every app on it, current and future.</strong> The Tools Box, and every app inside it, is provided by iStructural Group Inc. as an informational and decision-support resource only. Outputs are produced by software models and do not replace licensed professional advice (engineering, legal, financial, medical, immigration, or otherwise). iStructural Group Inc. makes no warranty of accuracy, fitness, or outcome. Apps may evolve, change, or be withdrawn at any time without notice. You remain solely responsible for any decisions made on the basis of any output. Confidentiality is enforced: inputs you submit are used only to deliver the requested output and to follow up. We do not share your data with third parties. By using any app, or by submitting any input or request through this page, you accept these terms.
+          </div>
+        )}
+      </div>
+
+      {/* ═══ OPEN TREASURE CHEST  neutral intelligence vibes; no app pointers inside ═══ */}
+      {/* Visual proportion: same artwork as before, scaled down (380x280 -> 240x180) and section padding tightened */}
+      <div style={{padding:"14px 24px 8px",background:`linear-gradient(180deg, ${P.navy} 0%, ${P.navy} 30%, ${P.sand} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+        {/* Caption above the chest */}
+        <div style={{position:"absolute",top:8,left:0,right:0,textAlign:"center",pointerEvents:"none"}}>
+          <div style={{fontSize:8,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",opacity:0.85}}>Open the box. Apps inside. More arriving as we draft them.</div>
+        </div>
+        <svg width="240" height="180" viewBox="0 0 380 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Antique open treasure chest with glowing intelligence inside" style={{filter:"drop-shadow(0 12px 20px rgba(0,0,0,0.55))"}}>
+          <defs>
+            {/* Aged plank gradient */}
+            <linearGradient id="plankGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#A78256"/>
+              <stop offset="55%" stopColor="#7A5A36"/>
+              <stop offset="100%" stopColor="#4A3520"/>
+            </linearGradient>
+            {/* Inside (shadowed) gradient */}
+            <linearGradient id="insideGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#1A0F08"/>
+              <stop offset="100%" stopColor="#0A0604"/>
+            </linearGradient>
+            {/* Iron band */}
+            <linearGradient id="ironGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#5C5C5C"/>
+              <stop offset="50%" stopColor="#2E2E2E"/>
+              <stop offset="100%" stopColor="#1A1A1A"/>
+            </linearGradient>
+            {/* Light beam escaping */}
+            <linearGradient id="lightBeam" x1="50%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stopColor={P.tealL} stopOpacity="0"/>
+              <stop offset="50%" stopColor={P.tealL} stopOpacity="0.25"/>
+              <stop offset="100%" stopColor={P.tealL} stopOpacity="0.45"/>
+            </linearGradient>
+            {/* Vibe glow */}
+            <radialGradient id="apexGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor={P.tealL} stopOpacity="0.95"/>
+              <stop offset="60%" stopColor={P.teal} stopOpacity="0.35"/>
+              <stop offset="100%" stopColor={P.teal} stopOpacity="0"/>
+            </radialGradient>
+            <radialGradient id="argoGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#F4C77A" stopOpacity="0.95"/>
+              <stop offset="60%" stopColor="#C77A2A" stopOpacity="0.40"/>
+              <stop offset="100%" stopColor="#C77A2A" stopOpacity="0"/>
+            </radialGradient>
+            {/* Wood grain pattern */}
+            <pattern id="woodGrain" patternUnits="userSpaceOnUse" width="40" height="80">
+              <rect width="40" height="80" fill="url(#plankGrad)"/>
+              <path d="M0 20 Q 10 18, 20 22 T 40 20" stroke="#3D2810" strokeWidth="0.6" fill="none" opacity="0.55"/>
+              <path d="M0 40 Q 12 38, 22 42 T 40 40" stroke="#3D2810" strokeWidth="0.5" fill="none" opacity="0.4"/>
+              <path d="M0 62 Q 8 60, 18 64 T 40 62" stroke="#3D2810" strokeWidth="0.6" fill="none" opacity="0.5"/>
+            </pattern>
+          </defs>
+
+          {/* Escaping light beam from chest interior */}
+          <path d="M 110 150 L 80 30 L 300 30 L 270 150 Z" fill="url(#lightBeam)" opacity="0.55"/>
+
+          {/* Particles drifting up from the chest */}
+          <g fill={P.tealL}>
+            <circle cx="140" cy="80" r="1.2" opacity="0.75">
+              <animate attributeName="cy" values="150;40" dur="4.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.9;0" dur="4.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="200" cy="100" r="1.6" opacity="0.65">
+              <animate attributeName="cy" values="150;30" dur="6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.95;0" dur="6s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="240" cy="90" r="1" opacity="0.8">
+              <animate attributeName="cy" values="150;50" dur="5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.85;0" dur="5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="170" cy="110" r="1.4" opacity="0.7">
+              <animate attributeName="cy" values="150;60" dur="5.6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.9;0" dur="5.6s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="220" cy="120" r="1.1" opacity="0.6">
+              <animate attributeName="cy" values="150;45" dur="6.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.8;0" dur="6.5s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          {/* Open lid (hinged backward, perspective foreshortened) */}
+          <g transform="translate(0,0)">
+            {/* Lid back (visible interior side) */}
+            <path d="M 95 130 L 105 50 L 275 50 L 285 130 Z" fill="#1F1308" stroke="#3D2810" strokeWidth="1.5"/>
+            {/* Lid inner planks (3 panels) */}
+            <path d="M 120 70 L 260 70" stroke="#0A0604" strokeWidth="0.8" opacity="0.5"/>
+            <path d="M 115 90 L 265 90" stroke="#0A0604" strokeWidth="0.8" opacity="0.5"/>
+            <path d="M 110 110 L 270 110" stroke="#0A0604" strokeWidth="0.8" opacity="0.5"/>
+            {/* Lid outer arch (visible top edge) */}
+            <path d="M 95 130 Q 190 30, 285 130" stroke="#3D2810" strokeWidth="1.8" fill="none"/>
+            {/* Iron strap on lid */}
+            <path d="M 188 50 L 192 130" stroke="url(#ironGrad)" strokeWidth="6" fill="none"/>
+            <circle cx="190" cy="56" r="2.2" fill="#C8B07A" stroke="#5A4520" strokeWidth="0.6"/>
+            <circle cx="190" cy="124" r="2.2" fill="#C8B07A" stroke="#5A4520" strokeWidth="0.6"/>
+          </g>
+
+          {/* Chest body (front face, planks) */}
+          <g>
+            {/* Front face */}
+            <path d="M 80 150 L 80 240 L 300 240 L 300 150 Z" fill="url(#woodGrain)" stroke="#3D2810" strokeWidth="1.8"/>
+            {/* Side perspective panel (right) */}
+            <path d="M 300 150 L 315 145 L 315 235 L 300 240 Z" fill="#4A3520" stroke="#3D2810" strokeWidth="1.5"/>
+            {/* Chest interior visible at the top (dark opening) */}
+            <path d="M 80 150 L 95 130 L 285 130 L 300 150 Z" fill="url(#insideGrad)" stroke="#3D2810" strokeWidth="1.5"/>
+
+            {/* Iron horizontal bands on front face */}
+            <rect x="78" y="172" width="224" height="6" fill="url(#ironGrad)"/>
+            <rect x="78" y="210" width="224" height="6" fill="url(#ironGrad)"/>
+            {/* Iron vertical strap */}
+            <rect x="186" y="150" width="8" height="90" fill="url(#ironGrad)"/>
+            {/* Brass nails on bands */}
+            <g fill="#D9B873" stroke="#5A4520" strokeWidth="0.4">
+              <circle cx="100" cy="175" r="1.6"/>
+              <circle cx="140" cy="175" r="1.6"/>
+              <circle cx="240" cy="175" r="1.6"/>
+              <circle cx="280" cy="175" r="1.6"/>
+              <circle cx="100" cy="213" r="1.6"/>
+              <circle cx="140" cy="213" r="1.6"/>
+              <circle cx="240" cy="213" r="1.6"/>
+              <circle cx="280" cy="213" r="1.6"/>
+            </g>
+            {/* Brass lock plate */}
+            <rect x="178" y="188" width="24" height="18" fill="#C8A24C" stroke="#5A4520" strokeWidth="0.8" rx="1.5"/>
+            <rect x="186" y="195" width="8" height="6" fill="#1A1308" rx="1"/>
+            <circle cx="190" cy="198" r="1.2" fill="#D9B873"/>
+
+            {/* Wood plank grooves on front */}
+            <line x1="80" y1="195" x2="186" y2="195" stroke="#3D2810" strokeWidth="0.6" opacity="0.5"/>
+            <line x1="194" y1="195" x2="300" y2="195" stroke="#3D2810" strokeWidth="0.6" opacity="0.5"/>
+            <line x1="80" y1="225" x2="300" y2="225" stroke="#3D2810" strokeWidth="0.6" opacity="0.5"/>
+
+            {/* Aged wear (faint scuffs) */}
+            <ellipse cx="115" cy="200" rx="14" ry="2.5" fill="#2A1A0A" opacity="0.18"/>
+            <ellipse cx="265" cy="220" rx="12" ry="2" fill="#2A1A0A" opacity="0.18"/>
+          </g>
+
+          {/* ═══ NEUTRAL INTELLIGENCE VIBES INSIDE THE CHEST  no app pointers ═══ */}
+          {/* Central halo of light */}
+          <g transform="translate(190, 145)">
+            <circle cx="0" cy="0" r="42" fill="url(#apexGlow)" opacity="0.55">
+              <animate attributeName="r" values="38;46;38" dur="6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.4;0.7;0.4" dur="6s" repeatCount="indefinite"/>
+            </circle>
+            {/* Drifting orbs (suggest many apps) */}
+            <g fill={P.tealL} opacity="0.9">
+              <circle cx="-22" cy="-8" r="2.2">
+                <animate attributeName="cy" values="-10;-4;-10" dur="4.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.6;1;0.6" dur="4.5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="-8" cy="-14" r="1.8">
+                <animate attributeName="cy" values="-16;-10;-16" dur="5.2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="6" cy="-10" r="2">
+                <animate attributeName="cy" values="-12;-6;-12" dur="4.8s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="20" cy="-4" r="1.6">
+                <animate attributeName="cy" values="-6;0;-6" dur="5.6s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="-14" cy="6" r="1.4" opacity="0.7">
+                <animate attributeName="cy" values="4;10;4" dur="5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="14" cy="8" r="1.8" opacity="0.8">
+                <animate attributeName="cy" values="6;12;6" dur="5.4s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+            {/* Tiny faint glyphs: gear, book, chart  hint at the variety of apps inside */}
+            <g opacity="0.45" stroke={P.tealL} strokeWidth="0.7" fill="none">
+              {/* gear */}
+              <g transform="translate(-30, 14)">
+                <circle cx="0" cy="0" r="5"/>
+                <circle cx="0" cy="0" r="2"/>
+                <line x1="0" y1="-7" x2="0" y2="-5"/>
+                <line x1="0" y1="5" x2="0" y2="7"/>
+                <line x1="-7" y1="0" x2="-5" y2="0"/>
+                <line x1="5" y1="0" x2="7" y2="0"/>
+              </g>
+              {/* book */}
+              <g transform="translate(0, 22)">
+                <path d="M -6 -3 L 0 -2 L 0 5 L -6 4 Z"/>
+                <path d="M 6 -3 L 0 -2 L 0 5 L 6 4 Z"/>
+              </g>
+              {/* chart bars */}
+              <g transform="translate(30, 14)">
+                <line x1="-5" y1="5" x2="-5" y2="0"/>
+                <line x1="-1" y1="5" x2="-1" y2="-3"/>
+                <line x1="3" y1="5" x2="3" y2="-6"/>
+              </g>
+            </g>
+            {/* Caption inside the chest */}
+            <text x="0" y="-30" fontFamily="'Fraunces',serif" fontSize="7.5" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.5" opacity="0.88">INTELLIGENCE INSIDE</text>
+            <text x="0" y="-22" fontFamily="'DM Sans',sans-serif" fontSize="5.2" fill={P.tealL} textAnchor="middle" letterSpacing="1.6" opacity="0.85">MANY APPS  ALWAYS GROWING</text>
+          </g>
+
+          {/* Tiny brass plaque on the lid arch */}
+          <rect x="160" y="38" width="60" height="12" fill="#C8A24C" stroke="#5A4520" strokeWidth="0.6" rx="1.5" opacity="0.92"/>
+          <text x="190" y="46" fontFamily="'DM Sans',sans-serif" fontSize="6" fontWeight="700" fill="#3D2810" textAnchor="middle" letterSpacing="2.5">iSTRUCTURAL</text>
+
+          {/* Ground shadow under chest */}
+          <ellipse cx="190" cy="246" rx="130" ry="6" fill="#000" opacity="0.35"/>
+        </svg>
+      </div>
+
+      {/* APP GRID: grouped by category */}
+      <div style={{padding:"24px 24px 8px",background:P.sand}}>
+        {[...new Set(toolsApps.map(a=>a.category))].map(cat => (
+          <div key={cat} style={{marginBottom:22}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,background:P.charcoal+"08",border:`1px solid ${P.charcoal}15`,borderLeft:`4px solid ${P.teal}`,marginBottom:10}}>
+              <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:8.5,fontWeight:700,letterSpacing:2,color:P.teal,background:P.teal+"15",border:`1px solid ${P.teal}30`,padding:"3px 8px",borderRadius:4,textTransform:"uppercase"}}>CAT</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{cat}</div>
+                <div style={{fontSize:8.5,color:P.slate,marginTop:2}}>{toolsApps.filter(a=>a.category===cat).length} app(s) in this category</div>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(250px, 1fr))",gap:10}}>
+              {toolsApps.filter(a=>a.category===cat).map(app => (
+                <div key={app.id} onClick={()=>setActiveApp(app)} {...kbd(()=>setActiveApp(app))} aria-label={`Open ${app.name}`}
+                     style={{padding:"14px",borderRadius:10,background:P.white,border:`1px solid ${app.iconColor}25`,cursor:"pointer",transition:"all 0.18s",display:"flex",flexDirection:"column",gap:10,minHeight:170}}
+                     onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 18px ${app.iconColor}25`;}}
+                     onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,boxShadow:`0 3px 10px ${app.iconColor}40`,position:"relative",overflow:"hidden"}}>
+                      <div style={{position:"absolute",inset:0,opacity:0.18,backgroundImage:`radial-gradient(circle at 30% 30%, ${P.white}80 1px, transparent 1.5px), radial-gradient(circle at 70% 70%, ${P.white}50 1px, transparent 1.5px)`,backgroundSize:"12px 12px"}}></div>
+                      <span style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {app.icon ? <AppIcon id={app.icon} size={26} color={P.white} accent={P.tealL}/> : app.iconLetter}
+                      </span>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:800,color:P.charcoal}}>{app.name}</div>
+                      <div style={{fontSize:8.5,color:P.slate,marginTop:1}}>{app.tagline}</div>
+                    </div>
+                  </div>
+                  <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.55,flex:1}}>{app.shortDesc}</div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                    <span style={{fontSize:7.5,fontWeight:700,padding:"3px 8px",borderRadius:6,background:app.iconColor+"15",color:app.iconColor,border:`1px solid ${app.iconColor}30`,textTransform:"uppercase",letterSpacing:1}}>{app.requiresKey ? "Key required" : "Open"}</span>
+                    <span style={{fontSize:9,fontWeight:700,color:app.iconColor}}>Open app &#x2197;</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══ BRIEFING REQUEST FORM (bottom of Tools Box page) ═══ */}
+      <BriefingRequestForm apps={toolsApps} accepted={toolsDisclaimerAccepted} setAccepted={setToolsDisclaimerAccepted} />
+
+      {/* ═══ APP DETAIL MODAL ═══ */}
+      {activeApp && <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />}
+    </div>
+  );
+
+  // ══════════════════════ BRIEFING REQUEST FORM ══════════════════════
+  // Sits at the bottom of the Tools Box page. User picks any app from the
+  // dropdown (sourced dynamically from toolsApps) and submits a request.
+  // Routed through info@istructgroup.com via the existing FormSubmit pipeline
+  // shared with all Start a Project forms. No briefing files are auto served;
+  // every briefing is issued on request by the iStructural team.
+  const BriefingRequestForm = ({apps, accepted, setAccepted}) => {
+    const {values, set, status, submit, captcha} = useForm({
+      _subject:"iStructural | Tools Box  Capabilities Briefing Request",
+      app:"", contact:"", role:"", company:"", email:"", phone:"",
+      country:"", audience:"", urgency:"", notes:""
+    });
+    return (
+      <div style={{padding:"28px 24px 36px",background:`linear-gradient(180deg, ${P.sand} 0%, ${P.s2L} 100%)`,borderTop:`1px solid ${P.charcoal}15`}}>
+        <div style={{maxWidth:760,margin:"0 auto",background:P.white,borderRadius:14,boxShadow:`0 8px 26px ${P.navy}1A`,overflow:"hidden",border:`1px solid ${P.teal}25`}}>
+          {/* Header banner */}
+          <div style={{padding:"14px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Request a Capabilities Briefing</div>
+            <h3 style={{fontSize:18,fontWeight:800,fontFamily:"'Fraunces',serif",margin:"4px 0 0"}}>Tell us which app you want a briefing for</h3>
+            <p style={{fontSize:10.5,color:"#9BBCD6",marginTop:4,lineHeight:1.6}}>Briefings are issued on request, tailored to your role and audience. Our team replies from <strong style={{color:P.tealL}}>info@istructgroup.com</strong>, typically within one business day.</p>
+          </div>
+
+          <form onSubmit={submit} style={{padding:"18px 22px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {/* App pulled from registry */}
+              <div style={{gridColumn:"1 / -1"}}>
+                <label style={labelStyle}>Which app do you want a briefing for? *</label>
+                <select required style={inputStyle} value={values.app} onChange={set("app")} aria-label="App selection">
+                  <option value="">Select an app...</option>
+                  {apps.map(a => (
+                    <option key={a.id} value={a.name}>{a.name}  {a.tagline}</option>
+                  ))}
+                  <option value="Other / Multiple">Other / Multiple (specify in notes)</option>
+                </select>
+              </div>
+
+              {/* Contact details */}
+              <div>
+                <label style={labelStyle}>Full Name *</label>
+                <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="e.g. Jane Smith" aria-label="Full name" />
+              </div>
+              <div>
+                <label style={labelStyle}>Role / Title *</label>
+                <input required style={inputStyle} value={values.role} onChange={set("role")} placeholder="e.g. Senior Structural Engineer" aria-label="Role or title" />
+              </div>
+              <div>
+                <label style={labelStyle}>Company / Organization</label>
+                <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. ABC Consulting" aria-label="Company or organization" />
+              </div>
+              <div>
+                <label style={labelStyle}>Country / City</label>
+                <input style={inputStyle} value={values.country} onChange={set("country")} placeholder="e.g. UAE  Dubai" aria-label="Country and city" />
+              </div>
+              <div>
+                <label style={labelStyle}>Email Address *</label>
+                <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
+              </div>
+              <div>
+                <label style={labelStyle}>Phone (optional)</label>
+                <input type="tel" style={inputStyle} value={values.phone} onChange={set("phone")} placeholder="+1 555 123 4567" aria-label="Phone number" />
+              </div>
+
+              {/* Audience and urgency */}
+              <div>
+                <label style={labelStyle}>I am a *</label>
+                <select required style={inputStyle} value={values.audience} onChange={set("audience")} aria-label="Audience">
+                  <option value="">Select audience...</option>
+                  <option>Student / Early Career</option>
+                  <option>Mid Career Professional</option>
+                  <option>Executive / Senior Leader</option>
+                  <option>Engineer / Technical Specialist</option>
+                  <option>Owner / Project Manager</option>
+                  <option>Educator / Trainer</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Urgency</label>
+                <select style={inputStyle} value={values.urgency} onChange={set("urgency")} aria-label="Urgency">
+                  <option value="">No rush</option>
+                  <option>Within 24 hours</option>
+                  <option>Within this week</option>
+                  <option>Within this month</option>
+                </select>
+              </div>
+
+              {/* Notes */}
+              <div style={{gridColumn:"1 / -1"}}>
+                <label style={labelStyle}>What do you want covered in the briefing?</label>
+                <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Optional. Mention any specific use case, audience, format preference, or questions you want the briefing to answer." aria-label="Briefing notes" />
+              </div>
+            </div>
+
+            <CaptchaBlock captcha={captcha} status={status} />
+
+            {/* Hard-stop disclaimer (covers current and future apps) */}
+            <div style={{marginTop:12,padding:"12px 14px",borderRadius:8,background:P.coral+"10",border:`1px solid ${P.coral}45`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1.4,textTransform:"uppercase"}}>Disclaimer  Please Read</span>
+                <span style={{fontSize:9.5,color:P.charcoal,fontWeight:700}}>Covers this page and every app on it, current and future.</span>
+              </div>
+              <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.65}}>
+                The Tools Box, and every app inside it, is provided by iStructural Group Inc. as an informational and decision-support resource only. Outputs are produced by software models and do not replace licensed professional advice (engineering, legal, financial, medical, immigration, or otherwise). iStructural Group Inc. makes no warranty of accuracy, fitness, or outcome. Apps may evolve, change, or be withdrawn at any time without notice. You remain solely responsible for any decisions made on the basis of any output. Confidentiality is enforced: inputs you submit are used only to deliver the requested output and to follow up. We do not share your data with third parties.
+              </div>
+              <label style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:10,cursor:"pointer"}}>
+                <input type="checkbox" checked={!!accepted} onChange={(e)=>setAccepted(e.target.checked)} aria-label="Accept disclaimer" style={{marginTop:3}} />
+                <span style={{fontSize:10,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>I have read the disclaimer above and I accept the terms. *</span>
+              </label>
+            </div>
+
+            <button type="submit" disabled={status==="sending"||status==="success"||!accepted} style={{...submitStyle(P.teal), opacity:(!accepted ? 0.55 : 1), cursor:(!accepted ? "not-allowed" : "pointer")}}>
+              {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : (accepted ? "Submit Briefing Request" : "Accept the disclaimer to enable submit")}
+            </button>
+            <FormStatus status={status} color={P.teal} />
+
+            <div style={{marginTop:10,fontSize:9,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>
+              By submitting you confirm you have read the iStructural privacy posture. Your details are used only to deliver the requested briefing and to follow up on the request. We do not share your information with third parties.
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // ══════════════════════ APP DETAIL MODAL ══════════════════════
+  // Opens when a user clicks an app card on ToolsPage. Renders full capabilities depth,
+  // intake form bound to FormSubmit (same pattern as S1Form), access-key gate, and
+  // download links to the saved capabilities briefing files.
+  const AppDetailModal = ({app, onClose}) => {
+    const [keyInput, setKeyInput] = useState("");
+    const [keyError, setKeyError] = useState("");
+    const [intake, setIntake] = useState({});
+    const [submitStatus, setSubmitStatus] = useState("idle");
+    const setIntakeField = (k) => (e) => setIntake(prev => ({...prev, [k]: e.target.value}));
+
+    const chipColor = (t) => t==="green" ? P.greenD : t==="yellow" ? P.s4 : t==="blue" ? P.s2 : P.slate;
+    const chipFill  = (t) => (chipColor(t))+"15";
+
+    const tryUnlock = () => {
+      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), 60); setKeyError(""); }
+      else { setKeyError("Access key invalid. Request a key from info@istructgroup.com"); }
+    };
+
+    const submitIntake = async (e) => {
+      e.preventDefault();
+      const required = app.intakeFields.filter(f=>f.required);
+      const missing = required.filter(f => !(intake[f.key]||"").trim());
+      if (missing.length) { setSubmitStatus("error"); return; }
+      setSubmitStatus("sending");
+      try {
+        const body = new FormData();
+        body.append("_subject", `iStructural | ${app.name} run request`);
+        body.append("app", app.name);
+        body.append("tagline", app.tagline);
+        Object.keys(intake).forEach(k => body.append(k, intake[k]));
+        body.append("session_key", toolsSession.accessKey || "");
+        const res = await fetch("https://formsubmit.co/ajax/info@istructgroup.com", { method:"POST", body });
+        if (res.ok) setSubmitStatus("success"); else setSubmitStatus("error");
+      } catch (err) { setSubmitStatus("error"); }
+    };
+
+    return (
+      <div role="dialog" aria-modal="true" aria-label={`${app.name} detail`}
+           onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
+           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(11,37,69,0.78)",backdropFilter:"blur(5px)",overflowY:"auto",padding:"24px 12px"}}>
+        <div style={{maxWidth:920,margin:"0 auto",background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
+          {/* Modal header */}
+          <div style={{padding:"18px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800}}>
+              {app.icon ? <AppIcon id={app.icon} size={28} color={P.white} accent={P.tealL}/> : app.iconLetter}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:18,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{app.name}</div>
+              <div style={{fontSize:10.5,color:P.tealL,marginTop:2}}>{app.tagline}</div>
+            </div>
+            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+          </div>
+
+          {/* Sub banner */}
+          <div style={{padding:"10px 22px",background:P.teal,color:P.white,fontSize:10.5,fontWeight:700,letterSpacing:0.3}}>
+            From a job description to an executive grade application package in one run. No inferred experience. References dated. No em dashes. Three iterations stated.
+          </div>
+
+          {/* Per-modal disclaimer chip (covers current and future apps) */}
+          <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,display:"flex",alignItems:"flex-start",gap:8}}>
+            <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1.4,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer</span>
+            <div style={{flex:1,fontSize:9.5,color:P.charcoal,lineHeight:1.55}}>
+              Informational use only. No professional advice. No guarantee of outcome. App content and behavior may change at any time. You remain solely responsible for any decisions made on the basis of any output. Confidentiality enforced. By submitting any input you accept the full terms shown at the top of the Tools Box page.
+            </div>
+          </div>
+
+          <div style={{padding:"18px 22px",background:P.sand}}>
+
+            {/* A. 8 Phase capability map */}
+            {app.phases && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>A. {app.id==="ecios" ? "8 Phase Capability Map (APEX)" : "8 Phase Decision Pipeline (ARGO)"}</div>
+                <div style={{display:"grid",gridTemplateColumns:"40px 1fr 2fr 60px",gap:6,fontSize:10}}>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>#</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Phase</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What You Get</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4,textAlign:"center"}}>Status</div>
+                  {app.phases.map((ph,i)=>(
+                    <Fragment key={ph.n}>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{ph.n}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{ph.name}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{ph.get}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,textAlign:"center"}}>
+                        <span style={{fontSize:8.5,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}40`}}>READY</span>
+                      </div>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* B. Capabilities bullets (always shown) */}
+            <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>B. Core Capabilities</div>
+              <ul style={{margin:0,paddingLeft:18,fontSize:10.5,color:P.charcoal,lineHeight:1.65}}>
+                {app.capabilities.map((c,i)=>(<li key={i} style={{marginBottom:3}}>{c}</li>))}
+              </ul>
+            </div>
+
+            {/* C. Shortcuts */}
+            {app.shortcuts && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>C. Trigger Shortcuts</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {app.shortcuts.map((s,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 9px",borderRadius:7,background:chipFill(s.t),border:`1px solid ${chipColor(s.t)}40`}}>
+                      <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:10,fontWeight:800,color:chipColor(s.t)}}>{s.k}</span>
+                      <span style={{fontSize:9.5,color:P.charcoal}}>{s.a}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* D. Expected outputs */}
+            {app.outputs && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>D. Expected Outputs Per Run</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1.2fr 2.4fr",gap:5,fontSize:10}}>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>File</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Format</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What It Contains</div>
+                  {app.outputs.map((o,i)=>(
+                    <Fragment key={i}>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{o.file}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{o.fmt}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{o.what}</div>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* E. Probability funnel */}
+            {app.bars && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>E. {app.id==="ecios" ? "APEX Hiring Outcome Probability (illustrative)" : "ARGO Decision Probability (illustrative)"}</div>
+                {app.bars.map((b,i)=>(
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"160px 1fr 50px",gap:8,alignItems:"center",marginBottom:5}}>
+                    <div style={{fontSize:10,color:P.charcoal,fontWeight:600}}>{b.label}</div>
+                    <div style={{height:12,borderRadius:6,background:P.charcoal+"10",overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${b.pct}%`,background:`linear-gradient(90deg, ${P.teal} 0%, ${P.tealL} 100%)`,borderRadius:6}}></div>
+                    </div>
+                    <div style={{fontSize:10,color:P.charcoal,fontWeight:700,textAlign:"right"}}>{b.pct}%</div>
+                  </div>
+                ))}
+                <div style={{fontSize:8.5,color:P.slate,marginTop:6,fontStyle:"italic"}}>Illustrative ranges. Each run produces user specific values from the engine.</div>
+              </div>
+            )}
+
+            {/* F. Tips */}
+            {app.tips && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>F. Tips to Get the Most Out of {app.name}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:5,fontSize:10}}>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Tip</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Why It Matters</div>
+                  {app.tips.map((t,i)=>(
+                    <Fragment key={i}>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{t.tip}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{t.why}</div>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* G. Boundaries */}
+            {app.boundaries && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.coral}40`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.coral,marginBottom:8,fontFamily:"'Fraunces',serif"}}>G. Boundaries: What {app.name} Will Not Do</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:5,fontSize:10}}>
+                  <div style={{fontWeight:800,color:P.white,background:P.coral,padding:"5px 7px",borderRadius:4}}>Will Not Do</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.coral,padding:"5px 7px",borderRadius:4}}>Why</div>
+                  {app.boundaries.map((b,i)=>(
+                    <Fragment key={i}>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.coral+"12":P.white,color:P.charcoal}}>{b.will}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.coral+"12":P.white,color:P.charcoal}}>{b.why}</div>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* H. Briefing request hint (no in-modal download; request form lives at the bottom of the page) */}
+            <div style={{background:P.s2L,borderRadius:10,border:`1px dashed ${P.s2}40`,padding:"10px 14px",marginBottom:14,color:P.charcoal,fontSize:10}}>
+              Want a printed capabilities briefing for <strong>{app.name}</strong>? Briefings are issued on request. Scroll to the bottom of the Tools Box page and submit the Briefing Request form. Our team replies from <strong>info@istructgroup.com</strong>.
+            </div>
+
+            {/* I. Access key gate + intake */}
+            <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
+              <div style={{fontSize:12,fontWeight:800,color:P.teal,marginBottom:8,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
+
+              {!sessionStillValid && (
+                <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`,marginBottom:10}}>
+                  <div style={{fontSize:10.5,color:P.charcoal,marginBottom:6}}>This app requires a time limited access key. Request one at <strong>info@istructgroup.com</strong>. Then paste it here to unlock the 60 minute session.</div>
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                    <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="e.g. ISG-XXXXX-XXXXX" aria-label="Access key" style={{flex:"1 1 220px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
+                    <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.teal,color:P.white,fontSize:10.5,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock Session</button>
+                  </div>
+                  {keyError && <div style={{marginTop:6,fontSize:9.5,color:P.coral,fontWeight:600}}>{keyError}</div>}
+                </div>
+              )}
+
+              {sessionStillValid && (
+                <form onSubmit={submitIntake}>
+                  {app.intakeFields.map(f=>(
+                    <div key={f.key} style={{marginBottom:8}}>
+                      <label style={{display:"block",fontSize:10,fontWeight:700,color:P.charcoal,marginBottom:3}}>{f.label}{f.required?" *":""}</label>
+                      <textarea value={intake[f.key]||""} onChange={setIntakeField(f.key)} placeholder={f.placeholder} required={f.required} aria-label={f.label} style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
+                    </div>
+                  ))}
+                  <button type="submit" disabled={submitStatus==="sending"||submitStatus==="success"} style={{marginTop:4,padding:"10px 18px",borderRadius:8,background:app.iconColor,color:P.white,fontSize:11,fontWeight:800,border:"none",cursor:submitStatus==="success"?"default":"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
+                    {submitStatus==="sending" ? "Sending..." : submitStatus==="success" ? "Received | we will be in touch" : `Submit ${app.name} Run`}
+                  </button>
+                  {submitStatus==="error" && <div style={{marginTop:6,fontSize:10,color:P.coral,fontWeight:600}}>Please complete the required fields and try again.</div>}
+                  {submitStatus==="success" && <div style={{marginTop:6,fontSize:10,color:P.greenD,fontWeight:600}}>Run request received. Our team will follow up by email with your output package.</div>}
+                </form>
+              )}
+            </div>
+
+            {/* Footer banner */}
+            <div style={{marginTop:14,padding:"10px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:9.5,fontWeight:700,letterSpacing:0.3}}>
+              {app.id==="ecios"
+                ? "APEX. Three iterations stated. References dated. No em dashes. One A4 cover letter. Multi vendor ATS. Mission vision values. Twelve interview scenarios. Full report in DOCX and PDF."
+                : "ARGO. Three iterations stated. References dated. No em dashes. Eight phase decision pipeline. Risk math P x I x D. Delivery and commercial ranking. Win probability. Full dashboard in DOCX and PDF."}
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ══════════════════════ PROJECTS ══════════════════════
   const ProjectsPage=()=>(
     <div>
@@ -1706,6 +2640,7 @@ export default function App(){
       {page==="s2"&&<S2Page/>}
       {page==="s3"&&<S3Page/>}
       {page==="hub"&&<HubPage/>}
+      {page==="tools"&&<ToolsPage/>}
       {page==="projects"&&<ProjectsPage/>}
       {page==="training"&&<TrainingPage/>}
       {page==="start"&&<StartPage/>}
@@ -1722,7 +2657,7 @@ export default function App(){
               <div style={{fontSize:11,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
               <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:16,fontWeight:700,fontFamily:"inherit"}}>×</button>
             </div>
-            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>(
+            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>(
               <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
             ))}
             <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
@@ -1740,6 +2675,7 @@ export default function App(){
           {id:"s2",l:"Design Services & Consultancy",d:"High-rise, bridges, irregular, structural assessment"},
           {id:"s3",l:"AI & Technology Services",d:"AI literacy, readiness, implementation"},
           {id:"hub",l:"Knowledge Hub",d:"Free documents, calculators, standards, training links"},
+          {id:"tools",l:"Tools Box",d:"Modular apps: APEX career intelligence, ARGO bid decision system, more coming"},
           {id:"projects",l:"Projects",d:"Selected portfolio across MENA, Europe and beyond"},
           {id:"training",l:"Training Programs",d:"CSi licensed training, MENA and North America"},
           {id:"contact",l:"Contact",d:"Reach iStructural Group Inc."},

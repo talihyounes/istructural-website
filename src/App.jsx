@@ -322,6 +322,19 @@ export default function App(){
   const [toolsDisclaimerAccepted,setToolsDisclaimerAccepted]=useState(false); // checkbox above briefing form
   const [nowTick,setNowTick]=useState(Date.now());        // 1s heartbeat so the 60 min session timer counts down live
   useEffect(()=>{ const id=setInterval(()=>setNowTick(Date.now()),1000); return ()=>clearInterval(id); },[]);
+  const [ownerMode,setOwnerMode]=useState(false);         // owner unlimited access: no 60 min cap on any app
+  const [ownerSignInOpen,setOwnerSignInOpen]=useState(false); // inline owner sign-in field toggle
+  const [ownerSignInInput,setOwnerSignInInput]=useState("");  // owner passphrase field value
+  const [ownerSignInError,setOwnerSignInError]=useState("");  // owner sign-in error message
+  // Body scroll lock: while any overlay is open, freeze the page behind it so touch scroll
+  // does not chain between layers and stutter. This is the real fix for the modal scroll glitch.
+  useEffect(()=>{
+    const anyOverlayOpen = !!activeApp || !!accessRequest || !!inquiryProj || mobileNavOpen;
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
+    }
+    return ()=>{ if (typeof document !== "undefined") document.body.style.overflow = ""; };
+  }, [activeApp, accessRequest, inquiryProj, mobileNavOpen]);
   const [toolsSession,setToolsSession]=useState({
     userId:"default_user",                                 // dormant — single-user mode for Phase 1
     accessKey:"",                                          // currently empty until user enters key
@@ -1284,7 +1297,7 @@ export default function App(){
       name:"APEX",
       tagline:"Applied Persona and Executive eXecution",
       category:"Career & Hiring",
-      shortDesc:"From a job description to an executive grade application package in one run. Multi vendor ATS, recruiter and hiring manager simulation, company intelligence, interview prep, advisory. Peak your application package.",
+      shortDesc:"A JD-driven war room. APEX reads your resume and the job description, detects every discipline the role spans (bidding, engineering, architecture, business, management) and builds the full preparation environment for that one job. One unified war-room report.",
       iconColor:P.s2,
       iconLetter:"A",
       icon:"summit",
@@ -1295,53 +1308,72 @@ export default function App(){
         pdf:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.pdf",
       },
       capabilities:[
-        "Multi-vendor ATS scoring (Workday, Taleo, iCIMS, Greenhouse, Lever, Ashby, BambooHR, ADP, SuccessFactors)",
-        "Recruiter and hiring manager 6 second scan simulation",
-        "Company intelligence: mission, vision, values, leadership, employee sentiment",
-        "12 interview scenarios + STAR matrix + day of brief",
-        "Strategic advisory: Apply / Selectively / Skip + probability + salary range",
-        "Outputs: DOCX cover letter (1 A4), DOCX CV, XLSX scorecard, PDF full report",
+        "JD discipline scan: detects bidding, engineering, architecture, business and management content in the role, then assembles matching war-room environments",
+        "Multi-vendor ATS scoring (11 engines), recruiter and hiring manager 6 second scan simulation",
+        "Company intelligence with regional market context, SWOT and radar; employer answer library, the Why this company set, 10 versions",
+        "Interview war room: 100+ question bank with JD-driven scenario slices, interview scorecards, stakeholder maps",
+        "Bidding and proposal war room built inside APEX when the JD calls for it: proposal strategy, fee-proposal questions, win themes, risk matrices, decision trees, as role preparation",
+        "Engineering, architecture and business environments: constructability, CCDC, RFI, rehabilitation, value engineering, utilization, profitability, change orders, all tailored to the JD",
+        "Strategic advisory with 30 / 60 / 90 day success plan, hiring probability model, salary and negotiation intelligence",
+        "Outputs: DOCX cover letter (1 A4), DOCX CV, XLSX scorecard, unified war-room PDF and DOCX report",
       ],
       phases:[
-        {n:1, name:"ATS Intelligence", get:"Score / 100 across 11 ATS engines + 5 angle consensus"},
-        {n:2, name:"Recruiter and HM Simulation", get:"6 second scan, hiring psychology, AI detection"},
-        {n:3, name:"Company Intelligence", get:"Mission, vision, values, leadership, employee sentiment, news"},
-        {n:4, name:"Interview Intelligence", get:"12 scenario answers, mock simulator, day of brief"},
-        {n:5, name:"Strategic Advisory", get:"Apply yes / no, probability, salary range"},
-        {n:6, name:"Report Exports", get:"DOCX cover letter, DOCX CV, XLSX scorecard, PDF full report"},
-        {n:7, name:"Automation", get:"Save, reuse, batch, schedule, log"},
-        {n:8, name:"AI Optimization", get:"Continuous improvement, gap closure"},
+        {n:1, name:"JD Discipline Scan", get:"Reads resume + JD, classifies disciplines, activates matching war-room environments"},
+        {n:2, name:"ATS Intelligence", get:"Score / 100 across 11 ATS engines + 5 angle consensus"},
+        {n:3, name:"Recruiter and HM Simulation", get:"6 second scan, hiring psychology, stakeholder map, AI detection"},
+        {n:4, name:"Company Intelligence", get:"Mission, vision, values, leadership, sentiment, regional market context, SWOT, radar"},
+        {n:5, name:"Interview War Room", get:"100+ question bank, JD-driven scenario slices, scorecards, Why this company library"},
+        {n:6, name:"Discipline Environments", get:"Bidding, engineering, architecture, business environments built per the JD"},
+        {n:7, name:"Strategic Advisory", get:"Apply decision, probability, salary, 30 / 60 / 90 day success plan"},
+        {n:8, name:"Report Exports", get:"DOCX cover letter, DOCX CV, XLSX scorecard, unified war-room PDF and DOCX"},
+        {n:9, name:"Automation", get:"Save, reuse, batch, schedule, log"},
+        {n:10, name:"AI Optimization", get:"Continuous improvement, gap closure"},
+      ],
+      environments:[
+        {id:"core", name:"ATS and Screening", trigger:"Always on", what:"11-engine ATS, 5-angle consensus, format safety"},
+        {id:"recruiter", name:"Recruiter and HM Simulation", trigger:"Always on", what:"6 second scan, hiring psychology, stakeholder map"},
+        {id:"company", name:"Company Intelligence", trigger:"Always on", what:"Mission, vision, values, leadership, sentiment, regional market, SWOT, radar"},
+        {id:"interview", name:"Interview War Room", trigger:"Always on", what:"100+ question bank, JD-driven scenario slices, scorecards"},
+        {id:"bidding", name:"Bidding and Proposal War Room", trigger:"JD mentions bidding, proposals, BD, fee strategy", what:"Proposal strategy, fee-proposal questions, win themes, risk matrices, decision trees, as interview and role prep"},
+        {id:"engineering", name:"Engineering Environment", trigger:"JD is engineering", what:"Constructability, CCDC, RFI, existing structures, rehabilitation, FEED, value engineering, site scenarios"},
+        {id:"architecture", name:"Architecture Environment", trigger:"JD is architecture", what:"Design-stage coordination, heritage, adaptive reuse, multidisciplinary conflicts"},
+        {id:"business", name:"Business and Commercial Environment", trigger:"JD is business or management", what:"Utilization, billability, profitability, change orders, scope creep, market intelligence"},
+        {id:"advisory", name:"Strategic Advisory", trigger:"Always on", what:"Apply decision, probability, salary, 30 / 60 / 90 day plan"},
       ],
       shortcuts:[
-        {k:"A", a:"Full APEX run, all 8 phases", t:"green"},
-        {k:"A quick", a:"ATS + decision only", t:"blue"},
+        {k:"A", a:"Full APEX war-room run, all environments", t:"green"},
+        {k:"A scan", a:"JD discipline scan only", t:"blue"},
+        {k:"A quick", a:"ATS + apply decision only", t:"blue"},
         {k:"A cover", a:"Cover letter only", t:"blue"},
         {k:"A cv", a:"CV optimization only", t:"blue"},
-        {k:"A interview", a:"Interview prep only (Phase 4)", t:"blue"},
-        {k:"A mock", a:"Mock interview simulator (Phase 4 D2)", t:"blue"},
-        {k:"A company", a:"Company intelligence only (Phase 3)", t:"blue"},
-        {k:"A brief", a:"Day of interview brief", t:"blue"},
+        {k:"A interview", a:"Interview war room only", t:"blue"},
+        {k:"A mock", a:"Mock interview simulator", t:"blue"},
+        {k:"A company", a:"Company intelligence only", t:"blue"},
+        {k:"A bid", a:"Bidding and proposal war room only", t:"blue"},
+        {k:"A plan", a:"30 / 60 / 90 day success plan only", t:"blue"},
         {k:"A batch", a:"Multi JD batch", t:"yellow"},
         {k:"A reuse", a:"Reuse last saved CV + cover letter", t:"green"},
-        {k:"A help", a:"Show the 2 page capabilities briefing", t:"green"},
+        {k:"A help", a:"Show the capabilities briefing", t:"green"},
         {k:"A report", a:"Regenerate full report from last run", t:"green"},
       ],
       outputs:[
         {file:"Cover Letter", fmt:"DOCX, 1 A4 page", what:"Executive tone, JD tailored, target company only"},
         {file:"CV", fmt:"DOCX, ATS optimized", what:"Single column, no images, no tables"},
-        {file:"ATS Scorecard", fmt:"XLSX, 8 worksheets", what:"Per vendor scores, keyword heatmap, gaps, Q and A bank"},
-        {file:"Full Report", fmt:"PDF", what:"All 8 phases, charts, tables, references with dates"},
-        {file:"Full Report (editable)", fmt:"DOCX", what:"Same content in Word for editing or sharing"},
+        {file:"ATS Scorecard", fmt:"XLSX, multi worksheet", what:"Per vendor scores, keyword heatmap, gaps, Q and A bank"},
+        {file:"Why This Company Library", fmt:"DOCX", what:"10 tailored answer versions for the target employer"},
+        {file:"30 / 60 / 90 Day Plan", fmt:"DOCX", what:"Success plan written against the actual role"},
+        {file:"War-Room Report", fmt:"PDF", what:"All active environments, charts, SWOT, radar, references with dates"},
+        {file:"War-Room Report (editable)", fmt:"DOCX", what:"Same content in Word for editing or sharing"},
         {file:"Day of Brief", fmt:"DOCX, 1 page", what:"Generated after the interview is scheduled"},
       ],
       tips:[
         {tip:"Upload your latest CV verbatim, do not pre filter", why:"The engine needs raw signal"},
         {tip:"Upload at least one reference cover letter", why:"Style anchor improves the final letter"},
         {tip:"Use real numbers (team size, budget, scope) in your CV", why:"Hiring manager lens rewards specificity"},
-        {tip:"Run J batch for multiple JDs", why:"Compare in one consolidated XLSX"},
-        {tip:"Run J mock 48 hours before an interview", why:"Mock simulator with rubric scoring"},
-        {tip:"Save versions of your CV per role family", why:"Library reuse cuts run time in half"},
-        {tip:"Re run J after any CV edit", why:"Track ATS score delta in optimization log"},
+        {tip:"Give the full JD, not a summary", why:"The discipline scan needs the complete text to activate the right environments"},
+        {tip:"Run A batch for multiple JDs", why:"Compare in one consolidated XLSX"},
+        {tip:"Run A mock 48 hours before an interview", why:"Mock simulator with rubric scoring"},
+        {tip:"Re run A after any CV edit", why:"Track ATS score delta in optimization log"},
       ],
       boundaries:[
         {will:"Invent experience you do not have", why:"Hard anti hallucination rule"},
@@ -1432,12 +1464,75 @@ export default function App(){
         {key:"constraints",label:"Known Constraints",type:"textarea",required:false,placeholder:"Budget, timeline, regulatory, stakeholder, geographic."},
       ],
     },
+    {
+      id:"learn",
+      name:"LEARN",
+      tagline:"Structured courses, studied with you, progress tracked",
+      category:"Learning",
+      shortDesc:"Owner-authored courses grounded in real material. Ask questions, get step by step solutions, draft practice. Every answer carries a source label and an accuracy and confidence score. Progress bar and time analytics per course.",
+      iconColor:P.s3,
+      iconLetter:"L",
+      icon:"book",
+      requiresKey:true,
+      requiresEntitlement:"learn",
+      customModal:"learn",
+      capabilities:[
+        "Modules and courses authored by iStructural, grounded in verified source material",
+        "Question answering, practice question drafting, step by step problem solutions",
+        "Every answer labelled: from course material, from a course-provided source, or from the internet",
+        "Accuracy and confidence percentages shown on every answer",
+        "Internet search only with explicit consent, external sources cited with dates",
+        "Progress bar, total time on course, average use per day analytics",
+      ],
+    },
   ];
 
+  // ── LEARN  module catalog (33 modules: PEO live, 32 named Coming later) ──
+  // moduleId is stable. status: "live" once a published course exists, else "soon".
+  // group: "featured" shows in the top row, "drawer" sits in the collapsible Coming later drawer.
+  const learnModules = [
+    {id:"peo", n:"Professional Engineering of Ontario", status:"live", group:"featured"},
+    {id:"m13", n:"Structural Engineering", status:"soon", group:"featured"},
+    {id:"m12", n:"Fire Safety Engineering", status:"soon", group:"featured"},
+    {id:"m03", n:"Mechanical Engineering (HVAC & Drainage)", status:"soon", group:"featured"},
+    {id:"m04", n:"Electrical Engineering (Building Services)", status:"soon", group:"featured"},
+    {id:"m29", n:"BIM (Building Information Modeling)", status:"soon", group:"featured"},
+    {id:"m19", n:"Construction Management", status:"soon", group:"featured"},
+    {id:"m18", n:"Project Management", status:"soon", group:"featured"},
+    {id:"m20", n:"Cost Estimation", status:"soon", group:"featured"},
+    {id:"m31", n:"Risk Management", status:"soon", group:"featured"},
+    {id:"m22", n:"Health & Safety", status:"soon", group:"featured"},
+    {id:"m16", n:"Sustainability Engineering", status:"soon", group:"featured"},
+    {id:"m23", n:"Environmental Engineering", status:"soon", group:"featured"},
+    {id:"m24", n:"Transportation Engineering", status:"soon", group:"featured"},
+    {id:"m01", n:"Urban Planning & Smart Cities", status:"soon", group:"drawer"},
+    {id:"m02", n:"Architecture & Building Design", status:"soon", group:"drawer"},
+    {id:"m05", n:"Building Automation & Controls", status:"soon", group:"drawer"},
+    {id:"m06", n:"Facility Management & Operations", status:"soon", group:"drawer"},
+    {id:"m07", n:"Real Estate Development", status:"soon", group:"drawer"},
+    {id:"m08", n:"Property Management", status:"soon", group:"drawer"},
+    {id:"m09", n:"Hospitality Operations", status:"soon", group:"drawer"},
+    {id:"m10", n:"Retail Management", status:"soon", group:"drawer"},
+    {id:"m11", n:"Logistics & Supply Chain", status:"soon", group:"drawer"},
+    {id:"m14", n:"Interior Design", status:"soon", group:"drawer"},
+    {id:"m15", n:"Landscape Architecture", status:"soon", group:"drawer"},
+    {id:"m17", n:"Energy Management", status:"soon", group:"drawer"},
+    {id:"m21", n:"Procurement & Contracts", status:"soon", group:"drawer"},
+    {id:"m25", n:"Urban Economics", status:"soon", group:"drawer"},
+    {id:"m26", n:"Smart Infrastructure", status:"soon", group:"drawer"},
+    {id:"m27", n:"Digital Twins", status:"soon", group:"drawer"},
+    {id:"m28", n:"GIS & Mapping", status:"soon", group:"drawer"},
+    {id:"m30", n:"Quality Assurance", status:"soon", group:"drawer"},
+    {id:"m32", n:"Operations Strategy", status:"soon", group:"drawer"},
+  ];
+
+  // Owner passphrase. When entered, ownerMode unlocks unlimited access on every app, no 60 min cap.
+  const OWNER_PHRASE = "ISG-OWNER";
   // Session validity recomputes every second via nowTick so the timer is live.
+  // Owner mode bypasses the cap entirely: always valid, no countdown.
   const sessionMsLeft = toolsSession.keyValidUntil ? (new Date(toolsSession.keyValidUntil).getTime() - nowTick) : 0;
-  const sessionStillValid = sessionMsLeft > 0;
-  const sessionSecondsLeft = sessionStillValid ? Math.floor(sessionMsLeft / 1000) : 0;
+  const sessionStillValid = ownerMode || sessionMsLeft > 0;
+  const sessionSecondsLeft = sessionMsLeft > 0 ? Math.floor(sessionMsLeft / 1000) : 0;
   const sessionMinutesLeft = Math.floor(sessionSecondsLeft / 60);
   const SESSION_TOTAL_SECONDS = 60 * 60; // 60 minute slot during this transition stage
 
@@ -1490,13 +1585,44 @@ export default function App(){
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:30,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Tools Box</h2>
         <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
         <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap",alignItems:"center"}}>
-          {sessionStillValid ? (
+          {ownerMode ? (
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:10,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1}}>OWNER</span>
+              <span>Unlimited access  no session cap on any app</span>
+            </div>
+          ) : sessionStillValid ? (
             <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",border:`1px solid ${P.tealL}40`,fontSize:10,fontWeight:700,color:"#7EE8DA",display:"flex",alignItems:"center",gap:8}}>
               <span>Session active</span>
               <SandTimer secondsLeft={sessionSecondsLeft} size={30} dark={true}/>
             </div>
           ) : (
             <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:10,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
+          )}
+          {!ownerMode && !ownerSignInOpen && (
+            <button onClick={()=>{ setOwnerSignInOpen(true); setOwnerSignInError(""); }}
+              aria-label="Owner sign in"
+              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,fontSize:9,fontWeight:700,color:P.tealL,cursor:"pointer",fontFamily:"inherit"}}>Owner sign in</button>
+          )}
+          {!ownerMode && ownerSignInOpen && (
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <input
+                type="password"
+                value={ownerSignInInput}
+                onChange={(e)=>setOwnerSignInInput(e.target.value)}
+                onKeyDown={(e)=>{ if(e.key==="Enter"){ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } } }}
+                placeholder="Owner passphrase"
+                aria-label="Owner passphrase"
+                autoFocus
+                style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${P.tealL}50`,background:P.navyM,color:P.white,fontSize:10,fontFamily:"inherit",width:150}} />
+              <button
+                onClick={()=>{ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } }}
+                style={{padding:"6px 12px",borderRadius:7,background:P.teal,color:P.white,fontSize:9,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock</button>
+              <button
+                onClick={()=>{ setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); }}
+                aria-label="Cancel owner sign in"
+                style={{padding:"6px 9px",borderRadius:7,background:"transparent",color:"#9BBCD6",fontSize:9,fontWeight:700,border:`1px solid ${P.tealL}30`,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
+              {ownerSignInError && <span style={{fontSize:9,fontWeight:700,color:"#FFD1C9"}}>{ownerSignInError}</span>}
+            </div>
           )}
         </div>
       </div></HeroBg>
@@ -1526,197 +1652,157 @@ export default function App(){
         <div style={{position:"absolute",top:8,left:0,right:0,textAlign:"center",pointerEvents:"none"}}>
           <div style={{fontSize:8,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",opacity:0.85}}>Open the box. Apps inside. More arriving as we draft them.</div>
         </div>
-        <svg width="240" height="180" viewBox="0 0 380 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Antique open treasure chest with glowing intelligence inside" style={{filter:"drop-shadow(0 12px 20px rgba(0,0,0,0.55))"}}>
+        <svg width="250" height="205" viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Antique open treasure chest with a domed lid and glowing intelligence inside" style={{filter:"drop-shadow(0 14px 22px rgba(0,0,0,0.55))"}}>
           <defs>
-            {/* Aged plank gradient */}
-            <linearGradient id="plankGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#A78256"/>
-              <stop offset="55%" stopColor="#7A5A36"/>
-              <stop offset="100%" stopColor="#4A3520"/>
+            <linearGradient id="chFront" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#A07C4E"/>
+              <stop offset="55%" stopColor="#6E4F2E"/>
+              <stop offset="100%" stopColor="#3A2614"/>
             </linearGradient>
-            {/* Inside (shadowed) gradient */}
-            <linearGradient id="insideGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#1A0F08"/>
-              <stop offset="100%" stopColor="#0A0604"/>
+            <linearGradient id="chSide" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#4A3220"/>
+              <stop offset="100%" stopColor="#281A0C"/>
             </linearGradient>
-            {/* Iron band */}
-            <linearGradient id="ironGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient id="chLidTop" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#A88054"/>
+              <stop offset="60%" stopColor="#7C5838"/>
+              <stop offset="100%" stopColor="#4A3018"/>
+            </linearGradient>
+            <linearGradient id="chLidSide" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#4A3018"/>
+              <stop offset="100%" stopColor="#281A0C"/>
+            </linearGradient>
+            <linearGradient id="chLidInner" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#2A1A0C"/>
+              <stop offset="100%" stopColor="#120A04"/>
+            </linearGradient>
+            <linearGradient id="chRim" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#5A3F26"/>
+              <stop offset="100%" stopColor="#2A1A0C"/>
+            </linearGradient>
+            <linearGradient id="chIron" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#5C5C5C"/>
               <stop offset="50%" stopColor="#2E2E2E"/>
-              <stop offset="100%" stopColor="#1A1A1A"/>
+              <stop offset="100%" stopColor="#161616"/>
             </linearGradient>
-            {/* Light beam escaping */}
-            <linearGradient id="lightBeam" x1="50%" y1="0%" x2="50%" y2="100%">
-              <stop offset="0%" stopColor={P.tealL} stopOpacity="0"/>
-              <stop offset="50%" stopColor={P.tealL} stopOpacity="0.25"/>
-              <stop offset="100%" stopColor={P.tealL} stopOpacity="0.45"/>
-            </linearGradient>
-            {/* Vibe glow */}
-            <radialGradient id="apexGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor={P.tealL} stopOpacity="0.95"/>
-              <stop offset="60%" stopColor={P.teal} stopOpacity="0.35"/>
+            <radialGradient id="chCavity" cx="50%" cy="30%" r="80%">
+              <stop offset="0%" stopColor="#1A0F08"/>
+              <stop offset="100%" stopColor="#000000"/>
+            </radialGradient>
+            <radialGradient id="chGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor={P.tealL} stopOpacity="0.85"/>
               <stop offset="100%" stopColor={P.teal} stopOpacity="0"/>
             </radialGradient>
-            <radialGradient id="argoGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#F4C77A" stopOpacity="0.95"/>
-              <stop offset="60%" stopColor="#C77A2A" stopOpacity="0.40"/>
-              <stop offset="100%" stopColor="#C77A2A" stopOpacity="0"/>
-            </radialGradient>
-            {/* Wood grain pattern */}
-            <pattern id="woodGrain" patternUnits="userSpaceOnUse" width="40" height="80">
-              <rect width="40" height="80" fill="url(#plankGrad)"/>
-              <path d="M0 20 Q 10 18, 20 22 T 40 20" stroke="#3D2810" strokeWidth="0.6" fill="none" opacity="0.55"/>
-              <path d="M0 40 Q 12 38, 22 42 T 40 40" stroke="#3D2810" strokeWidth="0.5" fill="none" opacity="0.4"/>
-              <path d="M0 62 Q 8 60, 18 64 T 40 62" stroke="#3D2810" strokeWidth="0.6" fill="none" opacity="0.5"/>
+            <linearGradient id="chBeam" x1="50%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stopColor={P.tealL} stopOpacity="0"/>
+              <stop offset="100%" stopColor={P.tealL} stopOpacity="0.38"/>
+            </linearGradient>
+            <pattern id="chGrain" patternUnits="userSpaceOnUse" width="40" height="68">
+              <rect width="40" height="68" fill="url(#chFront)"/>
+              <path d="M0 18 Q 10 16, 20 20 T 40 18" stroke="#2A1A0A" strokeWidth="0.6" fill="none" opacity="0.5"/>
+              <path d="M0 38 Q 12 36, 22 40 T 40 38" stroke="#2A1A0A" strokeWidth="0.5" fill="none" opacity="0.42"/>
+              <path d="M0 56 Q 8 54, 18 58 T 40 56" stroke="#2A1A0A" strokeWidth="0.6" fill="none" opacity="0.46"/>
             </pattern>
           </defs>
 
-          {/* Escaping light beam from chest interior */}
-          <path d="M 110 150 L 80 30 L 300 30 L 270 150 Z" fill="url(#lightBeam)" opacity="0.55"/>
+          {/* Escaping light beam from the open chest */}
+          <path d="M 118 158 L 92 60 L 282 60 L 256 158 Z" fill="url(#chBeam)" opacity="0.5"/>
 
-          {/* Particles drifting up from the chest */}
+          {/* Rising particles */}
           <g fill={P.tealL}>
-            <circle cx="140" cy="80" r="1.2" opacity="0.75">
-              <animate attributeName="cy" values="150;40" dur="4.5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.9;0" dur="4.5s" repeatCount="indefinite"/>
+            <circle cx="150" cy="100" r="1.3" opacity="0.8">
+              <animate attributeName="cy" values="158;70" dur="4.8s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.9;0" dur="4.8s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="200" cy="100" r="1.6" opacity="0.65">
-              <animate attributeName="cy" values="150;30" dur="6s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.95;0" dur="6s" repeatCount="indefinite"/>
+            <circle cx="200" cy="110" r="1.7" opacity="0.7">
+              <animate attributeName="cy" values="158;62" dur="6.2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.95;0" dur="6.2s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="240" cy="90" r="1" opacity="0.8">
-              <animate attributeName="cy" values="150;50" dur="5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.85;0" dur="5s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="170" cy="110" r="1.4" opacity="0.7">
-              <animate attributeName="cy" values="150;60" dur="5.6s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.9;0" dur="5.6s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="220" cy="120" r="1.1" opacity="0.6">
-              <animate attributeName="cy" values="150;45" dur="6.5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.8;0" dur="6.5s" repeatCount="indefinite"/>
+            <circle cx="232" cy="104" r="1.1" opacity="0.85">
+              <animate attributeName="cy" values="158;76" dur="5.3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.85;0" dur="5.3s" repeatCount="indefinite"/>
             </circle>
           </g>
 
-          {/* Open lid (hinged backward, perspective foreshortened) */}
-          <g transform="translate(0,0)">
-            {/* Lid back (visible interior side) */}
-            <path d="M 95 130 L 105 50 L 275 50 L 285 130 Z" fill="#1F1308" stroke="#3D2810" strokeWidth="1.5"/>
-            {/* Lid inner planks (3 panels) */}
-            <path d="M 120 70 L 260 70" stroke="#0A0604" strokeWidth="0.8" opacity="0.5"/>
-            <path d="M 115 90 L 265 90" stroke="#0A0604" strokeWidth="0.8" opacity="0.5"/>
-            <path d="M 110 110 L 270 110" stroke="#0A0604" strokeWidth="0.8" opacity="0.5"/>
-            {/* Lid outer arch (visible top edge) */}
-            <path d="M 95 130 Q 190 30, 285 130" stroke="#3D2810" strokeWidth="1.8" fill="none"/>
-            {/* Iron strap on lid */}
-            <path d="M 188 50 L 192 130" stroke="url(#ironGrad)" strokeWidth="6" fill="none"/>
-            <circle cx="190" cy="56" r="2.2" fill="#C8B07A" stroke="#5A4520" strokeWidth="0.6"/>
-            <circle cx="190" cy="124" r="2.2" fill="#C8B07A" stroke="#5A4520" strokeWidth="0.6"/>
-          </g>
+          {/* No lid  the chest is an open box, cover removed by design */}
 
-          {/* Chest body (front face, planks) */}
-          <g>
-            {/* Front face */}
-            <path d="M 80 150 L 80 240 L 300 240 L 300 150 Z" fill="url(#woodGrain)" stroke="#3D2810" strokeWidth="1.8"/>
-            {/* Side perspective panel (right) */}
-            <path d="M 300 150 L 315 145 L 315 235 L 300 240 Z" fill="#4A3520" stroke="#3D2810" strokeWidth="1.5"/>
-            {/* Chest interior visible at the top (dark opening) */}
-            <path d="M 80 150 L 95 130 L 285 130 L 300 150 Z" fill="url(#insideGrad)" stroke="#3D2810" strokeWidth="1.5"/>
+          {/* ════ CHEST BODY  one consistent perspective ════ */}
+          {/* Top rim plane */}
+          <path d="M 74 168 L 100 152 L 270 152 L 244 168 Z" fill="url(#chRim)" stroke="#1A0F08" strokeWidth="1.5"/>
+          {/* Interior cavity recessed below the rim */}
+          <path d="M 90 166 L 112 152 L 258 152 L 236 166 Z" fill="url(#chCavity)"/>
+          {/* Front face */}
+          <path d="M 74 168 L 74 256 L 244 256 L 244 168 Z" fill="url(#chGrain)" stroke="#1A0F08" strokeWidth="1.8"/>
+          {/* Right side panel */}
+          <path d="M 244 168 L 270 152 L 270 240 L 244 256 Z" fill="url(#chSide)" stroke="#1A0F08" strokeWidth="1.6"/>
 
-            {/* Iron horizontal bands on front face */}
-            <rect x="78" y="172" width="224" height="6" fill="url(#ironGrad)"/>
-            <rect x="78" y="210" width="224" height="6" fill="url(#ironGrad)"/>
-            {/* Iron vertical strap */}
-            <rect x="186" y="150" width="8" height="90" fill="url(#ironGrad)"/>
-            {/* Brass nails on bands */}
-            <g fill="#D9B873" stroke="#5A4520" strokeWidth="0.4">
-              <circle cx="100" cy="175" r="1.6"/>
-              <circle cx="140" cy="175" r="1.6"/>
-              <circle cx="240" cy="175" r="1.6"/>
-              <circle cx="280" cy="175" r="1.6"/>
-              <circle cx="100" cy="213" r="1.6"/>
-              <circle cx="140" cy="213" r="1.6"/>
-              <circle cx="240" cy="213" r="1.6"/>
-              <circle cx="280" cy="213" r="1.6"/>
-            </g>
-            {/* Brass lock plate */}
-            <rect x="178" y="188" width="24" height="18" fill="#C8A24C" stroke="#5A4520" strokeWidth="0.8" rx="1.5"/>
-            <rect x="186" y="195" width="8" height="6" fill="#1A1308" rx="1"/>
-            <circle cx="190" cy="198" r="1.2" fill="#D9B873"/>
-
-            {/* Wood plank grooves on front */}
-            <line x1="80" y1="195" x2="186" y2="195" stroke="#3D2810" strokeWidth="0.6" opacity="0.5"/>
-            <line x1="194" y1="195" x2="300" y2="195" stroke="#3D2810" strokeWidth="0.6" opacity="0.5"/>
-            <line x1="80" y1="225" x2="300" y2="225" stroke="#3D2810" strokeWidth="0.6" opacity="0.5"/>
-
-            {/* Aged wear (faint scuffs) */}
-            <ellipse cx="115" cy="200" rx="14" ry="2.5" fill="#2A1A0A" opacity="0.18"/>
-            <ellipse cx="265" cy="220" rx="12" ry="2" fill="#2A1A0A" opacity="0.18"/>
-          </g>
-
-          {/* ═══ NEUTRAL INTELLIGENCE VIBES INSIDE THE CHEST  no app pointers ═══ */}
-          {/* Central halo of light */}
-          <g transform="translate(190, 145)">
-            <circle cx="0" cy="0" r="42" fill="url(#apexGlow)" opacity="0.55">
-              <animate attributeName="r" values="38;46;38" dur="6s" repeatCount="indefinite"/>
+          {/* Glow inside the cavity */}
+          <g transform="translate(166, 166)">
+            <ellipse cx="0" cy="-6" rx="52" ry="11" fill="url(#chGlow)" opacity="0.55">
+              <animate attributeName="rx" values="46;56;46" dur="6s" repeatCount="indefinite"/>
               <animate attributeName="opacity" values="0.4;0.7;0.4" dur="6s" repeatCount="indefinite"/>
-            </circle>
-            {/* Drifting orbs (suggest many apps) */}
-            <g fill={P.tealL} opacity="0.9">
-              <circle cx="-22" cy="-8" r="2.2">
-                <animate attributeName="cy" values="-10;-4;-10" dur="4.5s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.6;1;0.6" dur="4.5s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="-8" cy="-14" r="1.8">
-                <animate attributeName="cy" values="-16;-10;-16" dur="5.2s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="6" cy="-10" r="2">
-                <animate attributeName="cy" values="-12;-6;-12" dur="4.8s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="20" cy="-4" r="1.6">
-                <animate attributeName="cy" values="-6;0;-6" dur="5.6s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="-14" cy="6" r="1.4" opacity="0.7">
-                <animate attributeName="cy" values="4;10;4" dur="5s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="14" cy="8" r="1.8" opacity="0.8">
-                <animate attributeName="cy" values="6;12;6" dur="5.4s" repeatCount="indefinite"/>
-              </circle>
-            </g>
-            {/* Tiny faint glyphs: gear, book, chart  hint at the variety of apps inside */}
-            <g opacity="0.45" stroke={P.tealL} strokeWidth="0.7" fill="none">
-              {/* gear */}
-              <g transform="translate(-30, 14)">
-                <circle cx="0" cy="0" r="5"/>
-                <circle cx="0" cy="0" r="2"/>
-                <line x1="0" y1="-7" x2="0" y2="-5"/>
-                <line x1="0" y1="5" x2="0" y2="7"/>
-                <line x1="-7" y1="0" x2="-5" y2="0"/>
-                <line x1="5" y1="0" x2="7" y2="0"/>
-              </g>
-              {/* book */}
-              <g transform="translate(0, 22)">
-                <path d="M -6 -3 L 0 -2 L 0 5 L -6 4 Z"/>
-                <path d="M 6 -3 L 0 -2 L 0 5 L 6 4 Z"/>
-              </g>
-              {/* chart bars */}
-              <g transform="translate(30, 14)">
-                <line x1="-5" y1="5" x2="-5" y2="0"/>
-                <line x1="-1" y1="5" x2="-1" y2="-3"/>
-                <line x1="3" y1="5" x2="3" y2="-6"/>
-              </g>
-            </g>
-            {/* Caption inside the chest */}
-            <text x="0" y="-30" fontFamily="'Fraunces',serif" fontSize="7.5" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.5" opacity="0.88">INTELLIGENCE INSIDE</text>
-            <text x="0" y="-22" fontFamily="'DM Sans',sans-serif" fontSize="5.2" fill={P.tealL} textAnchor="middle" letterSpacing="1.6" opacity="0.85">MANY APPS  ALWAYS GROWING</text>
+            </ellipse>
           </g>
 
-          {/* Tiny brass plaque on the lid arch */}
-          <rect x="160" y="38" width="60" height="12" fill="#C8A24C" stroke="#5A4520" strokeWidth="0.6" rx="1.5" opacity="0.92"/>
-          <text x="190" y="46" fontFamily="'DM Sans',sans-serif" fontSize="6" fontWeight="700" fill="#3D2810" textAnchor="middle" letterSpacing="2.5">iSTRUCTURAL</text>
+          {/* Iron horizontal bands, front + wrap onto the side */}
+          <g>
+            <rect x="72" y="190" width="174" height="6" fill="url(#chIron)"/>
+            <path d="M 246 190 L 272 174 L 272 180 L 246 196 Z" fill="#1C1108"/>
+            <rect x="72" y="228" width="174" height="6" fill="url(#chIron)"/>
+            <path d="M 246 228 L 272 212 L 272 218 L 246 234 Z" fill="#1C1108"/>
+          </g>
+          {/* Vertical strap */}
+          <rect x="155" y="168" width="8" height="88" fill="url(#chIron)"/>
 
-          {/* Ground shadow under chest */}
-          <ellipse cx="190" cy="246" rx="130" ry="6" fill="#000" opacity="0.35"/>
+          {/* Brass nails */}
+          <g fill="#D9B873" stroke="#5A4520" strokeWidth="0.4">
+            <circle cx="88" cy="193" r="1.6"/>
+            <circle cx="120" cy="193" r="1.4"/>
+            <circle cx="198" cy="193" r="1.4"/>
+            <circle cx="230" cy="193" r="1.6"/>
+            <circle cx="88" cy="231" r="1.6"/>
+            <circle cx="198" cy="231" r="1.4"/>
+            <circle cx="230" cy="231" r="1.6"/>
+          </g>
+          {/* Lock plate */}
+          <rect x="147" y="206" width="22" height="17" fill="#C8A24C" stroke="#5A4520" strokeWidth="0.8" rx="1.5"/>
+          <rect x="154" y="212" width="8" height="6" fill="#1A1308" rx="1"/>
+          <circle cx="158" cy="215" r="1.2" fill="#D9B873"/>
+
+          {/* Plank grooves */}
+          <line x1="74" y1="214" x2="155" y2="214" stroke="#1A0F08" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="163" y1="214" x2="244" y2="214" stroke="#1A0F08" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="74" y1="244" x2="244" y2="244" stroke="#1A0F08" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="246" y1="196" x2="272" y2="180" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="246" y1="234" x2="272" y2="218" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
+
+          {/* Feet */}
+          <path d="M 78 256 L 94 256 L 94 266 L 80 266 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.5"/>
+          <path d="M 224 256 L 244 256 L 246 264 L 236 266 L 226 266 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.5"/>
+          <path d="M 244 256 L 270 240 L 270 248 L 246 264 Z" fill="#1C1108" stroke="#0E0703" strokeWidth="0.5"/>
+
+          {/* ── Neutral intelligence vibes inside, no app pointers ── */}
+          <g transform="translate(166, 154)">
+            <g fill={P.tealL} opacity="0.9">
+              <circle cx="-22" cy="-2" r="1.9">
+                <animate attributeName="cy" values="-4;2;-4" dur="4.6s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.6;1;0.6" dur="4.6s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="-7" cy="-5" r="1.6">
+                <animate attributeName="cy" values="-7;-1;-7" dur="5.3s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="8" cy="-3" r="1.8">
+                <animate attributeName="cy" values="-5;1;-5" dur="4.9s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="22" cy="2" r="1.4">
+                <animate attributeName="cy" values="0;6;0" dur="5.6s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+            <text x="0" y="-14" fontFamily="'Fraunces',serif" fontSize="6.6" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.2" opacity="0.9">INTELLIGENCE INSIDE</text>
+          </g>
+
+          {/* Ground shadow */}
+          <ellipse cx="172" cy="270" rx="116" ry="6" fill="#000" opacity="0.4"/>
         </svg>
       </div>
 
@@ -1753,8 +1839,13 @@ export default function App(){
 
                   {/* Session status line on the card */}
                   {app.requiresKey && (
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"6px 8px",borderRadius:7,background:sessionStillValid ? P.greenD+"12" : P.s4+"12",border:`1px solid ${sessionStillValid ? P.greenD+"35" : P.s4+"35"}`}}>
-                      {sessionStillValid ? (
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"6px 8px",borderRadius:7,background:ownerMode ? P.s2+"12" : sessionStillValid ? P.greenD+"12" : P.s4+"12",border:`1px solid ${ownerMode ? P.s2+"40" : sessionStillValid ? P.greenD+"35" : P.s4+"35"}`}}>
+                      {ownerMode ? (
+                        <>
+                          <span style={{fontSize:8,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner mode</span>
+                          <span style={{fontSize:8.5,fontWeight:800,color:P.s2}}>Unlimited access</span>
+                        </>
+                      ) : sessionStillValid ? (
                         <>
                           <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session live</span>
                           <SandTimer secondsLeft={sessionSecondsLeft} size={26} dark={false}/>
@@ -1798,7 +1889,8 @@ export default function App(){
       <BriefingRequestForm apps={toolsApps} accepted={toolsDisclaimerAccepted} setAccepted={setToolsDisclaimerAccepted} />
 
       {/* ═══ APP DETAIL MODAL ═══ */}
-      {activeApp && <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />}
+      {activeApp && activeApp.customModal==="learn" && <LearnModal app={activeApp} modules={learnModules} onClose={()=>setActiveApp(null)} />}
+      {activeApp && !activeApp.customModal && <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />}
     </div>
   );
 
@@ -1926,6 +2018,251 @@ export default function App(){
     );
   };
 
+  // ══════════════════════ LEARN MODAL ══════════════════════
+  // Dedicated modal for the LEARN app. Two roles:
+  //  Learner  browses published modules and courses, studies, sees progress + time analytics.
+  //  Author (owner)  reaches the Course Builder behind an owner passphrase, creates modules
+  //  and courses, uploads source material, embeds design requirements, publishes.
+  // Phase 1 transition stage: progress + time stored client-side in component state.
+  const LearnModal = ({app, modules, onClose}) => {
+    const [view, setView] = useState("catalog");        // catalog | course | author
+    const [activeModule, setActiveModule] = useState(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [studyTab, setStudyTab] = useState("ask");    // ask | practice | solve
+    const [studyInput, setStudyInput] = useState("");
+    const [keyInput, setKeyInput] = useState("");
+    const [keyError, setKeyError] = useState("");
+    const [ownerPhrase, setOwnerPhrase] = useState("");
+    const [ownerUnlocked, setOwnerUnlocked] = useState(false);
+    const [ownerError, setOwnerError] = useState("");
+    const [courseStartedAt] = useState(Date.now());     // session start, drives the live time stat
+
+    const tryUnlock = () => {
+      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), 60); setKeyError(""); }
+      else { setKeyError("Access key invalid. Request a 60 minute key from info@istructgroup.com"); }
+    };
+    const tryOwner = () => {
+      if (ownerPhrase.trim().toUpperCase() === OWNER_PHRASE) { setOwnerUnlocked(true); setOwnerMode(true); setOwnerError(""); }
+      else { setOwnerError("Owner passphrase not recognized."); }
+    };
+
+    const featured = modules.filter(m=>m.group==="featured");
+    const drawer = modules.filter(m=>m.group==="drawer");
+    // Live session-time minutes for the analytics demo strip
+    const minsThisSession = Math.max(0, Math.floor((nowTick - courseStartedAt)/60000));
+
+    const moduleCard = (m) => {
+      const live = m.status==="live";
+      return (
+        <div key={m.id}
+          onClick={()=>{ if(live){ setActiveModule(m); setView("course"); } }}
+          {...(live ? kbd(()=>{ setActiveModule(m); setView("course"); }) : {})}
+          aria-label={live ? `Open module ${m.n}` : `${m.n} coming later`}
+          style={{padding:"11px 12px",borderRadius:9,background:live?P.white:P.sand,border:`1px solid ${live?P.s3+"40":P.charcoal+"18"}`,cursor:live?"pointer":"default",opacity:live?1:0.7,display:"flex",flexDirection:"column",gap:6,minHeight:74}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+            <span style={{fontSize:10,fontWeight:800,color:live?P.charcoal:P.slate,lineHeight:1.3}}>{m.n}</span>
+            {live
+              ? <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`,whiteSpace:"nowrap"}}>LIVE</span>
+              : <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s4+"20",color:P.s4,border:`1px solid ${P.s4}45`,whiteSpace:"nowrap"}}>COMING LATER</span>}
+          </div>
+          {live && <span style={{fontSize:8.5,fontWeight:700,color:P.s3}}>Open module &#x2197;</span>}
+        </div>
+      );
+    };
+
+    return (
+      <div role="dialog" aria-modal="true" aria-label="LEARN"
+           onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
+           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(11,37,69,0.78)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 12px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:920,width:"100%",margin:"0 auto 24px",background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden",flexShrink:0}}>
+
+          {/* Header */}
+          <div style={{padding:"16px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:46,height:46,borderRadius:11,background:`linear-gradient(135deg, ${P.s3} 0%, ${P.s3}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <AppIcon id="book" size={26} color={P.white} accent={P.tealL}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:18,fontWeight:800,fontFamily:"'Fraunces',serif"}}>LEARN</div>
+              <div style={{fontSize:10.5,color:P.tealL,marginTop:2}}>{app.tagline}</div>
+            </div>
+            {ownerMode
+              ? <span style={{marginRight:6,fontSize:8,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>
+              : sessionStillValid && <div style={{marginRight:6}}><SandTimer secondsLeft={sessionSecondsLeft} size={28} dark={true}/></div>}
+            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+          </div>
+
+          {/* Disclaimer chip */}
+          <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,fontSize:9.5,color:P.charcoal,lineHeight:1.55}}>
+            <strong>Study support only.</strong> LEARN is not official Professional Engineers Ontario material and does not guarantee exam success. Answers carry accuracy and confidence estimates, not guarantees. By using LEARN you accept the full terms at the top of the Tools Box page.
+          </div>
+
+          {/* View tabs */}
+          <div style={{display:"flex",gap:6,padding:"10px 22px 0",background:P.sand}}>
+            {[{k:"catalog",l:"Module Catalog"},{k:"course",l:"Course"},{k:"author",l:"Course Builder (owner)"}].map(t=>(
+              <div key={t.k} onClick={()=>setView(t.k)} {...kbd(()=>setView(t.k))} role="tab" aria-selected={view===t.k}
+                style={{padding:"7px 12px",borderRadius:"8px 8px 0 0",fontSize:9.5,fontWeight:800,cursor:"pointer",background:view===t.k?P.white:"transparent",color:view===t.k?P.s3:P.slate,border:`1px solid ${view===t.k?P.charcoal+"15":"transparent"}`,borderBottom:"none"}}>
+                {t.l}
+              </div>
+            ))}
+          </div>
+
+          <div style={{padding:"16px 22px",background:P.sand}}>
+
+            {/* ───── CATALOG VIEW ───── */}
+            {view==="catalog" && (
+              <div>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif",marginBottom:4}}>Modules</div>
+                <div style={{fontSize:9.5,color:P.slate,marginBottom:10,lineHeight:1.55}}>One catalog of modules. Professional Engineering of Ontario is live. The rest are named and arriving as iStructural authors them.</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8}}>
+                  {featured.map(moduleCard)}
+                </div>
+                <div onClick={()=>setDrawerOpen(v=>!v)} {...kbd(()=>setDrawerOpen(v=>!v))} aria-expanded={drawerOpen}
+                  style={{marginTop:12,padding:"8px 12px",borderRadius:8,background:P.charcoal+"08",border:`1px solid ${P.charcoal}15`,cursor:"pointer",fontSize:9.5,fontWeight:800,color:P.charcoal,display:"flex",justifyContent:"space-between"}}>
+                  <span>{drawerOpen ? "Hide" : "Show"} the other {drawer.length} modules  Coming later</span>
+                  <span>{drawerOpen ? "▾" : "▸"}</span>
+                </div>
+                {drawerOpen && (
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8,marginTop:8}}>
+                    {drawer.map(moduleCard)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ───── COURSE VIEW ───── */}
+            {view==="course" && (
+              <div>
+                {!activeModule && (
+                  <div style={{fontSize:10.5,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
+                    Select a live module from the Module Catalog to begin.
+                  </div>
+                )}
+                {activeModule && activeModule.status!=="live" && (
+                  <div style={{fontSize:10.5,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
+                    {activeModule.n} is coming later. No published course yet.
+                  </div>
+                )}
+                {activeModule && activeModule.status==="live" && (
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeModule.n}</div>
+                    <div style={{fontSize:9,color:P.slate,marginBottom:10}}>Module is live. Courses appear here once iStructural publishes them.</div>
+
+                    {/* Progress + time analytics strip */}
+                    <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px",marginBottom:12}}>
+                      <div style={{fontSize:11,fontWeight:800,color:P.s3,marginBottom:8}}>Your Progress</div>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <div style={{flex:1,height:12,borderRadius:6,background:P.charcoal+"10",overflow:"hidden"}}>
+                          <div style={{height:"100%",width:"0%",background:`linear-gradient(90deg, ${P.s3} 0%, ${P.tealL} 100%)`,borderRadius:6}}></div>
+                        </div>
+                        <span style={{fontSize:10,fontWeight:800,color:P.charcoal}}>0%</span>
+                      </div>
+                      <div style={{fontSize:8.5,color:P.slate,marginBottom:10}}>Progress fills as you complete lessons, examples and practice in a published course.</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))",gap:8}}>
+                        {[
+                          {l:"Time this session", v:`${minsThisSession} min`},
+                          {l:"Total time on module", v:`${minsThisSession} min`},
+                          {l:"Average per day", v:`${minsThisSession} min`},
+                          {l:"Active days", v:"1"},
+                          {l:"Current streak", v:"1 day"},
+                        ].map((s,i)=>(
+                          <div key={i} style={{padding:"8px 10px",borderRadius:8,background:P.s3+"0C",border:`1px solid ${P.s3}25`}}>
+                            <div style={{fontSize:13,fontWeight:800,color:P.s3}}>{s.v}</div>
+                            <div style={{fontSize:7.5,color:P.slate,marginTop:1}}>{s.l}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Study panel */}
+                    <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px"}}>
+                      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+                        {[{k:"ask",l:"Ask a question"},{k:"practice",l:"Draft practice questions"},{k:"solve",l:"Step by step solution"}].map(t=>(
+                          <div key={t.k} onClick={()=>setStudyTab(t.k)} {...kbd(()=>setStudyTab(t.k))} role="tab" aria-selected={studyTab===t.k}
+                            style={{padding:"6px 10px",borderRadius:7,fontSize:9,fontWeight:800,cursor:"pointer",background:studyTab===t.k?P.s3:"transparent",color:studyTab===t.k?P.white:P.slate,border:`1px solid ${studyTab===t.k?P.s3:"#ccc"}`}}>
+                            {t.l}
+                          </div>
+                        ))}
+                      </div>
+                      {!sessionStillValid ? (
+                        <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`}}>
+                          <div style={{fontSize:10,color:P.charcoal,marginBottom:8}}>Studying requires a free 60 minute session key during this transition stage.</div>
+                          <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural LEARN  60 minute key request")}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the LEARN app.\n\nFull name: \nRole: \nEmail: \n\nThank you.")}`}
+                            style={{display:"inline-block",padding:"8px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:800,textDecoration:"none",marginBottom:8}}>Request 60-min key by email</a>
+                          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                            <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key" aria-label="Access key" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
+                            <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
+                          </div>
+                          {keyError && <div style={{marginTop:6,fontSize:9,color:P.coral,fontWeight:600}}>{keyError}</div>}
+                        </div>
+                      ) : (
+                        <div>
+                          <textarea value={studyInput} onChange={(e)=>setStudyInput(e.target.value)}
+                            placeholder={studyTab==="ask" ? "Type your question. LEARN answers from this module's course material only." : studyTab==="practice" ? "Name a topic or unit. LEARN drafts practice questions from the course material." : "Paste a problem. LEARN gives a step by step solution from the course material."}
+                            aria-label="Study input"
+                            style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
+                          <button style={{marginTop:8,padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
+                            {studyTab==="ask" ? "Ask LEARN" : studyTab==="practice" ? "Draft questions" : "Solve step by step"}
+                          </button>
+                          <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:9,color:P.slate,lineHeight:1.6}}>
+                            Once a course is published in this module, every answer here will carry a source chip (from course material, from a course-provided source, or from the internet), an accuracy percentage, and a confidence percentage. If the course material cannot answer, LEARN will ask your permission before searching the internet and will cite any external source with its date.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ───── COURSE BUILDER (owner) ───── */}
+            {view==="author" && (
+              <div>
+                {!ownerUnlocked ? (
+                  <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s2}40`,padding:"14px 16px"}}>
+                    <div style={{fontSize:12,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:6}}>Course Builder  Owner Access</div>
+                    <div style={{fontSize:10,color:P.charcoal,marginBottom:8,lineHeight:1.6}}>The Course Builder is restricted to the iStructural owner. Enter the owner passphrase to author modules and courses.</div>
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                      <input type="password" value={ownerPhrase} onChange={(e)=>setOwnerPhrase(e.target.value)} placeholder="Owner passphrase" aria-label="Owner passphrase" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
+                      <button onClick={tryOwner} style={{padding:"8px 14px",borderRadius:7,background:P.s2,color:P.white,fontSize:10.5,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock Builder</button>
+                    </div>
+                    {ownerError && <div style={{marginTop:6,fontSize:9.5,color:P.coral,fontWeight:600}}>{ownerError}</div>}
+                  </div>
+                ) : (
+                  <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s3}40`,padding:"14px 16px"}}>
+                    <div style={{fontSize:12,fontWeight:800,color:P.s3,fontFamily:"'Fraunces',serif",marginBottom:8}}>Course Builder</div>
+                    <div style={{fontSize:9.5,color:P.slate,marginBottom:12,lineHeight:1.6}}>Author a course inside a module. Fill the form, attach source material, embed your design requirements and instructions, then publish. Adding a course is filling this form, no code.</div>
+                    {[
+                      {l:"Module", h:"Select an existing module (PEO) or create a new one."},
+                      {l:"Course title and summary", h:"What this course is and who it is for."},
+                      {l:"Design requirements and instructions", h:"How LEARN should behave for this course: tone, depth, exam focus, terminology rules, what it may and may not do.", big:true},
+                      {l:"Source material", h:"Upload books, notes, slides, lecture or video transcripts. Owner upload only."},
+                      {l:"Units and lessons", h:"Structure the course into units, each with lessons, examples and practice sets."},
+                      {l:"Confidence threshold", h:"Below this percentage LEARN flags caution. Default 70."},
+                      {l:"Internet permission", h:"Allowed with learner consent, or never, for this course."},
+                      {l:"Status", h:"Draft or Published. Learners see Published only."},
+                    ].map((f,i)=>(
+                      <div key={i} style={{marginBottom:8}}>
+                        <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
+                        {f.big
+                          ? <textarea placeholder={f.h} aria-label={f.l} style={{width:"100%",minHeight:70,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
+                          : <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",boxSizing:"border-box"}} />}
+                      </div>
+                    ))}
+                    <div style={{marginTop:6,padding:"9px 12px",borderRadius:8,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:9,color:P.charcoal,lineHeight:1.6}}>
+                      Phase 1 transition stage: this Course Builder is the authoring shell. Persisting authored courses and uploaded material to the per-user library, and running the Comprehension Map, are wired in the next step once you author your first PEO course.
+                    </div>
+                    <button style={{marginTop:10,padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Save course draft</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ══════════════════════ APP DETAIL MODAL ══════════════════════
   // Opens when a user clicks an app card on ToolsPage. Renders full capabilities depth,
   // intake form bound to FormSubmit (same pattern as S1Form), access-key gate, and
@@ -1966,8 +2303,8 @@ export default function App(){
     return (
       <div role="dialog" aria-modal="true" aria-label={`${app.name} detail`}
            onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
-           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(11,37,69,0.78)",backdropFilter:"blur(5px)",overflowY:"auto",padding:"24px 12px"}}>
-        <div style={{maxWidth:920,margin:"0 auto",background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
+           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(11,37,69,0.78)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 12px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:920,width:"100%",margin:"0 auto 24px",background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden",flexShrink:0}}>
           {/* Modal header */}
           <div style={{padding:"18px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800}}>
@@ -2120,7 +2457,11 @@ export default function App(){
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8,flexWrap:"wrap"}}>
                 <div style={{fontSize:12,fontWeight:800,color:P.teal,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
-                {sessionStillValid && (
+                {ownerMode ? (
+                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.s2+"15",border:`1px solid ${P.s2}40`}}>
+                    <span style={{fontSize:8,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner  Unlimited</span>
+                  </div>
+                ) : sessionStillValid && (
                   <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}35`}}>
                     <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
                     <SandTimer secondsLeft={sessionSecondsLeft} size={28} dark={false}/>

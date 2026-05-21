@@ -326,41 +326,14 @@ export default function App(){
   const [ownerSignInOpen,setOwnerSignInOpen]=useState(false); // inline owner sign-in field toggle
   const [ownerSignInInput,setOwnerSignInInput]=useState("");  // owner passphrase field value
   const [ownerSignInError,setOwnerSignInError]=useState("");  // owner sign-in error message
-  // Body scroll lock. overflow:hidden alone does NOT stop touch scroll on iOS and many
-  // mobile browsers, which is what caused the freeze. The robust fix is to pin the body
-  // with position:fixed while a modal is open, then restore the exact scroll position.
+  // Body scroll lock. Minimal and safe: only set overflow:hidden while a modal is open.
+  // No position:fixed, no scrollTo. The position:fixed approach was fighting normal page
+  // scroll and snapping the page back up, which is the bug we are removing here.
   useEffect(()=>{
     if (typeof document === "undefined") return;
     const anyOverlayOpen = !!activeApp || !!accessRequest || !!inquiryProj || mobileNavOpen;
-    const body = document.body;
-    if (anyOverlayOpen) {
-      const y = window.scrollY || window.pageYOffset || 0;
-      body.dataset.scrollLockY = String(y);
-      body.style.position = "fixed";
-      body.style.top = `-${y}px`;
-      body.style.left = "0";
-      body.style.right = "0";
-      body.style.width = "100%";
-    } else {
-      const y = parseInt(body.dataset.scrollLockY || "0", 10);
-      body.style.position = "";
-      body.style.top = "";
-      body.style.left = "";
-      body.style.right = "";
-      body.style.width = "";
-      delete body.dataset.scrollLockY;
-      if (y) window.scrollTo(0, y);
-    }
-    return ()=>{
-      const y = parseInt(body.dataset.scrollLockY || "0", 10);
-      body.style.position = "";
-      body.style.top = "";
-      body.style.left = "";
-      body.style.right = "";
-      body.style.width = "";
-      delete body.dataset.scrollLockY;
-      if (y) window.scrollTo(0, y);
-    };
+    document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
+    return ()=>{ document.body.style.overflow = ""; };
   }, [activeApp, accessRequest, inquiryProj, mobileNavOpen]);
   const [toolsSession,setToolsSession]=useState({
     userId:"default_user",                                 // dormant — single-user mode for Phase 1

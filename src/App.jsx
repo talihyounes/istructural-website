@@ -326,14 +326,41 @@ export default function App(){
   const [ownerSignInOpen,setOwnerSignInOpen]=useState(false); // inline owner sign-in field toggle
   const [ownerSignInInput,setOwnerSignInInput]=useState("");  // owner passphrase field value
   const [ownerSignInError,setOwnerSignInError]=useState("");  // owner sign-in error message
-  // Body scroll lock: while any overlay is open, freeze the page behind it so touch scroll
-  // does not chain between layers and stutter. This is the real fix for the modal scroll glitch.
+  // Body scroll lock. overflow:hidden alone does NOT stop touch scroll on iOS and many
+  // mobile browsers, which is what caused the freeze. The robust fix is to pin the body
+  // with position:fixed while a modal is open, then restore the exact scroll position.
   useEffect(()=>{
+    if (typeof document === "undefined") return;
     const anyOverlayOpen = !!activeApp || !!accessRequest || !!inquiryProj || mobileNavOpen;
-    if (typeof document !== "undefined") {
-      document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
+    const body = document.body;
+    if (anyOverlayOpen) {
+      const y = window.scrollY || window.pageYOffset || 0;
+      body.dataset.scrollLockY = String(y);
+      body.style.position = "fixed";
+      body.style.top = `-${y}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+    } else {
+      const y = parseInt(body.dataset.scrollLockY || "0", 10);
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      delete body.dataset.scrollLockY;
+      if (y) window.scrollTo(0, y);
     }
-    return ()=>{ if (typeof document !== "undefined") document.body.style.overflow = ""; };
+    return ()=>{
+      const y = parseInt(body.dataset.scrollLockY || "0", 10);
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      delete body.dataset.scrollLockY;
+      if (y) window.scrollTo(0, y);
+    };
   }, [activeApp, accessRequest, inquiryProj, mobileNavOpen]);
   const [toolsSession,setToolsSession]=useState({
     userId:"default_user",                                 // dormant — single-user mode for Phase 1
@@ -593,6 +620,34 @@ export default function App(){
           <div style={{fontSize:9,color:P.slate,marginTop:2}}>Forms, crack library, calculators, software directory, standards, management templates</div>
         </div>
         <div style={{background:P.greenD,color:P.white,padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Browse &#8594;</div>
+      </div>
+
+      {/* TOOLS BOX teaser  introduces the modular app launcher */}
+      <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Tools Box" style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          {/* Small chest motif */}
+          <svg width="46" height="40" viewBox="0 0 46 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
+            <defs>
+              <linearGradient id="htChest" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#8C6740"/>
+                <stop offset="100%" stopColor="#3A2614"/>
+              </linearGradient>
+            </defs>
+            <path d="M 7 26 L 11 17 L 35 17 L 39 26 Z" fill="#13100A"/>
+            <ellipse cx="23" cy="20" rx="11" ry="3.4" fill={P.tealL} opacity="0.5"/>
+            <rect x="7" y="22" width="32" height="14" rx="1.5" fill="url(#htChest)" stroke="#1A0F08" strokeWidth="0.8"/>
+            <path d="M 39 22 L 43 20 L 43 33 L 39 36 Z" fill="#2A1A0C" stroke="#1A0F08" strokeWidth="0.7"/>
+            <rect x="6" y="27" width="34" height="2.4" fill="#2E2E2E"/>
+            <rect x="21" y="22" width="3" height="14" fill="#2E2E2E"/>
+            <circle cx="22.5" cy="29" r="1.5" fill="#C8A24C"/>
+            <path d="M 19 14 L 23 14 M 16 16 L 30 16" stroke={P.tealL} strokeWidth="1" opacity="0.7"/>
+          </svg>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:P.tealL}}>Tools Box | A growing collection of iStructural apps</div>
+            <div style={{fontSize:9,color:"#9BBCD6",marginTop:2}}>APEX career war room, ARGO bid decisions, LEARN courses. More apps arriving as we draft them. Open the box.</div>
+          </div>
+        </div>
+        <div style={{background:P.teal,color:P.white,padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:0,background:P.navy}}>
@@ -1391,8 +1446,10 @@ export default function App(){
       ],
       intakeFields:[
         {key:"cv",label:"Your CV / Resume",type:"textarea",required:true,placeholder:"Paste the full text of your CV here. The engine needs raw signal, do not pre filter."},
-        {key:"refLetter",label:"Reference Cover Letter (optional, used for style anchors only)",type:"textarea",required:false,placeholder:"Optional. Company names will be stripped on ingest."},
+        {key:"coverLetter",label:"Your Cover Letter, if you already have one (optional)",type:"textarea",required:false,placeholder:"Optional. If provided, APEX assesses it against the JD. It is not overwritten unless you ask for a new one."},
+        {key:"refLetter",label:"Reference Cover Letter for style anchors only (optional)",type:"textarea",required:false,placeholder:"Optional. Company names will be stripped on ingest."},
         {key:"jd",label:"Target Job Description",type:"textarea",required:true,placeholder:"Paste the job description text or a URL."},
+        {key:"want",label:"What do you want from this run?",type:"textarea",required:true,placeholder:"For example: full war-room report and assessment only. Or: assessment plus a new cover letter. Or: CV optimization and interview prep. The assessment and report are always produced."},
       ],
     },
     {
@@ -1652,157 +1709,195 @@ export default function App(){
         <div style={{position:"absolute",top:8,left:0,right:0,textAlign:"center",pointerEvents:"none"}}>
           <div style={{fontSize:8,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",opacity:0.85}}>Open the box. Apps inside. More arriving as we draft them.</div>
         </div>
-        <svg width="250" height="205" viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Antique open treasure chest with a domed lid and glowing intelligence inside" style={{filter:"drop-shadow(0 14px 22px rgba(0,0,0,0.55))"}}>
+        <svg width="270" height="215" viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Aged open treasure chest with iron banding, brass hasp and glowing intelligence inside" style={{filter:"drop-shadow(0 16px 26px rgba(0,0,0,0.6))"}}>
           <defs>
             <linearGradient id="chFront" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#A07C4E"/>
-              <stop offset="55%" stopColor="#6E4F2E"/>
-              <stop offset="100%" stopColor="#3A2614"/>
+              <stop offset="0%" stopColor="#9A7448"/>
+              <stop offset="48%" stopColor="#6A4A2C"/>
+              <stop offset="100%" stopColor="#34220F"/>
             </linearGradient>
             <linearGradient id="chSide" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#4A3220"/>
-              <stop offset="100%" stopColor="#281A0C"/>
-            </linearGradient>
-            <linearGradient id="chLidTop" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#A88054"/>
-              <stop offset="60%" stopColor="#7C5838"/>
-              <stop offset="100%" stopColor="#4A3018"/>
-            </linearGradient>
-            <linearGradient id="chLidSide" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#4A3018"/>
-              <stop offset="100%" stopColor="#281A0C"/>
-            </linearGradient>
-            <linearGradient id="chLidInner" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#2A1A0C"/>
-              <stop offset="100%" stopColor="#120A04"/>
+              <stop offset="100%" stopColor="#221408"/>
             </linearGradient>
             <linearGradient id="chRim" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#5A3F26"/>
-              <stop offset="100%" stopColor="#2A1A0C"/>
+              <stop offset="100%" stopColor="#241608"/>
             </linearGradient>
             <linearGradient id="chIron" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#5C5C5C"/>
-              <stop offset="50%" stopColor="#2E2E2E"/>
-              <stop offset="100%" stopColor="#161616"/>
+              <stop offset="0%" stopColor="#6E6259"/>
+              <stop offset="45%" stopColor="#3A332C"/>
+              <stop offset="100%" stopColor="#15110D"/>
             </linearGradient>
-            <radialGradient id="chCavity" cx="50%" cy="30%" r="80%">
-              <stop offset="0%" stopColor="#1A0F08"/>
+            <linearGradient id="chBrass" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#E4C878"/>
+              <stop offset="55%" stopColor="#B8923E"/>
+              <stop offset="100%" stopColor="#6E5220"/>
+            </linearGradient>
+            <radialGradient id="chCavity" cx="50%" cy="28%" r="82%">
+              <stop offset="0%" stopColor="#1C1109"/>
               <stop offset="100%" stopColor="#000000"/>
             </radialGradient>
             <radialGradient id="chGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor={P.tealL} stopOpacity="0.85"/>
+              <stop offset="0%" stopColor={P.tealL} stopOpacity="0.95"/>
+              <stop offset="55%" stopColor={P.teal} stopOpacity="0.3"/>
               <stop offset="100%" stopColor={P.teal} stopOpacity="0"/>
             </radialGradient>
             <linearGradient id="chBeam" x1="50%" y1="0%" x2="50%" y2="100%">
               <stop offset="0%" stopColor={P.tealL} stopOpacity="0"/>
-              <stop offset="100%" stopColor={P.tealL} stopOpacity="0.38"/>
+              <stop offset="55%" stopColor={P.tealL} stopOpacity="0.32"/>
+              <stop offset="100%" stopColor={P.tealL} stopOpacity="0.5"/>
             </linearGradient>
-            <pattern id="chGrain" patternUnits="userSpaceOnUse" width="40" height="68">
-              <rect width="40" height="68" fill="url(#chFront)"/>
-              <path d="M0 18 Q 10 16, 20 20 T 40 18" stroke="#2A1A0A" strokeWidth="0.6" fill="none" opacity="0.5"/>
-              <path d="M0 38 Q 12 36, 22 40 T 40 38" stroke="#2A1A0A" strokeWidth="0.5" fill="none" opacity="0.42"/>
-              <path d="M0 56 Q 8 54, 18 58 T 40 56" stroke="#2A1A0A" strokeWidth="0.6" fill="none" opacity="0.46"/>
+            <pattern id="chGrain" patternUnits="userSpaceOnUse" width="46" height="64">
+              <rect width="46" height="64" fill="url(#chFront)"/>
+              <path d="M0 14 Q 12 11, 24 16 T 46 13" stroke="#22150A" strokeWidth="0.7" fill="none" opacity="0.6"/>
+              <path d="M0 30 Q 14 27, 26 32 T 46 29" stroke="#22150A" strokeWidth="0.6" fill="none" opacity="0.5"/>
+              <path d="M0 47 Q 10 44, 22 49 T 46 46" stroke="#22150A" strokeWidth="0.7" fill="none" opacity="0.55"/>
+              <circle cx="12" cy="22" r="0.9" fill="#22150A" opacity="0.6"/>
+              <circle cx="34" cy="40" r="0.7" fill="#22150A" opacity="0.5"/>
             </pattern>
           </defs>
 
-          {/* Escaping light beam from the open chest */}
-          <path d="M 118 158 L 92 60 L 282 60 L 256 158 Z" fill="url(#chBeam)" opacity="0.5"/>
+          {/* Strong light beam escaping the open chest */}
+          <path d="M 120 150 L 96 30 L 300 30 L 276 150 Z" fill="url(#chBeam)" opacity="0.6"/>
 
           {/* Rising particles */}
           <g fill={P.tealL}>
-            <circle cx="150" cy="100" r="1.3" opacity="0.8">
-              <animate attributeName="cy" values="158;70" dur="4.8s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.9;0" dur="4.8s" repeatCount="indefinite"/>
+            <circle cx="150" cy="90" r="1.4" opacity="0.85">
+              <animate attributeName="cy" values="150;46" dur="4.8s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.95;0" dur="4.8s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="200" cy="110" r="1.7" opacity="0.7">
-              <animate attributeName="cy" values="158;62" dur="6.2s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.95;0" dur="6.2s" repeatCount="indefinite"/>
+            <circle cx="210" cy="100" r="1.8" opacity="0.75">
+              <animate attributeName="cy" values="150;38" dur="6.3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;1;0" dur="6.3s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="232" cy="104" r="1.1" opacity="0.85">
-              <animate attributeName="cy" values="158;76" dur="5.3s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.85;0" dur="5.3s" repeatCount="indefinite"/>
+            <circle cx="244" cy="92" r="1.2" opacity="0.9">
+              <animate attributeName="cy" values="150;54" dur="5.4s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.9;0" dur="5.4s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="182" cy="110" r="1.5" opacity="0.8">
+              <animate attributeName="cy" values="150;60" dur="5.8s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;0.92;0" dur="5.8s" repeatCount="indefinite"/>
             </circle>
           </g>
 
-          {/* No lid  the chest is an open box, cover removed by design */}
+          {/* No lid  open box, cover removed by design */}
 
-          {/* ════ CHEST BODY  one consistent perspective ════ */}
           {/* Top rim plane */}
-          <path d="M 74 168 L 100 152 L 270 152 L 244 168 Z" fill="url(#chRim)" stroke="#1A0F08" strokeWidth="1.5"/>
-          {/* Interior cavity recessed below the rim */}
-          <path d="M 90 166 L 112 152 L 258 152 L 236 166 Z" fill="url(#chCavity)"/>
+          <path d="M 72 168 L 100 150 L 286 150 L 258 168 Z" fill="url(#chRim)" stroke="#160C05" strokeWidth="1.6"/>
+          {/* Interior cavity */}
+          <path d="M 88 166 L 112 150 L 274 150 L 250 166 Z" fill="url(#chCavity)"/>
           {/* Front face */}
-          <path d="M 74 168 L 74 256 L 244 256 L 244 168 Z" fill="url(#chGrain)" stroke="#1A0F08" strokeWidth="1.8"/>
+          <path d="M 72 168 L 72 262 L 258 262 L 258 168 Z" fill="url(#chGrain)" stroke="#160C05" strokeWidth="2"/>
           {/* Right side panel */}
-          <path d="M 244 168 L 270 152 L 270 240 L 244 256 Z" fill="url(#chSide)" stroke="#1A0F08" strokeWidth="1.6"/>
+          <path d="M 258 168 L 286 150 L 286 244 L 258 262 Z" fill="url(#chSide)" stroke="#160C05" strokeWidth="1.7"/>
 
           {/* Glow inside the cavity */}
-          <g transform="translate(166, 166)">
-            <ellipse cx="0" cy="-6" rx="52" ry="11" fill="url(#chGlow)" opacity="0.55">
-              <animate attributeName="rx" values="46;56;46" dur="6s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0.4;0.7;0.4" dur="6s" repeatCount="indefinite"/>
+          <g transform="translate(165, 162)">
+            <ellipse cx="0" cy="-4" rx="60" ry="13" fill="url(#chGlow)" opacity="0.6">
+              <animate attributeName="rx" values="52;64;52" dur="6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.42;0.72;0.42" dur="6s" repeatCount="indefinite"/>
             </ellipse>
           </g>
 
-          {/* Iron horizontal bands, front + wrap onto the side */}
-          <g>
-            <rect x="72" y="190" width="174" height="6" fill="url(#chIron)"/>
-            <path d="M 246 190 L 272 174 L 272 180 L 246 196 Z" fill="#1C1108"/>
-            <rect x="72" y="228" width="174" height="6" fill="url(#chIron)"/>
-            <path d="M 246 228 L 272 212 L 272 218 L 246 234 Z" fill="#1C1108"/>
+          {/* Carved marks on the front planks */}
+          <g stroke="#1C1109" strokeWidth="1" opacity="0.4" fill="none">
+            <path d="M 88 182 L 94 188 M 94 182 L 88 188"/>
+            <path d="M 104 184 L 110 184 M 107 181 L 107 187"/>
+            <path d="M 224 184 L 230 178 M 224 178 L 230 184"/>
+            <path d="M 240 248 L 246 248 M 243 245 L 243 251"/>
           </g>
-          {/* Vertical strap */}
-          <rect x="155" y="168" width="8" height="88" fill="url(#chIron)"/>
 
-          {/* Brass nails */}
-          <g fill="#D9B873" stroke="#5A4520" strokeWidth="0.4">
-            <circle cx="88" cy="193" r="1.6"/>
-            <circle cx="120" cy="193" r="1.4"/>
-            <circle cx="198" cy="193" r="1.4"/>
-            <circle cx="230" cy="193" r="1.6"/>
-            <circle cx="88" cy="231" r="1.6"/>
-            <circle cx="198" cy="231" r="1.4"/>
-            <circle cx="230" cy="231" r="1.6"/>
+          {/* Heavy iron horizontal bands, front + wrap onto side */}
+          <g>
+            <rect x="70" y="190" width="190" height="8" fill="url(#chIron)"/>
+            <path d="M 260 190 L 288 172 L 288 180 L 260 198 Z" fill="#1C1611"/>
+            <rect x="70" y="234" width="190" height="8" fill="url(#chIron)"/>
+            <path d="M 260 234 L 288 216 L 288 224 L 260 242 Z" fill="#1C1611"/>
           </g>
-          {/* Lock plate */}
-          <rect x="147" y="206" width="22" height="17" fill="#C8A24C" stroke="#5A4520" strokeWidth="0.8" rx="1.5"/>
-          <rect x="154" y="212" width="8" height="6" fill="#1A1308" rx="1"/>
-          <circle cx="158" cy="215" r="1.2" fill="#D9B873"/>
+          {/* Iron corner braces: front-left, front-right, mid */}
+          <g fill="url(#chIron)" stroke="#160C05" strokeWidth="0.6">
+            <path d="M 70 168 L 88 168 L 88 262 L 70 262 Z"/>
+            <path d="M 240 168 L 258 168 L 258 262 L 240 262 Z"/>
+          </g>
+          {/* Side panel corner brace */}
+          <path d="M 258 168 L 286 150 L 286 168 L 258 184 Z" fill="url(#chIron)" stroke="#160C05" strokeWidth="0.6" opacity="0.92"/>
+          {/* Iron vertical strap centre */}
+          <rect x="153" y="168" width="10" height="94" fill="url(#chIron)"/>
+
+          {/* Rivets along the bands and braces */}
+          <g fill="#8A7B5A" stroke="#3A301E" strokeWidth="0.4">
+            <circle cx="79" cy="194" r="1.7"/>
+            <circle cx="120" cy="194" r="1.6"/>
+            <circle cx="200" cy="194" r="1.6"/>
+            <circle cx="249" cy="194" r="1.7"/>
+            <circle cx="79" cy="238" r="1.7"/>
+            <circle cx="120" cy="238" r="1.6"/>
+            <circle cx="200" cy="238" r="1.6"/>
+            <circle cx="249" cy="238" r="1.7"/>
+            <circle cx="79" cy="175" r="1.5"/>
+            <circle cx="79" cy="255" r="1.5"/>
+            <circle cx="249" cy="175" r="1.5"/>
+            <circle cx="249" cy="255" r="1.5"/>
+          </g>
+
+          {/* Hanging chain on the right */}
+          <g stroke="#2E2A24" strokeWidth="2.2" fill="none" opacity="0.95">
+            <ellipse cx="270" cy="206" rx="3" ry="4.4"/>
+            <ellipse cx="273" cy="214" rx="3" ry="4.4"/>
+            <ellipse cx="270" cy="222" rx="3" ry="4.4"/>
+            <ellipse cx="273" cy="230" rx="3" ry="4.4"/>
+          </g>
+
+          {/* Ornate brass hasp lock */}
+          <g>
+            <rect x="142" y="206" width="36" height="30" rx="3" fill="url(#chBrass)" stroke="#5A4520" strokeWidth="1"/>
+            <path d="M 150 206 L 150 200 Q 150 192, 160 192 Q 170 192, 170 200 L 170 206" fill="none" stroke="url(#chBrass)" strokeWidth="3.4"/>
+            <rect x="153" y="216" width="14" height="12" rx="1.6" fill="#1A1208" stroke="#5A4520" strokeWidth="0.7"/>
+            <circle cx="160" cy="222" r="2.2" fill="#3A2E14"/>
+            <circle cx="160" cy="222" r="0.9" fill="#E4C878"/>
+            <path d="M 142 230 L 178 230" stroke="#6E5220" strokeWidth="0.7" opacity="0.7"/>
+          </g>
+
+          {/* Side ring handle */}
+          <g stroke="#2E2A24" strokeWidth="2" fill="none">
+            <circle cx="92" cy="216" r="6"/>
+          </g>
 
           {/* Plank grooves */}
-          <line x1="74" y1="214" x2="155" y2="214" stroke="#1A0F08" strokeWidth="0.6" opacity="0.5"/>
-          <line x1="163" y1="214" x2="244" y2="214" stroke="#1A0F08" strokeWidth="0.6" opacity="0.5"/>
-          <line x1="74" y1="244" x2="244" y2="244" stroke="#1A0F08" strokeWidth="0.6" opacity="0.5"/>
-          <line x1="246" y1="196" x2="272" y2="180" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
-          <line x1="246" y1="234" x2="272" y2="218" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="88" y1="216" x2="153" y2="216" stroke="#160C05" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="163" y1="216" x2="240" y2="216" stroke="#160C05" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="88" y1="250" x2="240" y2="250" stroke="#160C05" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="260" y1="198" x2="288" y2="180" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="260" y1="242" x2="288" y2="224" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
 
           {/* Feet */}
-          <path d="M 78 256 L 94 256 L 94 266 L 80 266 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.5"/>
-          <path d="M 224 256 L 244 256 L 246 264 L 236 266 L 226 266 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.5"/>
-          <path d="M 244 256 L 270 240 L 270 248 L 246 264 Z" fill="#1C1108" stroke="#0E0703" strokeWidth="0.5"/>
+          <path d="M 76 262 L 96 262 L 96 274 L 78 274 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.6"/>
+          <path d="M 234 262 L 258 262 L 260 272 L 250 274 L 236 274 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.6"/>
+          <path d="M 258 262 L 286 244 L 286 254 L 260 272 Z" fill="#1C1611" stroke="#0E0703" strokeWidth="0.6"/>
 
-          {/* ── Neutral intelligence vibes inside, no app pointers ── */}
-          <g transform="translate(166, 154)">
+          {/* Neutral intelligence vibes inside, no app pointers */}
+          <g transform="translate(165, 152)">
             <g fill={P.tealL} opacity="0.9">
-              <circle cx="-22" cy="-2" r="1.9">
+              <circle cx="-24" cy="-2" r="2">
                 <animate attributeName="cy" values="-4;2;-4" dur="4.6s" repeatCount="indefinite"/>
                 <animate attributeName="opacity" values="0.6;1;0.6" dur="4.6s" repeatCount="indefinite"/>
               </circle>
-              <circle cx="-7" cy="-5" r="1.6">
+              <circle cx="-8" cy="-5" r="1.7">
                 <animate attributeName="cy" values="-7;-1;-7" dur="5.3s" repeatCount="indefinite"/>
               </circle>
-              <circle cx="8" cy="-3" r="1.8">
+              <circle cx="9" cy="-3" r="1.9">
                 <animate attributeName="cy" values="-5;1;-5" dur="4.9s" repeatCount="indefinite"/>
               </circle>
-              <circle cx="22" cy="2" r="1.4">
+              <circle cx="24" cy="2" r="1.5">
                 <animate attributeName="cy" values="0;6;0" dur="5.6s" repeatCount="indefinite"/>
               </circle>
             </g>
-            <text x="0" y="-14" fontFamily="'Fraunces',serif" fontSize="6.6" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.2" opacity="0.9">INTELLIGENCE INSIDE</text>
+            <text x="0" y="-14" fontFamily="'Fraunces',serif" fontSize="7" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.4" opacity="0.92">INTELLIGENCE INSIDE</text>
           </g>
 
           {/* Ground shadow */}
-          <ellipse cx="172" cy="270" rx="116" ry="6" fill="#000" opacity="0.4"/>
+          <ellipse cx="178" cy="278" rx="128" ry="7" fill="#000" opacity="0.45"/>
         </svg>
       </div>
 
@@ -2200,11 +2295,17 @@ export default function App(){
                             placeholder={studyTab==="ask" ? "Type your question. LEARN answers from this module's course material only." : studyTab==="practice" ? "Name a topic or unit. LEARN drafts practice questions from the course material." : "Paste a problem. LEARN gives a step by step solution from the course material."}
                             aria-label="Study input"
                             style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
-                          <button style={{marginTop:8,padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
-                            {studyTab==="ask" ? "Ask LEARN" : studyTab==="practice" ? "Draft questions" : "Solve step by step"}
-                          </button>
+                          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:8}}>
+                            <button style={{padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
+                              {studyTab==="ask" ? "Ask LEARN" : studyTab==="practice" ? "Draft questions" : "Solve step by step"}
+                            </button>
+                            <label style={{fontSize:9,fontWeight:700,color:P.s3,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                              <span style={{fontSize:13}}>+</span> Attach an image or document
+                              <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Attach image or document to your study request" style={{display:"none"}} />
+                            </label>
+                          </div>
                           <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:9,color:P.slate,lineHeight:1.6}}>
-                            Once a course is published in this module, every answer here will carry a source chip (from course material, from a course-provided source, or from the internet), an accuracy percentage, and a confidence percentage. If the course material cannot answer, LEARN will ask your permission before searching the internet and will cite any external source with its date.
+                            You can attach an image or a document to your question, for example a photo of a problem or a page of notes. LEARN reads it alongside the course material. Every answer carries a source chip (from course material, from a course-provided source, from your attachment, or from the internet), an accuracy percentage, and a confidence percentage. If the material cannot answer, LEARN asks your permission before searching the internet and cites any external source with its date.
                           </div>
                         </div>
                       )}
@@ -2235,17 +2336,41 @@ export default function App(){
                       {l:"Module", h:"Select an existing module (PEO) or create a new one."},
                       {l:"Course title and summary", h:"What this course is and who it is for."},
                       {l:"Design requirements and instructions", h:"How LEARN should behave for this course: tone, depth, exam focus, terminology rules, what it may and may not do.", big:true},
-                      {l:"Source material", h:"Upload books, notes, slides, lecture or video transcripts. Owner upload only."},
-                      {l:"Units and lessons", h:"Structure the course into units, each with lessons, examples and practice sets."},
-                      {l:"Confidence threshold", h:"Below this percentage LEARN flags caution. Default 70."},
-                      {l:"Internet permission", h:"Allowed with learner consent, or never, for this course."},
-                      {l:"Status", h:"Draft or Published. Learners see Published only."},
                     ].map((f,i)=>(
                       <div key={i} style={{marginBottom:8}}>
                         <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
                         {f.big
                           ? <textarea placeholder={f.h} aria-label={f.l} style={{width:"100%",minHeight:70,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
                           : <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",boxSizing:"border-box"}} />}
+                      </div>
+                    ))}
+
+                    {/* Source material upload: images and documents, with a purpose selector */}
+                    <div style={{marginBottom:8,padding:"10px 12px",borderRadius:8,background:P.s3+"0A",border:`1px solid ${P.s3}30`}}>
+                      <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>Source material  images and documents</label>
+                      <div style={{fontSize:9,color:P.slate,marginBottom:6,lineHeight:1.55}}>Upload books, notes, slides, lecture or video transcripts, and images. LEARN learns from every item. Tell LEARN what each upload is so it knows how to use it.</div>
+                      <label style={{display:"block",fontSize:8.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>What is this upload?</label>
+                      <select aria-label="Upload purpose" style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit",boxSizing:"border-box",marginBottom:6}}>
+                        <option>Study material  index and learn from it</option>
+                        <option>Questions only  save as practice or exam material</option>
+                        <option>Answers only  save as reference to check learner answers</option>
+                        <option>Questions with answers  LEARN checks and verifies them</option>
+                      </select>
+                      <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload images or documents"
+                        style={{width:"100%",fontSize:9.5,fontFamily:"inherit",color:P.charcoal}} />
+                      <div style={{fontSize:8,color:P.slate,marginTop:5,fontStyle:"italic"}}>Accepted: images (JPG, PNG), PDF, Word, PowerPoint, text. Owner uploads always. Learner upload is allowed only where the course is configured to permit it.</div>
+                    </div>
+
+                    {[
+                      {l:"Units and lessons", h:"Structure the course into units, each with lessons, examples and practice sets."},
+                      {l:"Allow learner uploads", h:"If on, learners may also upload images and documents into this course. Default off."},
+                      {l:"Confidence threshold", h:"Below this percentage LEARN flags caution. Default 70."},
+                      {l:"Internet permission", h:"Allowed with learner consent, or never, for this course."},
+                      {l:"Status", h:"Draft or Published. Learners see Published only."},
+                    ].map((f,i)=>(
+                      <div key={"b"+i} style={{marginBottom:8}}>
+                        <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
+                        <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",boxSizing:"border-box"}} />
                       </div>
                     ))}
                     <div style={{marginTop:6,padding:"9px 12px",borderRadius:8,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:9,color:P.charcoal,lineHeight:1.6}}>
@@ -2335,7 +2460,7 @@ export default function App(){
             {/* A. 8 Phase capability map */}
             {app.phases && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>A. {app.id==="ecios" ? "8 Phase Capability Map (APEX)" : "8 Phase Decision Pipeline (ARGO)"}</div>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>A. {app.id==="ecios" ? `${app.phases.length} Phase War-Room Pipeline (APEX)` : "8 Phase Decision Pipeline (ARGO)"}</div>
                 <div style={{display:"grid",gridTemplateColumns:"40px 1fr 2fr 60px",gap:6,fontSize:10}}>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>#</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Phase</div>
@@ -2355,6 +2480,32 @@ export default function App(){
               </div>
             )}
 
+            {/* A2. War-room environments (APEX) */}
+            {app.environments && (
+              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:4,fontFamily:"'Fraunces',serif"}}>A2. War-Room Environments</div>
+                <div style={{fontSize:9.5,color:P.slate,marginBottom:8,lineHeight:1.55}}>APEX reads your resume and the job description, then activates the environments the role calls for. Bidding, engineering, architecture and business depth are all built inside APEX. Nothing is offloaded.</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.3fr 1.1fr 2fr",gap:5,fontSize:9.5}}>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Environment</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Activates</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What It Builds</div>
+                  {app.environments.map((e,i)=>{
+                    const always = e.trigger==="Always on";
+                    return (
+                      <Fragment key={e.id}>
+                        <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{e.name}</div>
+                        <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white}}>
+                          <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:always?P.greenD+"20":P.s4+"20",color:always?P.greenD:P.s4,border:`1px solid ${always?P.greenD:P.s4}45`}}>{always?"ALWAYS ON":"JD-DRIVEN"}</span>
+                          {!always && <div style={{fontSize:7.5,color:P.slate,marginTop:2}}>{e.trigger}</div>}
+                        </div>
+                        <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{e.what}</div>
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* B. Capabilities bullets (always shown) */}
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
               <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>B. Core Capabilities</div>
@@ -2362,6 +2513,29 @@ export default function App(){
                 {app.capabilities.map((c,i)=>(<li key={i} style={{marginBottom:3}}>{c}</li>))}
               </ul>
             </div>
+
+            {/* B2. Run modes (APEX): assessment-only cases */}
+            {app.id==="ecios" && (
+              <div style={{background:P.s3+"0C",borderRadius:10,border:`1px solid ${P.s3}35`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontSize:12,fontWeight:800,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>B2. Run Modes  the Report Is Always the Goal</div>
+                <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.6,marginBottom:8}}>APEX adapts to what you already have. You do not need to want a cover letter. The assessment and the unified war-room report are the ultimate deliverable in every mode.</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 2fr",gap:5,fontSize:9.5}}>
+                  <div style={{fontWeight:800,color:P.white,background:P.s3,padding:"5px 7px",borderRadius:4}}>You provide</div>
+                  <div style={{fontWeight:800,color:P.white,background:P.s3,padding:"5px 7px",borderRadius:4}}>APEX delivers</div>
+                  {[
+                    {h:"Resume + JD", d:"Full assessment and war-room report. Cover letter optional, generated only if you ask"},
+                    {h:"Resume + cover letter + JD", d:"Assessment of all three against the JD, plus the full report. No new cover letter unless requested"},
+                    {h:"Resume + JD, cover letter not wanted", d:"Assessment and analysis report only. APEX skips cover letter generation"},
+                    {h:"Cover letter + JD", d:"Cover letter and JD assessment, gap analysis, full report"},
+                  ].map((r,i)=>(
+                    <Fragment key={i}>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s3+"10":P.white,fontWeight:700,color:P.charcoal}}>{r.h}</div>
+                      <div style={{padding:"5px 7px",background:i%2===0?P.s3+"10":P.white,color:P.charcoal}}>{r.d}</div>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* C. Shortcuts */}
             {app.shortcuts && (

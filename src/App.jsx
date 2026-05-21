@@ -2168,8 +2168,8 @@ export default function App(){
     return (
       <div role="dialog" aria-modal="true" aria-label="LEARN"
            onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
-           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(11,37,69,0.78)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 12px",boxSizing:"border-box"}}>
-        <div style={{maxWidth:920,width:"100%",margin:"0 auto 24px",background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden",flexShrink:0}}>
+           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"24px 12px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:920,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
 
           {/* Header */}
           <div style={{padding:"16px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
@@ -2428,8 +2428,8 @@ export default function App(){
     return (
       <div role="dialog" aria-modal="true" aria-label={`${app.name} detail`}
            onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
-           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(11,37,69,0.78)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 12px",boxSizing:"border-box"}}>
-        <div style={{maxWidth:920,width:"100%",margin:"0 auto 24px",background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden",flexShrink:0}}>
+           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"24px 12px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:920,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
           {/* Modal header */}
           <div style={{padding:"18px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800}}>

@@ -1835,6 +1835,66 @@ export default function App(){
     {id:"m32", n:"Operations Strategy", status:"soon", group:"drawer"},
   ];
 
+  // ── LEARN  published courses, keyed to a module ──────────────────────────
+  // The PEO module carries a Structural Engineering track with three live
+  // courses built around the Canadian design standards. Each course is where
+  // the user uploads the equivalent study material, then runs it: ask
+  // questions of the material, upload answers and find the matching questions,
+  // or ask LEARN to generate worked example questions and answers and explain
+  // concepts. Material is user-supplied and runs under the user's own IP
+  // responsibility (see the upload-agreement gate in the study panel).
+  const learnCourses = [
+    {
+      id:"c-a233", module:"peo", track:"Structural Engineering",
+      code:"CSA A23.3", title:"Elementary Structural Design  CSA A23.3 Concrete Design",
+      status:"live",
+      summary:"Reinforced concrete design to CSA A23.3. Flexure, shear, columns, development, serviceability. Upload your course material and study it with LEARN.",
+      concepts:["Limit states and load factors","Flexural design of beams and slabs","Shear and torsion","Columns and slenderness","Development length and detailing","Deflection and crack control"],
+      uploadHint:"Upload your A23.3 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
+    },
+    {
+      id:"c-s16", module:"peo", track:"Structural Engineering",
+      code:"CSA S16", title:"Elementary Structural Design  CSA S16 Steel Design",
+      status:"live",
+      summary:"Structural steel design to CSA S16. Tension, compression, flexure, connections, stability. Upload your course material and study it with LEARN.",
+      concepts:["Tension members and block shear","Compression members and buckling","Beam design and lateral torsional buckling","Beam-columns and combined actions","Bolted and welded connections","Stability and effective length"],
+      uploadHint:"Upload your S16 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
+    },
+    {
+      id:"c-o86", module:"peo", track:"Structural Engineering",
+      code:"CSA O86", title:"Elementary Structural Design  CSA O86 Wood Design",
+      status:"live",
+      summary:"Timber and engineered wood design to CSA O86. Bending, shear, compression, connections, modification factors. Upload your course material and study it with LEARN.",
+      concepts:["Specified strengths and modification factors","Bending members and lateral stability","Shear and bearing","Compression and combined loading","Connections: nails, bolts, timber rivets","Engineered wood products"],
+      uploadHint:"Upload your O86 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
+    },
+  ];
+
+  // ── COMMERCIAL TIER MODEL (dormant) ──────────────────────────────────────
+  // Visible but inactive. Phase 1 shows this so the commercial structure is
+  // ready; Phase 2 connects the backend, meters credits, and activates billing.
+  // Model: hybrid credits. A subscription includes a monthly credit allowance;
+  // heavy use buys overage credits so a run is never sold below its token cost.
+  // The platform pays the AI cost on the entry tiers; the BYOK add-on lets a
+  // power user connect their own AI key and removes the platform's cost risk.
+  const commercialTiers = [
+    {id:"free", name:"Free preview", price:"0", cadence:"", tag:"Current stage",
+     blurb:"Try the apps with a small run allowance. No card.",
+     points:["A few small runs per month","LEARN questions, limited","60 minute access keys by request"]},
+    {id:"starter", name:"Starter", price:"TBD", cadence:"per month",
+     blurb:"For students and light, single-app use.",
+     points:["Monthly credit allowance for light use","LEARN courses and study workspace","Email support"]},
+    {id:"pro", name:"Pro", price:"TBD", cadence:"per month", featured:true,
+     blurb:"For job seekers, consultants and regular users.",
+     points:["Larger monthly credit allowance","All apps: APEX, ARGO, MEET, LEARN","Counterparty profiling included","Overage credits available"]},
+    {id:"firm", name:"Firm", price:"TBD", cadence:"per month",
+     blurb:"For engineering firms running bids and hiring.",
+     points:["Team seats and shared allowance","Priority run queue","Large credit pool, volume pricing"]},
+    {id:"byok", name:"BYOK add-on", price:"TBD", cadence:"flat fee",
+     blurb:"Connect your own AI account. You pay the model, we charge only the app layer.",
+     points:["Use your own AI key","No platform run limits","Predictable, you control the model cost"]},
+  ];
+
   // Owner passphrase. When entered, ownerMode unlocks unlimited access on every app, no 60 min cap.
   const OWNER_PHRASE = "ISG-OWNER";
   // Session validity. SCROLL-FIX: computed WITHOUT a per-second tick. It is
@@ -2294,11 +2354,43 @@ export default function App(){
         ))}
       </div>
 
+      {/* ═══ PLANS  dormant commercial tier model, shown faded ═══ */}
+      <div style={{padding:"30px 24px",background:P.navy}}>
+        <div style={{maxWidth:1080,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <span style={{fontSize:8,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.s4,color:P.navy,letterSpacing:1,textTransform:"uppercase"}}>Coming later</span>
+            <h3 style={{fontFamily:"'Fraunces',serif",fontSize:20,fontWeight:800,color:P.white,margin:0}}>Plans and Pricing</h3>
+          </div>
+          <p style={{fontSize:10.5,color:"#9BBCD6",lineHeight:1.6,margin:"4px 0 16px",maxWidth:680}}>A preview of how the Tools Box will be offered. During this transition stage every app is free with a 60 minute access key. Pricing is not yet active. Subscriptions include a monthly credit allowance; heavier use adds overage credits. A bring-your-own-key option lets you connect your own AI account.</p>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:10,opacity:0.92}}>
+            {commercialTiers.map(t=>(
+              <div key={t.id} style={{background:t.featured?P.white:P.navyM,borderRadius:11,border:`1px solid ${t.featured?P.tealL:"#2E4763"}`,padding:"14px 14px",position:"relative"}}>
+                {t.featured && <span style={{position:"absolute",top:-9,left:14,fontSize:7.5,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.teal,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Most popular</span>}
+                {t.tag && <span style={{position:"absolute",top:-9,left:14,fontSize:7.5,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.greenD,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>{t.tag}</span>}
+                <div style={{fontSize:12,fontWeight:800,color:t.featured?P.navy:P.white,fontFamily:"'Fraunces',serif",marginBottom:2}}>{t.name}</div>
+                <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:6}}>
+                  <span style={{fontSize:18,fontWeight:800,color:t.featured?P.teal:P.tealL}}>{t.price==="0"?"Free":t.price}</span>
+                  {t.cadence && <span style={{fontSize:8,color:t.featured?P.slate:"#9BBCD6"}}>{t.cadence}</span>}
+                </div>
+                <div style={{fontSize:8.5,color:t.featured?P.slate:"#9BBCD6",lineHeight:1.5,marginBottom:8,minHeight:34}}>{t.blurb}</div>
+                {t.points.map((p,i)=>(
+                  <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:8.5,color:t.featured?P.charcoal:"#C3D4E5",lineHeight:1.45}}>
+                    <span style={{color:t.featured?P.teal:P.tealL,fontWeight:800,flexShrink:0}}>✓</span><span>{p}</span>
+                  </div>
+                ))}
+                <div style={{marginTop:9,padding:"6px 9px",borderRadius:6,background:t.featured?P.charcoal+"0A":"#0E2236",border:`1px dashed ${t.featured?P.charcoal+"25":"#2E4763"}`,fontSize:7.5,fontWeight:700,color:t.featured?P.slate:"#7E97AE",textAlign:"center",letterSpacing:0.5,textTransform:"uppercase"}}>Not yet active</div>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:12,fontSize:8.5,color:"#7E97AE",lineHeight:1.6}}>Pricing, credit sizing and billing are finalized in the next stage. Nothing here charges you today.</div>
+        </div>
+      </div>
+
       {/* ═══ BRIEFING REQUEST FORM (bottom of Tools Box page) ═══ */}
       <BriefingRequestForm apps={toolsApps} accepted={toolsDisclaimerAccepted} setAccepted={setToolsDisclaimerAccepted} />
 
       {/* ═══ APP DETAIL MODAL ═══ */}
-      {activeApp && activeApp.customModal==="learn" && <LearnModal app={activeApp} modules={learnModules} onClose={()=>setActiveApp(null)} />}
+      {activeApp && activeApp.customModal==="learn" && <LearnModal app={activeApp} modules={learnModules} courses={learnCourses} onClose={()=>setActiveApp(null)} />}
       {activeApp && !activeApp.customModal && <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />}
     </div>
   );
@@ -2433,11 +2525,12 @@ export default function App(){
   //  Author (owner)  reaches the Course Builder behind an owner passphrase, creates modules
   //  and courses, uploads source material, embeds design requirements, publishes.
   // Phase 1 transition stage: progress + time stored client-side in component state.
-  const LearnModal = ({app, modules, onClose}) => {
+  const LearnModal = ({app, modules, courses, onClose}) => {
     const [view, setView] = useState("catalog");        // catalog | course | author
     const [activeModule, setActiveModule] = useState(null);
+    const [activeCourse, setActiveCourse] = useState(null); // selected course within a module
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [studyTab, setStudyTab] = useState("ask");    // ask | practice | solve
+    const [studyTab, setStudyTab] = useState("ask");    // ask | findq | examples | concepts
     const [studyInput, setStudyInput] = useState("");
     const [keyInput, setKeyInput] = useState("");
     const [keyError, setKeyError] = useState("");
@@ -2445,6 +2538,7 @@ export default function App(){
     const [ownerUnlocked, setOwnerUnlocked] = useState(false);
     const [ownerError, setOwnerError] = useState("");
     const [courseStartedAt] = useState(Date.now());     // session start, drives the live time stat
+    const [ipAgreed, setIpAgreed] = useState(false);    // LIABILITY GATE: user accepts IP responsibility before any upload
 
     const tryUnlock = () => {
       if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), 60); setKeyError(""); }
@@ -2554,10 +2648,58 @@ export default function App(){
                     {activeModule.n} is coming later. No published course yet.
                   </div>
                 )}
-                {activeModule && activeModule.status==="live" && (
+                {activeModule && activeModule.status==="live" && (() => {
+                  const moduleCourses = (courses||[]).filter(c=>c.module===activeModule.id);
+                  const tracks = [...new Set(moduleCourses.map(c=>c.track))];
+                  // ── COURSE PICKER: track then the three CSA courses ──
+                  if (!activeCourse) {
+                    return (
+                      <div>
+                        <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeModule.n}</div>
+                        <div style={{fontSize:9,color:P.slate,marginBottom:12}}>Choose a course to begin. Each course is a workspace: upload your study material, then ask questions, find questions for answers, request worked examples, or learn the concepts.</div>
+                        {tracks.map(track=>(
+                          <div key={track} style={{marginBottom:14}}>
+                            <div style={{fontSize:9,fontWeight:800,color:P.s3,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>{track}</div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(230px, 1fr))",gap:8}}>
+                              {moduleCourses.filter(c=>c.track===track).map(c=>(
+                                <div key={c.id} onClick={()=>{ setActiveCourse(c); setIpAgreed(false); }} {...kbd(()=>{ setActiveCourse(c); setIpAgreed(false); })}
+                                  aria-label={`Open course ${c.title}`}
+                                  style={{padding:"12px 13px",borderRadius:9,background:P.white,border:`1px solid ${P.s3}40`,cursor:"pointer",display:"flex",flexDirection:"column",gap:5}}>
+                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+                                    <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{c.code}</span>
+                                    <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`}}>LIVE</span>
+                                  </div>
+                                  <div style={{fontSize:10.5,fontWeight:800,color:P.charcoal,lineHeight:1.35}}>{c.title}</div>
+                                  <div style={{fontSize:8.5,color:P.slate,lineHeight:1.5}}>{c.summary}</div>
+                                  <span style={{fontSize:8.5,fontWeight:800,color:P.s3,marginTop:2}}>Open course &#x2197;</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  // ── COURSE WORKSPACE: one CSA course open ──
+                  return (
                   <div>
-                    <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeModule.n}</div>
-                    <div style={{fontSize:9,color:P.slate,marginBottom:10}}>Module is live. Courses appear here once iStructural publishes them.</div>
+                    <div onClick={()=>setActiveCourse(null)} {...kbd(()=>setActiveCourse(null))} aria-label="Back to courses"
+                      style={{fontSize:8.5,fontWeight:800,color:P.s3,cursor:"pointer",marginBottom:6}}>&#8592; All {activeModule.n} courses</div>
+                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
+                      <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{activeCourse.code}</span>
+                      <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeCourse.title}</div>
+                    </div>
+                    <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>{activeCourse.summary}</div>
+
+                    {/* Concepts covered */}
+                    <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"11px 13px",marginBottom:12}}>
+                      <div style={{fontSize:10,fontWeight:800,color:P.s3,marginBottom:6}}>Concepts in this course</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {activeCourse.concepts.map((cc,i)=>(
+                          <span key={i} style={{fontSize:8.5,fontWeight:700,color:P.charcoal,padding:"3px 8px",borderRadius:5,background:P.s3+"10",border:`1px solid ${P.s3}30`}}>{cc}</span>
+                        ))}
+                      </div>
+                    </div>
 
                     {/* Progress + time analytics strip */}
                     <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px",marginBottom:12}}>
@@ -2585,10 +2727,17 @@ export default function App(){
                       </div>
                     </div>
 
-                    {/* Study panel */}
+                    {/* Study panel  the run-on-materials workspace */}
                     <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px"}}>
+                      <div style={{fontSize:11,fontWeight:800,color:P.s3,marginBottom:3}}>Study Workspace</div>
+                      <div style={{fontSize:8.5,color:P.slate,marginBottom:9,lineHeight:1.5}}>This is where you run on your material. Upload your {activeCourse.code} study material, then pick how you want to work with it.</div>
                       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-                        {[{k:"ask",l:"Ask a question"},{k:"practice",l:"Draft practice questions"},{k:"solve",l:"Step by step solution"}].map(t=>(
+                        {[
+                          {k:"ask",l:"Ask the material"},
+                          {k:"findq",l:"Answers, find the questions"},
+                          {k:"examples",l:"Example Q + A to learn from"},
+                          {k:"concepts",l:"Learn the concepts"},
+                        ].map(t=>(
                           <div key={t.k} onClick={()=>setStudyTab(t.k)} {...kbd(()=>setStudyTab(t.k))} role="tab" aria-selected={studyTab===t.k}
                             style={{padding:"6px 10px",borderRadius:7,fontSize:9,fontWeight:800,cursor:"pointer",background:studyTab===t.k?P.s3:"transparent",color:studyTab===t.k?P.white:P.slate,border:`1px solid ${studyTab===t.k?P.s3:"#ccc"}`}}>
                             {t.l}
@@ -2608,27 +2757,49 @@ export default function App(){
                         </div>
                       ) : (
                         <div>
+                          {/* ── LIABILITY GATE: required before any material upload ── */}
+                          <div style={{padding:"10px 12px",borderRadius:8,background:P.coral+"0E",border:`1px solid ${P.coral}45`,marginBottom:10}}>
+                            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                              <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1,textTransform:"uppercase"}}>Before you upload</span>
+                            </div>
+                            <div style={{fontSize:8.5,color:P.charcoal,lineHeight:1.6,marginBottom:7}}>
+                              Material you upload is supplied by you, not by iStructural. iStructural does not own, license, verify or endorse it. CSA standards (A23.3, S16, O86) are themselves copyrighted by CSA Group. You confirm you own or are properly licensed to use everything you upload, you hold all intellectual property and copyright responsibility, and you release and indemnify iStructural Group Inc. against any claim arising from your uploaded material. LEARN answers in original wording for your personal study and does not redistribute copyrighted standards.
+                            </div>
+                            <label style={{display:"flex",alignItems:"flex-start",gap:7,cursor:"pointer"}}>
+                              <input type="checkbox" checked={ipAgreed} onChange={(e)=>setIpAgreed(e.target.checked)} aria-label="I accept the upload and intellectual property terms" style={{marginTop:1,width:14,height:14,flexShrink:0,accentColor:P.coral}} />
+                              <span style={{fontSize:8.5,fontWeight:700,color:P.charcoal,lineHeight:1.5}}>I own or am licensed to use the material I upload, I accept full intellectual property responsibility, and I indemnify iStructural Group Inc.</span>
+                            </label>
+                          </div>
+
                           <textarea value={studyInput} onChange={(e)=>setStudyInput(e.target.value)}
-                            placeholder={studyTab==="ask" ? "Type your question. LEARN answers from this module's course material only." : studyTab==="practice" ? "Name a topic or unit. LEARN drafts practice questions from the course material." : "Paste a problem. LEARN gives a step by step solution from the course material."}
+                            placeholder={
+                              studyTab==="ask" ? "Type your question. LEARN answers from the material you upload for this course." :
+                              studyTab==="findq" ? "Paste an answer or a worked solution. LEARN finds and frames the questions it answers, from your material." :
+                              studyTab==="examples" ? "Name a topic or clause, for example flexural design or block shear. LEARN drafts example questions with full answers to learn from." :
+                              "Name a concept, for example lateral torsional buckling or development length. LEARN explains it from the course material, step by step."}
                             aria-label="Study input"
                             style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
                           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:8}}>
-                            <button style={{padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>
-                              {studyTab==="ask" ? "Ask LEARN" : studyTab==="practice" ? "Draft questions" : "Solve step by step"}
+                            <button disabled={!ipAgreed}
+                              style={{padding:"9px 16px",borderRadius:8,background:ipAgreed?P.s3:"#bbb",color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:ipAgreed?"pointer":"not-allowed",fontFamily:"inherit"}}>
+                              {studyTab==="ask" ? "Ask the material" : studyTab==="findq" ? "Find the questions" : studyTab==="examples" ? "Generate example Q + A" : "Explain the concept"}
                             </button>
-                            <label style={{fontSize:9,fontWeight:700,color:P.s3,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-                              <span style={{fontSize:13}}>+</span> Attach an image or document
-                              <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Attach image or document to your study request" style={{display:"none"}} />
+                            <label style={{fontSize:9,fontWeight:700,color:ipAgreed?P.s3:"#999",cursor:ipAgreed?"pointer":"not-allowed",display:"flex",alignItems:"center",gap:4}}>
+                              <span style={{fontSize:13}}>+</span> Upload {activeCourse.code} material
+                              <input type="file" multiple disabled={!ipAgreed} accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload course study material" style={{display:"none"}} />
                             </label>
                           </div>
-                          <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:9,color:P.slate,lineHeight:1.6}}>
-                            You can attach an image or a document to your question, for example a photo of a problem or a page of notes. LEARN reads it alongside the course material. Every answer carries a source chip (from course material, from a course-provided source, from your attachment, or from the internet), an accuracy percentage, and a confidence percentage. If the material cannot answer, LEARN asks your permission before searching the internet and cites any external source with its date.
+                          {!ipAgreed && <div style={{marginTop:6,fontSize:8.5,color:P.coral,fontWeight:700}}>Tick the box above to enable upload and run.</div>}
+                          <div style={{marginTop:9,fontSize:8,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>{activeCourse.uploadHint}</div>
+                          <div style={{marginTop:9,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:9,color:P.slate,lineHeight:1.6}}>
+                            LEARN works from the material you upload for this course. Every answer carries a source chip (from your uploaded material, from a course-provided source, or from the internet), an accuracy percentage, and a confidence percentage. If your material cannot answer, LEARN asks your permission before searching the internet and cites any external source with its date. No em dashes. Three iterations stated.
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 

@@ -202,12 +202,12 @@ const aiDeepInspection = {
 // ── SHARED STYLES ──
 const inputStyle = {
   width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid #d0d8e0",
-  fontSize:10,color:P.charcoal,background:"#fafbfc",
+  fontSize:T.body,color:P.charcoal,background:"#fafbfc",
   fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box",
   outline:"none",marginBottom:6,display:"block",
 };
 const textareaStyle = {...inputStyle,resize:"vertical",minHeight:72};
-const labelStyle = {fontSize:9,fontWeight:600,color:P.slate,marginBottom:2,display:"block",letterSpacing:0.3};
+const labelStyle = {fontSize:T.small,fontWeight:600,color:P.slate,marginBottom:2,display:"block",letterSpacing:0.3};
 
 // ── A11Y HELPER: add keyboard activation (Enter/Space) to non-button clickables ──
 const kbd = (handler) => ({
@@ -217,7 +217,7 @@ const kbd = (handler) => ({
 });
 const submitStyle = (color) => ({
   marginTop:12,background:color,color:P.white,padding:"10px 20px",
-  borderRadius:8,fontSize:11,fontWeight:700,textAlign:"center",
+  borderRadius:8,fontSize:T.body,fontWeight:700,textAlign:"center",
   cursor:"pointer",border:"none",width:"100%",fontFamily:"'DM Sans',sans-serif",
   letterSpacing:0.3,
 });
@@ -278,7 +278,7 @@ const CaptchaBlock = ({captcha, status}) => {
 
   return (
     <div style={{marginTop:8,padding:"12px 14px",borderRadius:7,background:"#F0F8F6",border:`1px solid ${P.teal}40`}}>
-      <div style={{fontSize:8,fontWeight:700,color:P.teal,letterSpacing:1.2,textTransform:"uppercase",marginBottom:8}}>Security Check &middot; Drag to Fit Puzzle Piece</div>
+      <div style={{fontSize:T.micro,fontWeight:700,color:P.teal,letterSpacing:1.2,textTransform:"uppercase",marginBottom:8}}>Security Check &middot; Drag to Fit Puzzle Piece</div>
 
       {/* Puzzle visual: track + target slot + draggable piece */}
       <div style={{position:"relative",height:36,background:P.white,borderRadius:6,border:"1px solid #d0d8e0",overflow:"hidden",marginBottom:8}}>
@@ -297,10 +297,10 @@ const CaptchaBlock = ({captcha, status}) => {
         style={{width:"100%",accentColor:P.teal,cursor:"grab"}} />
 
       {/* Status / accuracy display */}
-      <div style={{fontSize:8.5,color:statusColor,marginTop:6,fontWeight:600,fontFamily:"'DM Sans',monospace"}}>{statusText}</div>
+      <div style={{fontSize:T.small,color:statusColor,marginTop:6,fontWeight:600,fontFamily:"'DM Sans',monospace"}}>{statusText}</div>
 
       {status === "captcha" && !captcha.ok && (
-        <div style={{fontSize:8,color:P.coral,marginTop:4,fontStyle:"italic"}}>Verification incomplete. Drag the green piece to align with the dashed slot, then release.</div>
+        <div style={{fontSize:T.micro,color:P.coral,marginTop:4,fontStyle:"italic"}}>Verification incomplete. Drag the green piece to align with the dashed slot, then release.</div>
       )}
     </div>
   );
@@ -308,11 +308,68 @@ const CaptchaBlock = ({captcha, status}) => {
 
 // ── FORM STATUS MESSAGES ──
 const FormStatus = ({status, color}) => {
-  if (status === "sending") return <div style={{marginTop:10,padding:"8px 12px",borderRadius:7,background:"#f0f4f8",fontSize:10,color:P.slate,textAlign:"center"}}>Sending...</div>;
-  if (status === "success") return <div style={{marginTop:10,padding:"10px 14px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}25`,fontSize:10,color:P.greenD,fontWeight:600,textAlign:"center"}}>Received. We will be in touch within 24 hours.</div>;
-  if (status === "error") return <div style={{marginTop:10,padding:"10px 14px",borderRadius:7,background:P.coral+"12",border:`1px solid ${P.coral}25`,fontSize:10,color:P.coral,fontWeight:600,textAlign:"center"}}>Something went wrong. Please email info@istructgroup.com directly.</div>;
+  if (status === "sending") return <div style={{marginTop:10,padding:"8px 12px",borderRadius:7,background:"#f0f4f8",fontSize:T.body,color:P.slate,textAlign:"center"}}>Sending...</div>;
+  if (status === "success") return <div style={{marginTop:10,padding:"10px 14px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}25`,fontSize:T.body,color:P.greenD,fontWeight:600,textAlign:"center"}}>Received. We will be in touch within 24 hours.</div>;
+  if (status === "error") return <div style={{marginTop:10,padding:"10px 14px",borderRadius:7,background:P.coral+"12",border:`1px solid ${P.coral}25`,fontSize:T.body,color:P.coral,fontWeight:600,textAlign:"center"}}>Something went wrong. Please email info@istructgroup.com directly.</div>;
   return null;
 };
+
+// ── LEARN LOCAL LIBRARY (browser storage, IndexedDB) ─────────────────────
+// Free, no account, no backend. Author-testing stage. Uploaded course
+// material is saved inside this browser and persists across refreshes and
+// sessions. It is private to this browser and device. When the cloud bucket
+// is connected later, only these four functions get re-pointed; the LEARN UI
+// does not change. Each saved item records: course id, source-folder label,
+// file name, type, size, the file blob, and a timestamp.
+const ISG_DB = "isg_learn_library";
+const ISG_STORE = "materials";
+function isgOpenDB(){
+  return new Promise((resolve, reject)=>{
+    if (typeof indexedDB === "undefined") { reject(new Error("Browser storage is not available.")); return; }
+    const req = indexedDB.open(ISG_DB, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if (!db.objectStoreNames.contains(ISG_STORE)) {
+        const store = db.createObjectStore(ISG_STORE, { keyPath:"id" });
+        store.createIndex("byCourse", "courseId", { unique:false });
+      }
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error || new Error("Could not open browser storage."));
+  });
+}
+async function isgSaveMaterial(rec){
+  const db = await isgOpenDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(ISG_STORE, "readwrite");
+    tx.objectStore(ISG_STORE).put(rec);
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error || new Error("Could not save to browser storage."));
+  });
+}
+async function isgListMaterials(courseId){
+  const db = await isgOpenDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(ISG_STORE, "readonly");
+    const idx = tx.objectStore(ISG_STORE).index("byCourse");
+    const out = [];
+    idx.openCursor(IDBKeyRange.only(courseId)).onsuccess = (e)=>{
+      const cur = e.target.result;
+      if (cur) { out.push(cur.value); cur.continue(); }
+      else resolve(out.sort((a,b)=> (b.savedAt||0)-(a.savedAt||0)));
+    };
+    tx.onerror = ()=>reject(tx.error || new Error("Could not read browser storage."));
+  });
+}
+async function isgDeleteMaterial(id){
+  const db = await isgOpenDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(ISG_STORE, "readwrite");
+    tx.objectStore(ISG_STORE).delete(id);
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error || new Error("Could not remove the item."));
+  });
+}
 
 export default function App(){
   const [page,setPage]=useState("home");
@@ -325,6 +382,7 @@ export default function App(){
   const [showAll,setShowAll]=useState(false);
   const [sapOpen,setSapOpen]=useState(false);
   const [mobileNavOpen,setMobileNavOpen]=useState(false);
+  const [servicesOpen,setServicesOpen]=useState(false); // desktop nav Services dropdown
   const [showSearch,setShowSearch]=useState(false);
   const [searchQ,setSearchQ]=useState("");
   const [selectedProj,setSelectedProj]=useState(null);
@@ -554,20 +612,39 @@ export default function App(){
           <circle cx="43" cy="2" r="1.3" fill="none" stroke="#0EBEA8" strokeWidth="0.2" opacity="0.55"/>
         </svg>
         <div>
-          <div style={{fontSize:12.5,fontWeight:700,color:P.white,lineHeight:1.1}}>iStructural Group Inc.</div>
-          <div style={{fontSize:7,color:"#6A8CA8",letterSpacing:1.5,textTransform:"uppercase"}}>Structural Solutions | Management | AI</div>
+          <div style={{fontSize:T.lead,fontWeight:700,color:P.white,lineHeight:1.1}}>iStructural Group Inc.</div>
+          <div style={{fontSize:T.micro,color:"#6A8CA8",letterSpacing:1.5,textTransform:"uppercase"}}>Structural Solutions · Management · AI</div>
         </div>
       </div>
       {/* Desktop nav tabs (≥720px) */}
       <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:2}}>
-        {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>
-          <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
+        {/* Home */}
+        <div onClick={()=>setPage("home")} {...kbd(()=>setPage("home"))} aria-label="Go to Home" aria-current={page==="home"?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",color:page==="home"?P.tealL:"#8BA0B5",background:page==="home"?P.teal+"20":"transparent"}}>Home</div>
+        {/* Services dropdown  groups the three service pages */}
+        <div style={{position:"relative"}}
+          onMouseEnter={()=>setServicesOpen(true)} onMouseLeave={()=>setServicesOpen(false)}>
+          <div onClick={()=>setServicesOpen(o=>!o)} {...kbd(()=>setServicesOpen(o=>!o))} aria-haspopup="true" aria-expanded={servicesOpen} aria-label="Services menu"
+            style={{padding:"4px 8px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4,color:["s1","s2","s3"].includes(page)?P.tealL:"#8BA0B5",background:["s1","s2","s3"].includes(page)?P.teal+"20":"transparent"}}>
+            Services <span style={{fontSize:8}}>{servicesOpen?"▲":"▼"}</span>
+          </div>
+          {servicesOpen && (
+            <div role="menu" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:P.navyM,borderRadius:8,border:`1px solid ${P.tealL}30`,boxShadow:"0 10px 30px rgba(0,0,0,0.5)",padding:5,minWidth:170,zIndex:20}}>
+              {[{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"}].map(n=>(
+                <div key={n.id} role="menuitem" onClick={()=>{setPage(n.id);setServicesOpen(false);}} {...kbd(()=>{setPage(n.id);setServicesOpen(false);})} aria-current={page===n.id?"page":undefined}
+                  style={{padding:"7px 10px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Remaining flat items */}
+        {[{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>
+          <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
         )}
         {/* Search icon */}
         <div onClick={()=>setShowSearch(true)} {...kbd(()=>setShowSearch(true))} aria-label="Search the site" title="Search resources and projects" style={{marginLeft:6,width:28,height:28,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.tealL} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         </div>
-        <div onClick={()=>setPage("start")} {...kbd(()=>setPage("start"))} aria-label="Start a Project" style={{marginLeft:4,background:P.teal,color:P.white,padding:"5px 11px",borderRadius:7,fontSize:9.5,fontWeight:700,cursor:"pointer"}}>Start a Project</div>
+        <div onClick={()=>setPage("start")} {...kbd(()=>setPage("start"))} aria-label="Start a Project" style={{marginLeft:4,background:P.teal,color:P.white,padding:"5px 11px",borderRadius:7,fontSize:T.small,fontWeight:700,cursor:"pointer"}}>Start a Project</div>
       </div>
 
       {/* Mobile nav controls (<720px) */}
@@ -586,17 +663,17 @@ export default function App(){
     <div style={{background:P.navy,padding:"18px 22px 12px",marginTop:24}}>
       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr 0.8fr",gap:16,marginBottom:12}}>
         <div>
-          <div style={{fontSize:10,fontWeight:700,color:P.white,marginBottom:4}}>iStructural Group Inc.</div>
-          <div style={{fontSize:8,color:"#6A8CA8",lineHeight:1.6}}>Since 2010. Advanced structural engineering, business strategy, and AI-powered assessment. Canada.</div>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.white,marginBottom:4}}>iStructural Group Inc.</div>
+          <div style={{fontSize:T.micro,color:"#6A8CA8",lineHeight:1.6}}>Since 2010. Advanced structural engineering, business strategy, and AI-powered assessment. Canada.</div>
         </div>
         {[{t:"Management",i:["Project Management","Business Strategy","Risk & Financial","Value Engineering"]},
           {t:"Design",i:["Structural Design","PT Concrete","Seismic & Wind","Third-Party Review","Training"]},
           {t:"AI & Technology",i:["AI Literacy & Readiness","Implementation Support","Start a Project"]},
           {t:"Resources",i:["Knowledge Hub","Projects","Gallery","Contact"]},
-        ].map(c=><div key={c.t}><div style={{fontSize:9,fontWeight:700,color:P.tealL,marginBottom:5}}>{c.t}</div>{c.i.map(x=><div key={x} style={{fontSize:8,color:"#7A96AE",padding:"1px 0",cursor:"pointer"}}>{x}</div>)}</div>)}
+        ].map(c=><div key={c.t}><div style={{fontSize:T.small,fontWeight:700,color:P.tealL,marginBottom:5}}>{c.t}</div>{c.i.map(x=><div key={x} style={{fontSize:T.micro,color:"#7A96AE",padding:"1px 0",cursor:"pointer"}}>{x}</div>)}</div>)}
       </div>
-      <div style={{borderTop:"1px solid #1E3A55",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:7.5,color:"#5A7A95"}}>
-        <span>iStructural Group Inc. | istructgroup.com | Canada | info@istructgroup.com</span>
+      <div style={{borderTop:"1px solid #1E3A55",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:T.micro,color:"#5A7A95"}}>
+        <span>iStructural Group Inc. · istructgroup.com · Canada · info@istructgroup.com</span>
         <span>Copyright 2026 iStructural Group Inc. All rights reserved.</span>
       </div>
     </div>
@@ -673,22 +750,17 @@ export default function App(){
       {/* TOOLS BOX teaser  introduces the modular app launcher */}
       <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Tools Box" style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
-          {/* Small chest motif */}
-          <svg width="46" height="40" viewBox="0 0 46 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
-            <defs>
-              <linearGradient id="htChest" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#8C6740"/>
-                <stop offset="100%" stopColor="#3A2614"/>
-              </linearGradient>
-            </defs>
-            <path d="M 7 26 L 11 17 L 35 17 L 39 26 Z" fill="#13100A"/>
-            <ellipse cx="23" cy="20" rx="11" ry="3.4" fill={P.tealL} opacity="0.5"/>
-            <rect x="7" y="22" width="32" height="14" rx="1.5" fill="url(#htChest)" stroke="#1A0F08" strokeWidth="0.8"/>
-            <path d="M 39 22 L 43 20 L 43 33 L 39 36 Z" fill="#2A1A0C" stroke="#1A0F08" strokeWidth="0.7"/>
-            <rect x="6" y="27" width="34" height="2.4" fill="#2E2E2E"/>
-            <rect x="21" y="22" width="3" height="14" fill="#2E2E2E"/>
-            <circle cx="22.5" cy="29" r="1.5" fill="#C8A24C"/>
-            <path d="M 19 14 L 23 14 M 16 16 L 30 16" stroke={P.tealL} strokeWidth="1" opacity="0.7"/>
+          {/* Apps-grid motif, matches the Tools Box page */}
+          <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
+            <line x1="22" y1="22" x2="11" y2="11" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+            <line x1="22" y1="22" x2="33" y2="11" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+            <line x1="22" y1="22" x2="11" y2="33" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+            <line x1="22" y1="22" x2="33" y2="33" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+            <rect x="5" y="5" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+            <rect x="27" y="5" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+            <rect x="5" y="27" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+            <rect x="27" y="27" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+            <circle cx="22" cy="22" r="6.5" fill={P.tealL}/>
           </svg>
           <div>
             <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
@@ -713,9 +785,9 @@ export default function App(){
   const S1Page=()=>(
     <div>
       <HeroBg color1={P.s1}><div style={{padding:"32px 28px 28px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 01</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Management & Business Support</h2>
-        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:460,lineHeight:1.6}}>Strategic project management, business growth advisory, financial risk strategies, and value engineering. Aligning with new standards and surpassing client expectations.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 01</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Management & Business Support</h2>
+        <p style={{fontSize:T.body,color:P.white+"BB",marginTop:6,maxWidth:460,lineHeight:1.6}}>Strategic project management, business growth advisory, financial risk strategies, and value engineering. Aligning with new standards and surpassing client expectations.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
         {[{n:"Project & Construction Management",d:"Full lifecycle oversight. Budget control, schedule optimization, multi-stakeholder coordination across government, healthcare, education, industrial, hospitality."},
@@ -724,8 +796,8 @@ export default function App(){
           {n:"Value Engineering (V.E.)",d:"Systematic function analysis. Creative V.E. solutions with remarkable ROI. Applied to high-rise, bridges, irregular structures."},
           {n:"ROI & Investment Analysis",d:"Lifecycle cost analysis, capital allocation. LEED certification pathway support."}
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s1L:"transparent",border:`1px solid ${P.s1}10`,marginBottom:5}}>
-          <div style={{fontSize:11,fontWeight:700,color:P.s1}}>{o.n}</div><div style={{fontSize:10,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
-        <div onClick={()=>{setPage("start");setSTab("s1");}} {...kbd(()=>{setPage("start");setSTab("s1");})} aria-label="Start a Management Inquiry" style={{marginTop:14,background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Management Inquiry &#8594;</div>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.s1}}>{o.n}</div><div style={{fontSize:T.body,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
+        <div onClick={()=>{setPage("start");setSTab("s1");}} {...kbd(()=>{setPage("start");setSTab("s1");})} aria-label="Start a Management Inquiry" style={{marginTop:14,background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Management Inquiry &#8594;</div>
       </div>
     </div>
   );
@@ -734,23 +806,23 @@ export default function App(){
   const S2Page=()=>(
     <div>
       <HeroBg color1={P.s2}><div style={{padding:"32px 28px 28px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 02</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Design Services & Consultancy</h2>
-        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:480,lineHeight:1.6}}>Performance-based seismic design for super-tall structures exceeding 200m. Advanced nonlinear applications. CSi certified training programs.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 02</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Design Services & Consultancy</h2>
+        <p style={{fontSize:T.body,color:P.white+"BB",marginTop:6,maxWidth:480,lineHeight:1.6}}>Performance-based seismic design for super-tall structures exceeding 200m. Advanced nonlinear applications. CSi certified training programs.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
         {[{n:"Seismic and Wind Engineering",d:"ASCE 41, NBC, Eurocode 8. Dynamic response, base isolation, damper design. Wind tunnel correlation. Tall and supertall structures."},
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s2L:"transparent",border:`1px solid ${P.s2}10`,marginBottom:5}}>
-          <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{o.n}</div><div style={{fontSize:10,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
-        <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginTop:16,marginBottom:8}}>Third-Party Consultancy</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.s2}}>{o.n}</div><div style={{fontSize:T.body,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
+        <div style={{fontSize:T.body,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginTop:16,marginBottom:8}}>Third-Party Consultancy</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:6}}>
           {[{t:"High-Rise",i:["Lateral stability","Shortening vertical elements","Human response"]},
             {t:"Bridges",i:["Alternative concepts (V.E.)","Design details + verification","Stage modelling"]},
             {t:"Irregular",i:["Rotated/twisted buildings","Vibration analysis","Thermal design","Long spans","Transfer structures"]},
           ].map((c,i)=>(
             <div key={i} style={{padding:"10px 12px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`}}>
-              <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:4}}>{c.t}</div>
-              {c.i.map((x,j)=><div key={j} style={{fontSize:9,color:P.slate,padding:"1px 0"}}>+ {x}</div>)}
+              <div style={{fontSize:T.body,fontWeight:700,color:P.s2,marginBottom:4}}>{c.t}</div>
+              {c.i.map((x,j)=><div key={j} style={{fontSize:T.small,color:P.slate,padding:"1px 0"}}>+ {x}</div>)}
             </div>
           ))}
 
@@ -759,17 +831,17 @@ export default function App(){
                style={{padding:"10px 12px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}>
 
             {/* Title - same size/weight as other 3 cards */}
-            <div style={{fontSize:10,fontWeight:700,color:P.s2,marginBottom:6}}>Structural Assessment Platform</div>
+            <div style={{fontSize:T.body,fontWeight:700,color:P.s2,marginBottom:6}}>Structural Assessment Platform</div>
 
             {/* 3 softened pastel chips inside (internal distinction without alarming colors) */}
             <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
-              <span style={{fontSize:7.5,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s3+"20",color:P.s3,letterSpacing:0.2,border:`1px solid ${P.s3}40`}}>Phase 1</span>
-              <span style={{fontSize:7.5,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s2+"20",color:P.s2,letterSpacing:0.2,border:`1px solid ${P.s2}40`}}>Phase 2</span>
-              <span style={{fontSize:7.5,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s3+"10",color:P.s3,border:`1px dashed ${P.s3}60`,letterSpacing:0.2}}>Conditional Escalation</span>
+              <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s3+"20",color:P.s3,letterSpacing:0.2,border:`1px solid ${P.s3}40`}}>Phase 1</span>
+              <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s2+"20",color:P.s2,letterSpacing:0.2,border:`1px solid ${P.s2}40`}}>Phase 2</span>
+              <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 6px",borderRadius:4,background:P.s3+"10",color:P.s3,border:`1px dashed ${P.s3}60`,letterSpacing:0.2}}>Conditional Escalation</span>
             </div>
 
             {/* Compact button at bottom */}
-            <div style={{marginTop:4,padding:"5px 10px",background:P.s2,color:P.white,borderRadius:5,fontSize:8.5,fontWeight:700,textAlign:"center",letterSpacing:0.3}}>
+            <div style={{marginTop:4,padding:"5px 10px",background:P.s2,color:P.white,borderRadius:5,fontSize:T.small,fontWeight:700,textAlign:"center",letterSpacing:0.3}}>
               {sapOpen ? "▾ Hide Full Phases and Escalation" : "▸ View Full Phases and Escalation"}
             </div>
           </div>
@@ -778,21 +850,21 @@ export default function App(){
         {/* ═══ STRUCTURAL ASSESSMENT PLATFORM EXPANDED PANEL (toggled by 4th card) ═══ */}
         {sapOpen && (
           <div style={{marginTop:14,padding:"18px 20px",borderRadius:12,background:P.s2L,border:`1px solid ${P.s2}25`}}>
-            <div style={{fontSize:10,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Structural Assessment Platform</div>
-            <div style={{fontSize:11,color:P.slate,fontStyle:"italic",fontFamily:"'Fraunces',serif",marginBottom:10}}>AI-Augmented when needed</div>
-            <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from preliminary advisory through full stamped engineering with finite element modeling, repair drawings, and authority submission. AI Deep Inspection available as a conditional escalation on engineer's decision.</div>
+            <div style={{fontSize:T.body,fontWeight:700,color:P.s2,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Structural Assessment Platform</div>
+            <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",fontFamily:"'Fraunces',serif",marginBottom:10}}>AI-Augmented when needed</div>
+            <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:12}}>Two-phase structural assessment platform: from preliminary advisory through full stamped engineering with finite element modeling, repair drawings, and authority submission. AI Deep Inspection available as a conditional escalation on engineer's decision.</div>
 
             {/* Phase tabs */}
             <div style={{display:"flex",gap:5,marginBottom:12}}>
-              {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} {...kbd(()=>setAPhase(p.id))} role="tab" aria-selected={aPhase===p.id} aria-label={`${p.label}: ${p.title}`} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
+              {phases.map(p=><div key={p.id} onClick={()=>setAPhase(p.id)} {...kbd(()=>setAPhase(p.id))} role="tab" aria-selected={aPhase===p.id} aria-label={`${p.label}: ${p.title}`} style={{padding:"6px 12px",borderRadius:7,fontSize:T.body,fontWeight:700,cursor:"pointer",background:aPhase===p.id?p.color:"transparent",color:aPhase===p.id?P.white:P.slate,border:`1px solid ${aPhase===p.id?p.color:"#ccc"}`,transition:"all 0.2s"}}>{p.label}: {p.title}</div>)}
             </div>
 
             {/* Active phase content */}
             {phases.filter(p=>p.id===aPhase).map(p=>
               <div key={p.id}>
-                <div style={{fontSize:10,color:P.slate,marginBottom:8}}>{[p.price,p.liability].filter(Boolean).join(" | ")}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                  {p.items.map((it,i)=><div key={i} style={{fontSize:10,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+                <div style={{fontSize:T.body,color:P.slate,marginBottom:8}}>{[p.price,p.liability].filter(Boolean).join(" | ")}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:4}}>
+                  {p.items.map((it,i)=><div key={i} style={{fontSize:T.body,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:p.color,fontWeight:800,fontSize:T.micro,marginTop:2}}>+</span>{it}</div>)}
                 </div>
               </div>
             )}
@@ -800,25 +872,25 @@ export default function App(){
             {/* Conditional Escalation callout */}
             <div style={{marginTop:14,padding:"12px 14px",borderRadius:8,background:P.s3L,borderLeft:`3px dashed ${P.s3}`}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:8,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Conditional Escalation</span>
-                <span style={{fontSize:11,fontWeight:700,color:P.s3,fontFamily:"'Fraunces',serif"}}>{aiDeepInspection.title}</span>
+                <span style={{fontSize:T.micro,fontWeight:700,letterSpacing:1.4,color:P.white,background:P.s3,padding:"2px 8px",borderRadius:10,textTransform:"uppercase"}}>Conditional Escalation</span>
+                <span style={{fontSize:T.body,fontWeight:700,color:P.s3,fontFamily:"'Fraunces',serif"}}>{aiDeepInspection.title}</span>
               </div>
-              <div style={{fontSize:9.5,color:P.slate,marginBottom:8,fontStyle:"italic"}}>{aiDeepInspection.subtitle}. {aiDeepInspection.liability}.</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:10}}>
-                {aiDeepInspection.items.map((it,i)=><div key={i} style={{fontSize:9.5,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:P.s3,fontWeight:800,fontSize:8,marginTop:2}}>+</span>{it}</div>)}
+              <div style={{fontSize:T.small,color:P.slate,marginBottom:8,fontStyle:"italic"}}>{aiDeepInspection.subtitle}. {aiDeepInspection.liability}.</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:4,marginBottom:10}}>
+                {aiDeepInspection.items.map((it,i)=><div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"4px 8px",borderRadius:5,background:P.white,border:"1px solid #eee",display:"flex",gap:4}}><span style={{color:P.s3,fontWeight:800,fontSize:T.micro,marginTop:2}}>+</span>{it}</div>)}
               </div>
 
               {/* Allied Specialist Partnerships disclaimer */}
               <div style={{marginTop:10,padding:"10px 12px",borderRadius:6,background:P.white,borderLeft:`2px dashed ${P.s3}`}}>
-                <div style={{fontSize:8,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:5}}>Allied Specialist Partnerships</div>
-                <div style={{fontSize:9,color:P.charcoal,lineHeight:1.65}}>AI Deep Inspection is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges the inspection deliverables to Phase 2 stamped engineering when required.</div>
-                <div style={{fontSize:8,color:P.slate,lineHeight:1.6,marginTop:5,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
+                <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:1.6,color:P.s3,textTransform:"uppercase",marginBottom:5}}>Allied Specialist Partnerships</div>
+                <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.65}}>AI Deep Inspection is delivered in coordination with iStructural's curated network of allied specialist partners. Onboarded specialists handle on-site data capture (LiDAR, drone, thermal, GPR) and dedicated AI processing pipelines. iStructural Group Inc. coordinates the engagement, validates partner outputs, and bridges the inspection deliverables to Phase 2 stamped engineering when required.</div>
+                <div style={{fontSize:T.micro,color:P.slate,lineHeight:1.6,marginTop:5,fontStyle:"italic"}}>Partner selection is project-specific, based on asset type, location, and required deliverables. Specific partner pairings are discussed under NDA per engagement.</div>
               </div>
             </div>
           </div>
         )}
 
-        <div onClick={()=>{setPage("start");setSTab("s2");}} {...kbd(()=>{setPage("start");setSTab("s2");})} aria-label="Start a Design Inquiry" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s2");}} {...kbd(()=>{setPage("start");setSTab("s2");})} aria-label="Start a Design Inquiry" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
       </div>
     </div>
   );
@@ -827,25 +899,25 @@ export default function App(){
   const S3Page=()=>(
     <div>
       <HeroBg color1={P.s3}><div style={{padding:"32px 28px 28px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 03</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>AI & Technology Services</h2>
-        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:500,lineHeight:1.6}}>AI Literacy and Organizational Readiness for any industry. For AI-Augmented structural assessment, see Design Services & Consultancy.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Service 03</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:"6px 0 0"}}>AI & Technology Services</h2>
+        <p style={{fontSize:T.body,color:P.white+"BB",marginTop:6,maxWidth:500,lineHeight:1.6}}>AI Literacy and Organizational Readiness for any industry. For AI-Augmented structural assessment, see Design Services & Consultancy.</p>
       </div></HeroBg>
 
       <div style={{padding:"20px 24px 0"}}>
         <div style={{padding:"18px 20px",borderRadius:12,background:P.s3bL,border:`1px solid ${P.s3b}20`,marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <div style={{fontSize:14,fontWeight:800,color:P.s3b,fontFamily:"'Fraunces',serif"}}>AI Literacy & Organizational Readiness</div>
+            <div style={{fontSize:T.h3,fontWeight:800,color:P.s3b,fontFamily:"'Fraunces',serif"}}>AI Literacy & Organizational Readiness</div>
           </div>
-          <div style={{fontSize:10.5,color:P.slate,lineHeight:1.6,marginBottom:12}}>Eradicating AI illiteracy across your organization. From AI 101 fundamentals through readiness assessment to hands-on tool integration | tailored to your industry, your team, and your workflows.</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            {[{n:"AI 101 | Foundations",d:"What AI is, what it is not, how it works, where it applies. Tailored workshops for leadership, engineers, operations, and support teams. No technical background required."},
+          <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:12}}>Eradicating AI illiteracy across your organization. From AI 101 fundamentals through readiness assessment to hands-on tool integration, tailored to your industry, your team, and your workflows.</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:6}}>
+            {[{n:"AI 101 · Foundations",d:"What AI is, what it is not, how it works, where it applies. Tailored workshops for leadership, engineers, operations, and support teams. No technical background required."},
               {n:"AI Readiness Assessment",d:"Evaluate your organization's AI maturity. Identify high-impact automation opportunities. Gap analysis: data, skills, infrastructure, culture. Actionable roadmap delivered."},
               {n:"Tool Selection & Integration",d:"Identify the right AI tools for your specific tasks: document processing, quality control, scheduling, reporting, communication. Vendor-neutral recommendations. Integration planning."},
               {n:"Implementation Support",d:"Hands-on support deploying selected AI tools into existing workflows. Staff training. Process redesign. Performance monitoring. Ongoing advisory retainer available."},
             ].map((o,i)=><div key={i} style={{padding:"10px 12px",borderRadius:8,background:P.white,border:"1px solid #e0e8f0"}}>
-              <div style={{fontSize:10.5,fontWeight:700,color:P.s3b}}>{o.n}</div>
-              <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>{o.d}</div>
+              <div style={{fontSize:T.body,fontWeight:700,color:P.s3b}}>{o.n}</div>
+              <div style={{fontSize:T.small,color:P.slate,marginTop:3,lineHeight:1.5}}>{o.d}</div>
             </div>)}
           </div>
         </div>
@@ -855,12 +927,12 @@ export default function App(){
       <div style={{padding:"0 24px"}}>
         <div onClick={()=>setPage("s2")} {...kbd(()=>setPage("s2"))} aria-label="Go to Design page for Structural Assessment Platform" style={{padding:"14px 18px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
           <div>
-            <div style={{fontSize:9,fontWeight:700,letterSpacing:1.6,color:P.s2,textTransform:"uppercase",marginBottom:4}}>Looking for Structural Assessment?</div>
-            <div style={{fontSize:11,color:P.charcoal,lineHeight:1.5}}>The AI-Augmented Structural Assessment Platform is now part of Design Services. See <strong style={{color:P.s2}}>Design &gt; Structural Assessment Platform</strong> for Phase 1 (Preliminary Advisory), Phase 2 (Stamped Engineering), and optional AI Deep Inspection escalation.</div>
+            <div style={{fontSize:T.small,fontWeight:700,letterSpacing:1.6,color:P.s2,textTransform:"uppercase",marginBottom:4}}>Looking for Structural Assessment?</div>
+            <div style={{fontSize:T.body,color:P.charcoal,lineHeight:1.5}}>The AI-Augmented Structural Assessment Platform is now part of Design Services. See <strong style={{color:P.s2}}>Design &gt; Structural Assessment Platform</strong> for Phase 1 (Preliminary Advisory), Phase 2 (Stamped Engineering), and optional AI Deep Inspection escalation.</div>
           </div>
-          <div style={{fontSize:11,fontWeight:700,color:P.white,background:P.s2,padding:"7px 14px",borderRadius:7,whiteSpace:"nowrap"}}>Go to Design &#8594;</div>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.white,background:P.s2,padding:"7px 14px",borderRadius:7,whiteSpace:"nowrap"}}>Go to Design &#8594;</div>
         </div>
-        <div onClick={()=>{setPage("start");setSTab("s3");}} {...kbd(()=>{setPage("start");setSTab("s3");})} aria-label="Start an AI Literacy Inquiry" style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Literacy Inquiry &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s3");}} {...kbd(()=>{setPage("start");setSTab("s3");})} aria-label="Start an AI Literacy Inquiry" style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Literacy Inquiry &#8594;</div>
       </div>
 
     </div>
@@ -870,9 +942,9 @@ export default function App(){
   const HubPage=()=>(
     <div>
       <HeroBg color1={P.greenD}><div style={{padding:"32px 28px 28px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Free for everyone</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Knowledge Hub</h2>
-        <p style={{fontSize:11,color:P.white+"BB",marginTop:6,maxWidth:460,lineHeight:1.6}}>The most comprehensive free structural, engineering, and management resource online. For engineers, architects, students, safety officers, clients, and government officials.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Free for everyone</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Knowledge Hub</h2>
+        <p style={{fontSize:T.body,color:P.white+"BB",marginTop:6,maxWidth:460,lineHeight:1.6}}>The most comprehensive free structural, engineering, and management resource online. For engineers, architects, students, safety officers, clients, and government officials.</p>
       </div></HeroBg>
 
       {/* ═══ KNOWLEDGE HUB CATEGORY TILES (3 BANDS) ═══ */}
@@ -898,11 +970,11 @@ export default function App(){
           return (
             <div key={i} onClick={()=>setHubTile(active?null:r.id)} {...kbd(()=>setHubTile(active?null:r.id))} aria-expanded={active} aria-label={`${active?"Close":"Open"} ${r.n}`} style={{padding:"10px 12px",borderRadius:8,background:active?r.c+"15":r.c+"06",border:`1px solid ${active?r.c+"60":r.c+"12"}`,cursor:"pointer",transition:"all 0.2s",boxShadow:active?`0 2px 8px ${r.c}25`:"none"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <div style={{fontSize:10,fontWeight:700,color:r.c}}>{r.n}</div>
-                <span style={{fontSize:7,fontWeight:600,padding:"1px 5px",borderRadius:8,background:r.c+"12",color:r.c,whiteSpace:"nowrap"}}>{r.s}</span>
+                <div style={{fontSize:T.body,fontWeight:700,color:r.c}}>{r.n}</div>
+                <span style={{fontSize:T.micro,fontWeight:600,padding:"1px 5px",borderRadius:8,background:r.c+"12",color:r.c,whiteSpace:"nowrap"}}>{r.s}</span>
               </div>
-              <div style={{fontSize:8.5,color:P.slate,marginTop:3,lineHeight:1.5}}>{r.d}</div>
-              <div style={{fontSize:8,color:r.c,marginTop:6,fontWeight:700}}>{active ? "▾ Click to close" : "▸ Click to open"}</div>
+              <div style={{fontSize:T.small,color:P.slate,marginTop:3,lineHeight:1.5}}>{r.d}</div>
+              <div style={{fontSize:T.micro,color:r.c,marginTop:6,fontWeight:700}}>{active ? "▾ Click to close" : "▸ Click to open"}</div>
             </div>
           );
         };
@@ -915,25 +987,25 @@ export default function App(){
 
                   {/* Code mark — confident square block, sand-integrated */}
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:42,height:38,padding:"0 8px",background:P.greenD+"10",border:`1px solid ${P.greenD}40`,borderRadius:5}}>
-                    <span style={{fontFamily:"'SF Mono','Menlo','Consolas',monospace",fontSize:11,fontWeight:800,letterSpacing:2,color:P.greenD,textTransform:"uppercase",lineHeight:1}}>{b.code}</span>
+                    <span style={{fontFamily:"'SF Mono','Menlo','Consolas',monospace",fontSize:T.body,fontWeight:800,letterSpacing:2,color:P.greenD,textTransform:"uppercase",lineHeight:1}}>{b.code}</span>
                   </div>
 
                   {/* Title block */}
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontFamily:"'SF Mono','Menlo','Consolas',monospace",fontSize:7,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:2}}>{`Section · 0${bi+1} of 03`}</div>
-                    <div style={{fontSize:12,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",lineHeight:1.2}}>{b.title}</div>
-                    <div style={{fontSize:8.5,color:P.slate,marginTop:2,lineHeight:1.4}}>{b.subtitle}</div>
+                    <div style={{fontFamily:"'SF Mono','Menlo','Consolas',monospace",fontSize:T.micro,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:2}}>{`Section · 0${bi+1} of 03`}</div>
+                    <div style={{fontSize:T.lead,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",lineHeight:1.2}}>{b.title}</div>
+                    <div style={{fontSize:T.small,color:P.slate,marginTop:2,lineHeight:1.4}}>{b.subtitle}</div>
                   </div>
 
                   {/* Count chip — informative but quiet */}
                   <div style={{display:"flex",alignItems:"baseline",gap:4,padding:"4px 9px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}1A`,whiteSpace:"nowrap"}}>
-                    <span style={{fontFamily:"'Fraunces',serif",fontSize:13,fontWeight:800,color:P.charcoal,lineHeight:1}}>{b.items.length}</span>
-                    <span style={{fontSize:7.5,fontWeight:600,color:P.slate,letterSpacing:0.5}}>categories</span>
+                    <span style={{fontFamily:"'Fraunces',serif",fontSize:T.lead,fontWeight:800,color:P.charcoal,lineHeight:1}}>{b.items.length}</span>
+                    <span style={{fontSize:T.micro,fontWeight:600,color:P.slate,letterSpacing:0.5}}>categories</span>
                   </div>
                 </div>
 
                 {/* ── TILE GRID ── */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:7}}>
                   {b.items.map((r,i)=><Tile key={r.id} r={r} i={`${b.key}-${i}`} />)}
                 </div>
               </div>
@@ -954,15 +1026,15 @@ export default function App(){
             <div style={{height:4,background:`linear-gradient(90deg, ${P.greenD} 0%, ${P.s3} 50%, ${P.s2} 100%)`}}></div>
             {/* Close button */}
             <button onClick={()=>setHubTile(null)} aria-label="Close category details"
-                    style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,lineHeight:1,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
+                    style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:T.h3,lineHeight:1,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
             <div style={{padding:"24px 28px 28px"}}>
 
           {/* CRACK & DAMAGE LIBRARY */}
           {hubTile === "crack" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Crack & Damage Library</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Crack and Damage Reference Documents</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download references on damage evaluation and repair from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Crack & Damage Library</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Crack and Damage Reference Documents</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download references on damage evaluation and repair from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"FEMA P-2018 Seismic Evaluation of Older Concrete Buildings for Earthquake Damage", body:"FEMA", year:"2018", url:"https://www.fema.gov/sites/default/files/2020-08/fema_seismic-eval-older-concrete-buildings_p-2018.pdf"},
@@ -973,12 +1045,12 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s3}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
-                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s3+"15",color:P.s3,whiteSpace:"nowrap",border:`1px solid ${P.s3}30`}}>{d.region}</span>
+                      <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s3+"15",color:P.s3,whiteSpace:"nowrap",border:`1px solid ${P.s3}30`}}>{d.region}</span>
                     </div>
-                    <div style={{fontSize:8,color:P.s3,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.s3,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -988,9 +1060,9 @@ export default function App(){
           {/* FREE INSPECTION FORMS */}
           {hubTile === "forms" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Free Inspection Forms</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Standardized Field and Office Forms</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download inspection forms and field manuals from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.s3,textTransform:"uppercase",marginBottom:6}}>Free Inspection Forms</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Standardized Field and Office Forms</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download inspection forms and field manuals from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"FEMA P-154 Rapid Visual Screening of Buildings — Handbook + Data Collection Forms (3rd Ed.)", body:"FEMA", year:"2015", url:"https://www.fema.gov/sites/default/files/2020-07/fema_earthquakes_rapid-visual-screening-of-buildings-for-potential-seismic-hazards-a-handbook-third-edition-fema-p-154.pdf"},
@@ -1002,12 +1074,12 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s3}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
-                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s3+"15",color:P.s3,whiteSpace:"nowrap",border:`1px solid ${P.s3}30`}}>{d.region}</span>
+                      <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s3+"15",color:P.s3,whiteSpace:"nowrap",border:`1px solid ${P.s3}30`}}>{d.region}</span>
                     </div>
-                    <div style={{fontSize:8,color:P.s3,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.s3,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -1017,9 +1089,9 @@ export default function App(){
           {/* STRUCTURAL CALCULATORS */}
           {hubTile === "calc" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Structural Calculators</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Browser-Based Tools by Material and Load</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-use browser-based calculators from authoritative bodies and reputable 3rd-party-endorsed engineering resources in the USA, Canada, and Europe. Organized by material system (Reinforced Concrete, Post-Tensioned, Steel, Composite, Wood, Aluminum) and by load type (Wind, Seismic). No login or purchase required.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Structural Calculators</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Browser-Based Tools by Material and Load</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-use browser-based calculators from authoritative bodies and reputable 3rd-party-endorsed engineering resources in the USA, Canada, and Europe. Organized by material system (Reinforced Concrete, Post-Tensioned, Steel, Composite, Wood, Aluminum) and by load type (Wind, Seismic). No login or purchase required.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   // ── REINFORCED CONCRETE ──
@@ -1064,15 +1136,15 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s2}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
                       <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
-                        <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s2+"15",color:P.s2,whiteSpace:"nowrap",border:`1px solid ${P.s2}30`}}>{d.region}</span>
-                        <span style={{fontSize:7,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.charcoal+"0F",color:P.charcoal,whiteSpace:"nowrap",border:`1px solid ${P.charcoal}1F`,letterSpacing:0.5}}>{d.units}</span>
+                        <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s2+"15",color:P.s2,whiteSpace:"nowrap",border:`1px solid ${P.s2}30`}}>{d.region}</span>
+                        <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.charcoal+"0F",color:P.charcoal,whiteSpace:"nowrap",border:`1px solid ${P.charcoal}1F`,letterSpacing:0.5}}>{d.units}</span>
                       </div>
                     </div>
-                    <div style={{fontSize:8,color:P.s2,fontWeight:700,marginTop:6}}>Open free calculator &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.s2,fontWeight:700,marginTop:6}}>Open free calculator &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -1082,11 +1154,11 @@ export default function App(){
           {/* TRIAL SOFTWARE (commercial trials only) */}
           {hubTile === "trial" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Trial Software</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Commercial Trial Downloads</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Direct links to official trial downloads from leading commercial vendors. All trials require user registration on the vendor's website. iStructural Group Inc. does not host, distribute, or modify any third-party software.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.s2,textTransform:"uppercase",marginBottom:6}}>Trial Software</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Commercial Trial Downloads</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Direct links to official trial downloads from leading commercial vendors. All trials require user registration on the vendor's website. iStructural Group Inc. does not host, distribute, or modify any third-party software.</div>
 
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
                 {[
                   {n:"ETABS",v:"Computers and Structures, Inc.",t:"30-day trial",d:"Multi-story buildings, lateral systems, P-delta, response spectrum.",url:"https://www.csiamerica.com/products/etabs/trial",c:P.s3},
                   {n:"SAP2000",v:"Computers and Structures, Inc.",t:"30-day trial",d:"General-purpose structural analysis, linear, nonlinear, static, dynamic.",url:"https://www.csiamerica.com/products/sap2000/trial",c:P.s3},
@@ -1104,13 +1176,13 @@ export default function App(){
                   <div key={i} style={{padding:"12px 14px",borderRadius:8,background:P.white,border:`1px solid ${s.c}20`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:130}}>
                     <div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6}}>
-                        <div style={{fontSize:11,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
-                        <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:10,background:s.c+"15",color:s.c,whiteSpace:"nowrap",border:`1px solid ${s.c}30`}}>{s.t}</span>
+                        <div style={{fontSize:T.body,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
+                        <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:10,background:s.c+"15",color:s.c,whiteSpace:"nowrap",border:`1px solid ${s.c}30`}}>{s.t}</span>
                       </div>
-                      <div style={{fontSize:8,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:6}}>by {s.v}</div>
-                      <div style={{fontSize:9,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
+                      <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:6}}>by {s.v}</div>
+                      <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
                     </div>
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:9,fontWeight:700,color:P.white,background:s.c,padding:"5px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor Trial &#x2197;</a>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:T.small,fontWeight:700,color:P.white,background:s.c,padding:"5px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor Trial &#x2197;</a>
                   </div>
                 ))}
               </div>
@@ -1120,10 +1192,10 @@ export default function App(){
           {/* BUDGET-FRIENDLY SOFTWARE (free, open-source, low-cost) */}
           {hubTile === "budget" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Budget-Friendly Software</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Free, Open-Source, and Low-Cost Tools</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Free, open-source, and educational alternatives to commercial structural software. For students, small practices, research, and budget-conscious projects. License terms vary by vendor (GPL, MIT, BSD, EULA); review each vendor's license before use.</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Budget-Friendly Software</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Free, Open-Source, and Low-Cost Tools</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Free, open-source, and educational alternatives to commercial structural software. For students, small practices, research, and budget-conscious projects. License terms vary by vendor (GPL, MIT, BSD, EULA); review each vendor's license before use.</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
                 {[
                   {n:"OpenSees",v:"UC Berkeley / PEER",d:"Nonlinear seismic, advanced research, free open-source.",url:"https://opensees.berkeley.edu/",c:P.greenD},
                   {n:"Code_Aster + Salome-Meca",v:"Electricite de France (EDF)",d:"General FEA, mechanical, thermal. Industrial-grade open-source.",url:"https://code-aster.org/",c:P.greenD},
@@ -1138,11 +1210,11 @@ export default function App(){
                 ].map((s,i)=>(
                   <div key={i} style={{padding:"12px 14px",borderRadius:8,background:P.white,border:`1px solid ${s.c}20`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:130}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
-                      <div style={{fontSize:8,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:6}}>by {s.v}</div>
-                      <div style={{fontSize:9,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
+                      <div style={{fontSize:T.body,fontWeight:800,color:s.c,fontFamily:"'Fraunces',serif"}}>{s.n}</div>
+                      <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic",marginTop:1,marginBottom:6}}>by {s.v}</div>
+                      <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{s.d}</div>
                     </div>
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:9,fontWeight:700,color:P.white,background:s.c,padding:"5px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor &#x2197;</a>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,fontSize:T.small,fontWeight:700,color:P.white,background:s.c,padding:"5px 10px",borderRadius:5,textDecoration:"none",textAlign:"center"}}>Visit Vendor &#x2197;</a>
                   </div>
                 ))}
               </div>
@@ -1152,9 +1224,9 @@ export default function App(){
           {/* INTERNATIONAL STANDARDS */}
           {hubTile === "std" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>International Standards</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Codes and Standards Quick Reference</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access standards portals and design parameter tools from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>International Standards</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Codes and Standards Quick Reference</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access standards portals and design parameter tools from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"ASCE Hazard Tool — site-specific design parameters per ASCE 7-10/16/22 (wind, seismic, tornado, ice, snow)", body:"American Society of Civil Engineers", year:"Live · 2026", url:"https://ascehazardtool.org/"},
@@ -1167,12 +1239,12 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.greenD}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
-                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.greenD+"15",color:P.greenD,whiteSpace:"nowrap",border:`1px solid ${P.greenD}30`}}>{d.region}</span>
+                      <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.greenD+"15",color:P.greenD,whiteSpace:"nowrap",border:`1px solid ${P.greenD}30`}}>{d.region}</span>
                     </div>
-                    <div style={{fontSize:8,color:P.greenD,fontWeight:700,marginTop:6}}>Open free resource &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.greenD,fontWeight:700,marginTop:6}}>Open free resource &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -1182,9 +1254,9 @@ export default function App(){
           {/* PM TEMPLATES */}
           {hubTile === "pm" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s1,textTransform:"uppercase",marginBottom:6}}>PM Templates & Frameworks</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Project Management Documents and Frameworks</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download project management templates and frameworks from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.s1,textTransform:"uppercase",marginBottom:6}}>PM Templates & Frameworks</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Project Management Documents and Frameworks</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download project management templates and frameworks from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"PMBOK 6 Project Risk Management — Risk Register, Risk Breakdown Structure, Probability-Impact Matrix templates (free webinar PDF)", body:"PMI Central Italy Chapter", year:"2018", url:"https://www.pmi-centralitaly.org/wp-content/uploads/2019/06/PMBoK_Risk_03072018.pdf"},
@@ -1194,12 +1266,12 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s1}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
-                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s1+"15",color:P.s1,whiteSpace:"nowrap",border:`1px solid ${P.s1}30`}}>{d.region}</span>
+                      <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s1+"15",color:P.s1,whiteSpace:"nowrap",border:`1px solid ${P.s1}30`}}>{d.region}</span>
                     </div>
-                    <div style={{fontSize:8,color:P.s1,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.s1,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -1209,9 +1281,9 @@ export default function App(){
           {/* V.E. & ROI TOOLS */}
           {hubTile === "ve" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.s1,textTransform:"uppercase",marginBottom:6}}>V.E. & ROI Tools</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Value Engineering and Cost Documents</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download value engineering and life cycle costing references from authoritative bodies in the USA and Europe. All links lead to the issuing authority and require no purchase.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.s1,textTransform:"uppercase",marginBottom:6}}>V.E. & ROI Tools</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Value Engineering and Cost Documents</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-download value engineering and life cycle costing references from authoritative bodies in the USA and Europe. All links lead to the issuing authority and require no purchase.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"SAVE International Value Methodology Standard — full Six-Phase Job Plan", body:"SAVE International", year:"2015", url:"https://cdn.ymaws.com/www.value-eng.org/resource/resmgr/standards_documents/vmstd.pdf"},
@@ -1222,12 +1294,12 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.s1}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
-                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s1+"15",color:P.s1,whiteSpace:"nowrap",border:`1px solid ${P.s1}30`}}>{d.region}</span>
+                      <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.s1+"15",color:P.s1,whiteSpace:"nowrap",border:`1px solid ${P.s1}30`}}>{d.region}</span>
                     </div>
-                    <div style={{fontSize:8,color:P.s1,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.s1,fontWeight:700,marginTop:6}}>Open free document &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -1237,9 +1309,9 @@ export default function App(){
           {/* TRAINING & CERT LINKS */}
           {hubTile === "cert" && (
             <div>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Training & Certification Links</div>
-              <div style={{fontSize:14,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Professional Development Resources</div>
-              <div style={{fontSize:10,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access training portals and CPD entry points from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority. Course completion certificates may be issued at no cost or with a separate fee depending on the provider.</div>
+              <div style={{fontSize:T.small,fontWeight:700,letterSpacing:2.4,color:P.greenD,textTransform:"uppercase",marginBottom:6}}>Training & Certification Links</div>
+              <div style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:6}}>Professional Development Resources</div>
+              <div style={{fontSize:T.body,color:P.slate,lineHeight:1.6,marginBottom:14,maxWidth:760}}>Verified, free-to-access training portals and CPD entry points from authoritative bodies in the USA, Canada, and Europe. All links lead to the issuing authority. Course completion certificates may be issued at no cost or with a separate fee depending on the provider.</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
                 {[
                   {region:"USA", title:"FEMA Emergency Management Institute — Independent Study Program (200+ free online courses including building safety and emergency management)", body:"FEMA EMI", year:"Live · 2026", url:"https://training.fema.gov/is/crslist.aspx"},
@@ -1252,12 +1324,12 @@ export default function App(){
                   <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.greenD}25`,textDecoration:"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
-                        <div style={{fontSize:8.5,color:P.slate}}>{d.body} · {d.year}</div>
+                        <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:2}}>{d.title}</div>
+                        <div style={{fontSize:T.small,color:P.slate}}>{d.body} · {d.year}</div>
                       </div>
-                      <span style={{fontSize:7.5,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.greenD+"15",color:P.greenD,whiteSpace:"nowrap",border:`1px solid ${P.greenD}30`}}>{d.region}</span>
+                      <span style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:8,background:P.greenD+"15",color:P.greenD,whiteSpace:"nowrap",border:`1px solid ${P.greenD}30`}}>{d.region}</span>
                     </div>
-                    <div style={{fontSize:8,color:P.greenD,fontWeight:700,marginTop:6}}>Open free training portal &#x2197;</div>
+                    <div style={{fontSize:T.micro,color:P.greenD,fontWeight:700,marginTop:6}}>Open free training portal &#x2197;</div>
                   </a>
                 ))}
               </div>
@@ -1271,15 +1343,15 @@ export default function App(){
 
       {/* ═══ GENERIC DISCLAIMER (covers all third-party content site-wide) ═══ */}
       <div style={{padding:"18px 24px 24px",background:"#FAFAFA",borderTop:"1px solid #d0d0d0"}}>
-        <div style={{fontSize:8,fontWeight:700,letterSpacing:2,color:P.charcoal,textTransform:"uppercase",marginBottom:8}}>Disclaimer, Copyright, and Third-Party Notice</div>
-        <div style={{fontSize:8.5,color:P.slate,lineHeight:1.7,maxWidth:1100}}>
+        <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:2,color:P.charcoal,textTransform:"uppercase",marginBottom:8}}>Disclaimer, Copyright, and Third-Party Notice</div>
+        <div style={{fontSize:T.small,color:P.slate,lineHeight:1.7,maxWidth:1100}}>
           <p style={{marginBottom:6}}>All third-party content referenced or linked from this Knowledge Hub, including but not limited to software programs, documents, datasheets, code excerpts, technical standards, training materials, brand names, logos, trademarks, and any associated documentation, is the exclusive property of its respective owners, vendors, publishers, or issuing authorities.</p>
           <p style={{marginBottom:6}}>iStructural Group Inc. is not affiliated with, endorsed by, or sponsored by any third party referenced on this page unless explicitly stated. iStructural Group Inc. holds no rights, licenses, or ownership over any third-party content.</p>
           <p style={{marginBottom:6}}>External links provided here lead to the official sources of the respective owners. iStructural Group Inc. does not host, distribute, modify, or redistribute any third-party content. We are not responsible for the availability, terms of use, licensing terms, privacy practices, or any outcomes resulting from interaction with linked external resources. Trial periods, license restrictions, eligibility, and access terms are governed solely by the respective owners and may change without notice.</p>
           <p style={{marginBottom:6}}>Documents and materials displayed within this Knowledge Hub that explicitly carry the badge <strong style={{color:P.charcoal}}>"AUTHORED BY iSTRUCTURAL GROUP INC."</strong> or the iStructural Group Inc. copyright notice are the original intellectual property of iStructural Group Inc. and may not be reproduced, redistributed, or modified without prior written consent.</p>
           <p style={{marginBottom:6}}>All other content is referenced strictly for educational and informational purposes. iStructural Group Inc. does not claim authorship, endorsement, or any proprietary interest in third-party content unless explicitly stated.</p>
           <p style={{marginBottom:0}}>By accessing this Knowledge Hub, you acknowledge and accept these terms.</p>
-          <p style={{marginTop:8,fontSize:7.5,fontStyle:"italic",color:"#888"}}>Last updated: April 2026.</p>
+          <p style={{marginTop:8,fontSize:T.micro,fontStyle:"italic",color:"#888"}}>Last updated: April 2026.</p>
         </div>
       </div>
     </div>
@@ -1971,7 +2043,7 @@ export default function App(){
           {/* Bottom sand: a triangle that grows from the base */}
           <path d={`M 14 ${31 - 12.5*botFill} L ${14-7*botFill} 31 L ${14+7*botFill} 31 Z`} fill={sandColor} opacity="0.92"/>
         </svg>
-        <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:11,fontWeight:800,color:txtColor,letterSpacing:0.5}}>{mm}:{ss}</span>
+        <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:T.body,fontWeight:800,color:txtColor,letterSpacing:0.5}}>{mm}:{ss}</span>
       </span>
     );
   };
@@ -1989,29 +2061,29 @@ export default function App(){
     <div>
       {/* HERO: Tools Box */}
       <HeroBg color1={P.navy} color2={P.navyM}><div style={{padding:"44px 28px 36px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Modular Apps · Secure Sessions · Free Preview</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:30,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Tools Box</h2>
-        <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Modular Apps · Secure Sessions · Free Preview</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Tools Box</h2>
+        <p style={{fontSize:T.lead,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
         <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap",alignItems:"center"}}>
           {ownerMode ? (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:10,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1}}>OWNER</span>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:T.body,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1}}>OWNER</span>
               <span>Unlimited access  no session cap on any app</span>
               <button onClick={()=>setOwnerMode(false)} aria-label="Sign out of owner mode"
-                style={{padding:"2px 8px",borderRadius:5,background:"transparent",border:`1px solid ${P.s2L}`,fontSize:8,fontWeight:700,color:"#E9D6F0",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>Sign out</button>
+                style={{padding:"2px 8px",borderRadius:5,background:"transparent",border:`1px solid ${P.s2L}`,fontSize:T.micro,fontWeight:700,color:"#E9D6F0",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>Sign out</button>
             </div>
           ) : sessionStillValid ? (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",border:`1px solid ${P.tealL}40`,fontSize:10,fontWeight:700,color:"#7EE8DA",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",border:`1px solid ${P.tealL}40`,fontSize:T.body,fontWeight:700,color:"#7EE8DA",display:"flex",alignItems:"center",gap:8}}>
               <span>Session active</span>
               <SandTimer endMs={sessionEndMs} size={30} dark={true} onExpire={()=>setSessionExpired(true)}/>
             </div>
           ) : (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:10,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:T.body,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
           )}
           {!ownerMode && !ownerSignInOpen && (
             <button onClick={()=>{ setOwnerSignInOpen(true); setOwnerSignInError(""); }}
               aria-label="Owner sign in"
-              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,fontSize:9,fontWeight:700,color:P.tealL,cursor:"pointer",fontFamily:"inherit"}}>Owner sign in</button>
+              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,fontSize:T.small,fontWeight:700,color:P.tealL,cursor:"pointer",fontFamily:"inherit"}}>Owner sign in</button>
           )}
           {!ownerMode && ownerSignInOpen && (
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
@@ -2023,15 +2095,15 @@ export default function App(){
                 placeholder="Owner passphrase"
                 aria-label="Owner passphrase"
                 autoFocus
-                style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${P.tealL}50`,background:P.navyM,color:P.white,fontSize:10,fontFamily:"inherit",width:150}} />
+                style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${P.tealL}50`,background:P.navyM,color:P.white,fontSize:T.body,fontFamily:"inherit",width:150}} />
               <button
                 onClick={()=>{ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } }}
-                style={{padding:"6px 12px",borderRadius:7,background:P.teal,color:P.white,fontSize:9,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock</button>
+                style={{padding:"6px 12px",borderRadius:7,background:P.teal,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock</button>
               <button
                 onClick={()=>{ setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); }}
                 aria-label="Cancel owner sign in"
-                style={{padding:"6px 9px",borderRadius:7,background:"transparent",color:"#9BBCD6",fontSize:9,fontWeight:700,border:`1px solid ${P.tealL}30`,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
-              {ownerSignInError && <span style={{fontSize:9,fontWeight:700,color:"#FFD1C9"}}>{ownerSignInError}</span>}
+                style={{padding:"6px 9px",borderRadius:7,background:"transparent",color:"#9BBCD6",fontSize:T.small,fontWeight:700,border:`1px solid ${P.tealL}30`,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
+              {ownerSignInError && <span style={{fontSize:T.small,fontWeight:700,color:"#FFD1C9"}}>{ownerSignInError}</span>}
             </div>
           )}
         </div>
@@ -2040,232 +2112,62 @@ export default function App(){
       {/* ═══ TOP-OF-PAGE DISCLAIMER  covers current and future apps ═══ */}
       <div style={{padding:"10px 24px",background:P.navy,borderTop:`1px solid ${P.tealL}30`,borderBottom:`1px solid ${P.tealL}30`}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
-          <span style={{fontSize:8,fontWeight:800,padding:"3px 8px",borderRadius:4,background:P.coral+"25",color:"#FFD1C9",border:`1px solid ${P.coral}60`,letterSpacing:1.5,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer  Please Read</span>
-          <div style={{flex:1,minWidth:240,fontSize:10,color:"#CFE0F0",lineHeight:1.55}}>
+          <span style={{fontSize:T.micro,fontWeight:800,padding:"3px 8px",borderRadius:4,background:P.coral+"25",color:"#FFD1C9",border:`1px solid ${P.coral}60`,letterSpacing:1.5,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer  Please Read</span>
+          <div style={{flex:1,minWidth:240,fontSize:T.body,color:"#CFE0F0",lineHeight:1.55}}>
             Informational and decision-support use only. No professional advice. No guarantee. Confidentiality enforced. Apps may change at any time. By using any app you accept the terms.
           </div>
-          <button onClick={()=>setToolsDisclaimerOpen(v=>!v)} {...kbd(()=>setToolsDisclaimerOpen(v=>!v))} aria-expanded={toolsDisclaimerOpen} aria-label="Toggle full disclaimer text" style={{padding:"4px 10px",borderRadius:6,background:"transparent",color:P.tealL,border:`1px solid ${P.tealL}40`,fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>
+          <button onClick={()=>setToolsDisclaimerOpen(v=>!v)} {...kbd(()=>setToolsDisclaimerOpen(v=>!v))} aria-expanded={toolsDisclaimerOpen} aria-label="Toggle full disclaimer text" style={{padding:"4px 10px",borderRadius:6,background:"transparent",color:P.tealL,border:`1px solid ${P.tealL}40`,fontSize:T.small,fontWeight:700,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>
             {toolsDisclaimerOpen ? "Hide full terms" : "Read full terms"}
           </button>
         </div>
         {toolsDisclaimerOpen && (
-          <div style={{maxWidth:1100,margin:"10px auto 4px",padding:"12px 14px",borderRadius:8,background:P.navyM,border:`1px solid ${P.tealL}30`,fontSize:10,color:"#E2EBF5",lineHeight:1.7}}>
+          <div style={{maxWidth:1100,margin:"10px auto 4px",padding:"12px 14px",borderRadius:8,background:P.navyM,border:`1px solid ${P.tealL}30`,fontSize:T.body,color:"#E2EBF5",lineHeight:1.7}}>
             <strong style={{color:P.tealL}}>Important disclaimer covering this page and every app on it, current and future.</strong> The Tools Box, and every app inside it, is provided by iStructural Group Inc. as an informational and decision-support resource only. Outputs are produced by software models and do not replace licensed professional advice (engineering, legal, financial, medical, immigration, or otherwise). iStructural Group Inc. makes no warranty of accuracy, fitness, or outcome. Apps may evolve, change, or be withdrawn at any time without notice. You remain solely responsible for any decisions made on the basis of any output. Confidentiality is enforced: inputs you submit are used only to deliver the requested output and to follow up. We do not share your data with third parties. By using any app, or by submitting any input or request through this page, you accept these terms.
           </div>
         )}
       </div>
 
-      {/* ═══ OPEN TREASURE CHEST  neutral intelligence vibes; no app pointers inside ═══ */}
-      {/* Visual proportion: same artwork as before, scaled down (380x280 -> 240x180) and section padding tightened */}
-      <div style={{padding:"14px 24px 8px",background:`linear-gradient(180deg, ${P.navy} 0%, ${P.navy} 30%, ${P.sand} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
-        {/* Caption above the chest */}
-        <div style={{position:"absolute",top:8,left:0,right:0,textAlign:"center",pointerEvents:"none"}}>
-          <div style={{fontSize:8,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",opacity:0.85}}>Open the box. Apps inside. More arriving as we draft them.</div>
+      {/* ═══ TOOLS BOX INTELLIGENCE BANNER  clean modern motif, no chest ═══ */}
+      <div style={{padding:"30px 24px 26px",background:`linear-gradient(180deg, ${P.navy} 0%, ${P.navy} 55%, ${P.sand} 100%)`,position:"relative",overflow:"hidden"}}>
+        <div style={{maxWidth:760,margin:"0 auto",textAlign:"center",position:"relative"}}>
+          {/* Geometric apps-grid motif */}
+          <svg width="132" height="132" viewBox="0 0 132 132" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="iStructural apps intelligence motif" style={{display:"block",margin:"0 auto 14px"}}>
+            <defs>
+              <linearGradient id="tbCore" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0EBEA8"/><stop offset="100%" stopColor="#0A7C6E"/>
+              </linearGradient>
+              <radialGradient id="tbGlow" cx="50%" cy="50%" r="55%">
+                <stop offset="0%" stopColor="#0EBEA8" stopOpacity="0.45"/>
+                <stop offset="100%" stopColor="#0EBEA8" stopOpacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="66" cy="66" r="62" fill="url(#tbGlow)"/>
+            {/* four app tiles around a core node, connected */}
+            <line x1="66" y1="66" x2="34" y2="34" stroke="#0EBEA8" strokeWidth="1.4" opacity="0.5"/>
+            <line x1="66" y1="66" x2="98" y2="34" stroke="#0EBEA8" strokeWidth="1.4" opacity="0.5"/>
+            <line x1="66" y1="66" x2="34" y2="98" stroke="#0EBEA8" strokeWidth="1.4" opacity="0.5"/>
+            <line x1="66" y1="66" x2="98" y2="98" stroke="#0EBEA8" strokeWidth="1.4" opacity="0.5"/>
+            <rect x="20" y="20" width="28" height="28" rx="6" fill="none" stroke="#0EBEA8" strokeWidth="2" opacity="0.85"/>
+            <rect x="84" y="20" width="28" height="28" rx="6" fill="none" stroke="#0EBEA8" strokeWidth="2" opacity="0.85"/>
+            <rect x="20" y="84" width="28" height="28" rx="6" fill="none" stroke="#0EBEA8" strokeWidth="2" opacity="0.85"/>
+            <rect x="84" y="84" width="28" height="28" rx="6" fill="none" stroke="#0EBEA8" strokeWidth="2" opacity="0.85"/>
+            <circle cx="66" cy="66" r="15" fill="url(#tbCore)"/>
+            <circle cx="66" cy="66" r="21" fill="none" stroke="#0EBEA8" strokeWidth="1.2" opacity="0.55"/>
+            <circle cx="34" cy="34" r="2.6" fill="#0EBEA8"/>
+            <circle cx="98" cy="34" r="2.6" fill="#0EBEA8"/>
+            <circle cx="34" cy="98" r="2.6" fill="#0EBEA8"/>
+            <circle cx="98" cy="98" r="2.6" fill="#0EBEA8"/>
+          </svg>
+          <div style={{fontSize:T.micro,fontWeight:800,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:8}}>Intelligence Inside</div>
+          <div style={{fontSize:T.lead,fontWeight:700,color:P.white,lineHeight:1.5,maxWidth:560,margin:"0 auto"}}>A modular set of iStructural apps. More arriving as we draft them. Each one runs inside this site, with the depth of every report set by your access level.</div>
         </div>
-        <svg width="270" height="215" viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Aged open treasure chest with iron banding, brass hasp and glowing intelligence inside" style={{filter:"drop-shadow(0 16px 26px rgba(0,0,0,0.6))"}}>
-          <defs>
-            <linearGradient id="chFront" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#9A7448"/>
-              <stop offset="48%" stopColor="#6A4A2C"/>
-              <stop offset="100%" stopColor="#34220F"/>
-            </linearGradient>
-            <linearGradient id="chSide" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#4A3220"/>
-              <stop offset="100%" stopColor="#221408"/>
-            </linearGradient>
-            <linearGradient id="chRim" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#5A3F26"/>
-              <stop offset="100%" stopColor="#241608"/>
-            </linearGradient>
-            <linearGradient id="chIron" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#6E6259"/>
-              <stop offset="45%" stopColor="#3A332C"/>
-              <stop offset="100%" stopColor="#15110D"/>
-            </linearGradient>
-            <linearGradient id="chBrass" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#E4C878"/>
-              <stop offset="55%" stopColor="#B8923E"/>
-              <stop offset="100%" stopColor="#6E5220"/>
-            </linearGradient>
-            <radialGradient id="chCavity" cx="50%" cy="28%" r="82%">
-              <stop offset="0%" stopColor="#1C1109"/>
-              <stop offset="100%" stopColor="#000000"/>
-            </radialGradient>
-            <radialGradient id="chGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor={P.tealL} stopOpacity="0.95"/>
-              <stop offset="55%" stopColor={P.teal} stopOpacity="0.3"/>
-              <stop offset="100%" stopColor={P.teal} stopOpacity="0"/>
-            </radialGradient>
-            <linearGradient id="chBeam" x1="50%" y1="0%" x2="50%" y2="100%">
-              <stop offset="0%" stopColor={P.tealL} stopOpacity="0"/>
-              <stop offset="55%" stopColor={P.tealL} stopOpacity="0.32"/>
-              <stop offset="100%" stopColor={P.tealL} stopOpacity="0.5"/>
-            </linearGradient>
-            <pattern id="chGrain" patternUnits="userSpaceOnUse" width="46" height="64">
-              <rect width="46" height="64" fill="url(#chFront)"/>
-              <path d="M0 14 Q 12 11, 24 16 T 46 13" stroke="#22150A" strokeWidth="0.7" fill="none" opacity="0.6"/>
-              <path d="M0 30 Q 14 27, 26 32 T 46 29" stroke="#22150A" strokeWidth="0.6" fill="none" opacity="0.5"/>
-              <path d="M0 47 Q 10 44, 22 49 T 46 46" stroke="#22150A" strokeWidth="0.7" fill="none" opacity="0.55"/>
-              <circle cx="12" cy="22" r="0.9" fill="#22150A" opacity="0.6"/>
-              <circle cx="34" cy="40" r="0.7" fill="#22150A" opacity="0.5"/>
-            </pattern>
-          </defs>
-
-          {/* Strong light beam escaping the open chest */}
-          <path d="M 120 150 L 96 30 L 300 30 L 276 150 Z" fill="url(#chBeam)" opacity="0.6"/>
-
-          {/* Rising particles */}
-          <g fill={P.tealL}>
-            <circle cx="150" cy="90" r="1.4" opacity="0.85">
-              <animate attributeName="cy" values="150;46" dur="4.8s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.95;0" dur="4.8s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="210" cy="100" r="1.8" opacity="0.75">
-              <animate attributeName="cy" values="150;38" dur="6.3s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;1;0" dur="6.3s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="244" cy="92" r="1.2" opacity="0.9">
-              <animate attributeName="cy" values="150;54" dur="5.4s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.9;0" dur="5.4s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="182" cy="110" r="1.5" opacity="0.8">
-              <animate attributeName="cy" values="150;60" dur="5.8s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0;0.92;0" dur="5.8s" repeatCount="indefinite"/>
-            </circle>
-          </g>
-
-          {/* No lid  open box, cover removed by design */}
-
-          {/* Top rim plane */}
-          <path d="M 72 168 L 100 150 L 286 150 L 258 168 Z" fill="url(#chRim)" stroke="#160C05" strokeWidth="1.6"/>
-          {/* Interior cavity */}
-          <path d="M 88 166 L 112 150 L 274 150 L 250 166 Z" fill="url(#chCavity)"/>
-          {/* Front face */}
-          <path d="M 72 168 L 72 262 L 258 262 L 258 168 Z" fill="url(#chGrain)" stroke="#160C05" strokeWidth="2"/>
-          {/* Right side panel */}
-          <path d="M 258 168 L 286 150 L 286 244 L 258 262 Z" fill="url(#chSide)" stroke="#160C05" strokeWidth="1.7"/>
-
-          {/* Glow inside the cavity */}
-          <g transform="translate(165, 162)">
-            <ellipse cx="0" cy="-4" rx="60" ry="13" fill="url(#chGlow)" opacity="0.6">
-              <animate attributeName="rx" values="52;64;52" dur="6s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0.42;0.72;0.42" dur="6s" repeatCount="indefinite"/>
-            </ellipse>
-          </g>
-
-          {/* Carved marks on the front planks */}
-          <g stroke="#1C1109" strokeWidth="1" opacity="0.4" fill="none">
-            <path d="M 88 182 L 94 188 M 94 182 L 88 188"/>
-            <path d="M 104 184 L 110 184 M 107 181 L 107 187"/>
-            <path d="M 224 184 L 230 178 M 224 178 L 230 184"/>
-            <path d="M 240 248 L 246 248 M 243 245 L 243 251"/>
-          </g>
-
-          {/* Heavy iron horizontal bands, front + wrap onto side */}
-          <g>
-            <rect x="70" y="190" width="190" height="8" fill="url(#chIron)"/>
-            <path d="M 260 190 L 288 172 L 288 180 L 260 198 Z" fill="#1C1611"/>
-            <rect x="70" y="234" width="190" height="8" fill="url(#chIron)"/>
-            <path d="M 260 234 L 288 216 L 288 224 L 260 242 Z" fill="#1C1611"/>
-          </g>
-          {/* Iron corner braces: front-left, front-right, mid */}
-          <g fill="url(#chIron)" stroke="#160C05" strokeWidth="0.6">
-            <path d="M 70 168 L 88 168 L 88 262 L 70 262 Z"/>
-            <path d="M 240 168 L 258 168 L 258 262 L 240 262 Z"/>
-          </g>
-          {/* Side panel corner brace */}
-          <path d="M 258 168 L 286 150 L 286 168 L 258 184 Z" fill="url(#chIron)" stroke="#160C05" strokeWidth="0.6" opacity="0.92"/>
-          {/* Iron vertical strap centre */}
-          <rect x="153" y="168" width="10" height="94" fill="url(#chIron)"/>
-
-          {/* Rivets along the bands and braces */}
-          <g fill="#8A7B5A" stroke="#3A301E" strokeWidth="0.4">
-            <circle cx="79" cy="194" r="1.7"/>
-            <circle cx="120" cy="194" r="1.6"/>
-            <circle cx="200" cy="194" r="1.6"/>
-            <circle cx="249" cy="194" r="1.7"/>
-            <circle cx="79" cy="238" r="1.7"/>
-            <circle cx="120" cy="238" r="1.6"/>
-            <circle cx="200" cy="238" r="1.6"/>
-            <circle cx="249" cy="238" r="1.7"/>
-            <circle cx="79" cy="175" r="1.5"/>
-            <circle cx="79" cy="255" r="1.5"/>
-            <circle cx="249" cy="175" r="1.5"/>
-            <circle cx="249" cy="255" r="1.5"/>
-          </g>
-
-          {/* Hanging chain on the right */}
-          <g stroke="#2E2A24" strokeWidth="2.2" fill="none" opacity="0.95">
-            <ellipse cx="270" cy="206" rx="3" ry="4.4"/>
-            <ellipse cx="273" cy="214" rx="3" ry="4.4"/>
-            <ellipse cx="270" cy="222" rx="3" ry="4.4"/>
-            <ellipse cx="273" cy="230" rx="3" ry="4.4"/>
-          </g>
-
-          {/* Ornate brass hasp lock */}
-          <g>
-            <rect x="142" y="206" width="36" height="30" rx="3" fill="url(#chBrass)" stroke="#5A4520" strokeWidth="1"/>
-            <path d="M 150 206 L 150 200 Q 150 192, 160 192 Q 170 192, 170 200 L 170 206" fill="none" stroke="url(#chBrass)" strokeWidth="3.4"/>
-            <rect x="153" y="216" width="14" height="12" rx="1.6" fill="#1A1208" stroke="#5A4520" strokeWidth="0.7"/>
-            <circle cx="160" cy="222" r="2.2" fill="#3A2E14"/>
-            <circle cx="160" cy="222" r="0.9" fill="#E4C878"/>
-            <path d="M 142 230 L 178 230" stroke="#6E5220" strokeWidth="0.7" opacity="0.7"/>
-          </g>
-
-          {/* Side ring handle */}
-          <g stroke="#2E2A24" strokeWidth="2" fill="none">
-            <circle cx="92" cy="216" r="6"/>
-          </g>
-
-          {/* Plank grooves */}
-          <line x1="88" y1="216" x2="153" y2="216" stroke="#160C05" strokeWidth="0.6" opacity="0.5"/>
-          <line x1="163" y1="216" x2="240" y2="216" stroke="#160C05" strokeWidth="0.6" opacity="0.5"/>
-          <line x1="88" y1="250" x2="240" y2="250" stroke="#160C05" strokeWidth="0.6" opacity="0.5"/>
-          <line x1="260" y1="198" x2="288" y2="180" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
-          <line x1="260" y1="242" x2="288" y2="224" stroke="#0E0703" strokeWidth="0.5" opacity="0.5"/>
-
-          {/* Feet */}
-          <path d="M 76 262 L 96 262 L 96 274 L 78 274 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.6"/>
-          <path d="M 234 262 L 258 262 L 260 272 L 250 274 L 236 274 Z" fill="url(#chIron)" stroke="#0E0703" strokeWidth="0.6"/>
-          <path d="M 258 262 L 286 244 L 286 254 L 260 272 Z" fill="#1C1611" stroke="#0E0703" strokeWidth="0.6"/>
-
-          {/* Neutral intelligence vibes inside, no app pointers */}
-          <g transform="translate(165, 152)">
-            <g fill={P.tealL} opacity="0.9">
-              <circle cx="-24" cy="-2" r="2">
-                <animate attributeName="cy" values="-4;2;-4" dur="4.6s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.6;1;0.6" dur="4.6s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="-8" cy="-5" r="1.7">
-                <animate attributeName="cy" values="-7;-1;-7" dur="5.3s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="9" cy="-3" r="1.9">
-                <animate attributeName="cy" values="-5;1;-5" dur="4.9s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="24" cy="2" r="1.5">
-                <animate attributeName="cy" values="0;6;0" dur="5.6s" repeatCount="indefinite"/>
-              </circle>
-            </g>
-            <text x="0" y="-14" fontFamily="'Fraunces',serif" fontSize="7" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.4" opacity="0.92">INTELLIGENCE INSIDE</text>
-          </g>
-
-          {/* Ground shadow  rectangular footprint to match the box, follows its perspective */}
-          <defs>
-            <linearGradient id="chShadowFade" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#000000" stopOpacity="0.5"/>
-              <stop offset="100%" stopColor="#000000" stopOpacity="0"/>
-            </linearGradient>
-          </defs>
-          <path d="M 64 274 L 296 274 L 312 286 L 48 286 Z" fill="#000000" opacity="0.42"/>
-          <path d="M 56 286 L 304 286 L 300 292 L 60 292 Z" fill="url(#chShadowFade)" opacity="0.6"/>
-        </svg>
       </div>
 
       {/* ═══ EDGE PRINCIPLES  what makes these apps beyond a regular AI run ═══ */}
       <div style={{padding:"18px 24px",background:P.navy}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
-          <div style={{fontSize:9,fontWeight:800,letterSpacing:2.5,color:P.tealL,textTransform:"uppercase",marginBottom:4}}>The iStructural Edge</div>
-          <div style={{fontSize:13,fontWeight:800,color:P.white,fontFamily:"'Fraunces',serif",marginBottom:10}}>Beyond a regular search. Beyond a regular AI run.</div>
+          <div style={{fontSize:T.small,fontWeight:800,letterSpacing:2.5,color:P.tealL,textTransform:"uppercase",marginBottom:4}}>The iStructural Edge</div>
+          <div style={{fontSize:T.lead,fontWeight:800,color:P.white,fontFamily:"'Fraunces',serif",marginBottom:10}}>Beyond a regular search. Beyond a regular AI run.</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
             {[
               {t:"Multi-angle verification", d:"Every answer cross-checked from several independent angles, not a single pass"},
@@ -2276,8 +2178,8 @@ export default function App(){
               {t:"Iteration discipline", d:"Three to five iterations stated on every run"},
             ].map((e,i)=>(
               <div key={i} style={{padding:"10px 12px",borderRadius:9,background:P.navyM,border:`1px solid ${P.tealL}25`}}>
-                <div style={{fontSize:10,fontWeight:800,color:P.tealL,marginBottom:3}}>{e.t}</div>
-                <div style={{fontSize:8.5,color:"#9BBCD6",lineHeight:1.55}}>{e.d}</div>
+                <div style={{fontSize:T.body,fontWeight:800,color:P.tealL,marginBottom:3}}>{e.t}</div>
+                <div style={{fontSize:T.small,color:"#9BBCD6",lineHeight:1.55}}>{e.d}</div>
               </div>
             ))}
           </div>
@@ -2289,10 +2191,10 @@ export default function App(){
         {[...new Set(toolsApps.map(a=>a.category))].map(cat => (
           <div key={cat} style={{marginBottom:22}}>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,background:P.charcoal+"08",border:`1px solid ${P.charcoal}15`,borderLeft:`4px solid ${P.teal}`,marginBottom:10}}>
-              <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:8.5,fontWeight:700,letterSpacing:2,color:P.teal,background:P.teal+"15",border:`1px solid ${P.teal}30`,padding:"3px 8px",borderRadius:4,textTransform:"uppercase"}}>CAT</span>
+              <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:T.small,fontWeight:700,letterSpacing:2,color:P.teal,background:P.teal+"15",border:`1px solid ${P.teal}30`,padding:"3px 8px",borderRadius:4,textTransform:"uppercase"}}>CAT</span>
               <div style={{flex:1}}>
-                <div style={{fontSize:11,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{cat}</div>
-                <div style={{fontSize:8.5,color:P.slate,marginTop:2}}>{toolsApps.filter(a=>a.category===cat).length} app(s) in this category</div>
+                <div style={{fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{cat}</div>
+                <div style={{fontSize:T.small,color:P.slate,marginTop:2}}>{toolsApps.filter(a=>a.category===cat).length} app(s) in this category</div>
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(250px, 1fr))",gap:10}}>
@@ -2302,36 +2204,36 @@ export default function App(){
                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 18px ${app.iconColor}25`;}}
                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,boxShadow:`0 3px 10px ${app.iconColor}40`,position:"relative",overflow:"hidden"}}>
+                    <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,boxShadow:`0 3px 10px ${app.iconColor}40`,position:"relative",overflow:"hidden"}}>
                       <div style={{position:"absolute",inset:0,opacity:0.18,backgroundImage:`radial-gradient(circle at 30% 30%, ${P.white}80 1px, transparent 1.5px), radial-gradient(circle at 70% 70%, ${P.white}50 1px, transparent 1.5px)`,backgroundSize:"12px 12px"}}></div>
                       <span style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
                         {app.icon ? <AppIcon id={app.icon} size={26} color={P.white} accent={P.tealL}/> : app.iconLetter}
                       </span>
                     </div>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:12,fontWeight:800,color:P.charcoal}}>{app.name}</div>
-                      <div style={{fontSize:8.5,color:P.slate,marginTop:1}}>{app.tagline}</div>
+                      <div style={{fontSize:T.lead,fontWeight:800,color:P.charcoal}}>{app.name}</div>
+                      <div style={{fontSize:T.small,color:P.slate,marginTop:1}}>{app.tagline}</div>
                     </div>
                   </div>
-                  <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.55,flex:1}}>{app.shortDesc}</div>
+                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55,flex:1}}>{app.shortDesc}</div>
 
                   {/* Session status line on the card */}
                   {app.requiresKey && (
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"6px 8px",borderRadius:7,background:ownerMode ? P.s2+"12" : sessionStillValid ? P.greenD+"12" : P.s4+"12",border:`1px solid ${ownerMode ? P.s2+"40" : sessionStillValid ? P.greenD+"35" : P.s4+"35"}`}}>
                       {ownerMode ? (
                         <>
-                          <span style={{fontSize:8,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner mode</span>
-                          <span style={{fontSize:8.5,fontWeight:800,color:P.s2}}>Unlimited access</span>
+                          <span style={{fontSize:T.micro,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner mode</span>
+                          <span style={{fontSize:T.small,fontWeight:800,color:P.s2}}>Unlimited access</span>
                         </>
                       ) : sessionStillValid ? (
                         <>
-                          <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session live</span>
+                          <span style={{fontSize:T.micro,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session live</span>
                           <SandTimer endMs={sessionEndMs} size={26} dark={false} onExpire={()=>setSessionExpired(true)}/>
                         </>
                       ) : (
                         <>
-                          <span style={{fontSize:8.5,fontWeight:700,color:P.charcoal}}>60 min key required</span>
-                          <span style={{fontSize:8,color:P.slate}}>Free  transition stage</span>
+                          <span style={{fontSize:T.small,fontWeight:700,color:P.charcoal}}>60 min key required</span>
+                          <span style={{fontSize:T.micro,color:P.slate}}>Free  transition stage</span>
                         </>
                       )}
                     </div>
@@ -2340,8 +2242,8 @@ export default function App(){
                   {/* Dormant commercialization tag: faded, marked Coming later */}
                   {app.plan && (
                     <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.55}}>
-                      <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.charcoal+"12",color:P.slate,border:`1px solid ${P.charcoal}25`,letterSpacing:0.6,textTransform:"uppercase"}}>{app.plan.tier}</span>
-                      <span style={{fontSize:7.5,color:P.slate,fontStyle:"italic"}}>{app.plan.priceHint}  pricing coming later</span>
+                      <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.charcoal+"12",color:P.slate,border:`1px solid ${P.charcoal}25`,letterSpacing:0.6,textTransform:"uppercase"}}>{app.plan.tier}</span>
+                      <span style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>{app.plan.priceHint}  pricing coming later</span>
                     </div>
                   )}
 
@@ -2352,7 +2254,7 @@ export default function App(){
                         onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
                         {...kbd(()=>setActiveApp(app))}
                         aria-label={`Request a 60 minute key for ${app.name}`}
-                        style={{flex:1,fontSize:9.5,fontWeight:800,padding:"8px 10px",borderRadius:8,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
+                        style={{flex:1,fontSize:T.small,fontWeight:800,padding:"8px 10px",borderRadius:8,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
                         Request 60-min key
                       </button>
                     )}
@@ -2360,7 +2262,7 @@ export default function App(){
                       onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
                       {...kbd(()=>setActiveApp(app))}
                       aria-label={`Open ${app.name}`}
-                      style={{flex:1,fontSize:9.5,fontWeight:800,padding:"8px 10px",borderRadius:8,background:(app.requiresKey && !sessionStillValid) ? "transparent" : app.iconColor,color:(app.requiresKey && !sessionStillValid) ? app.iconColor : P.white,border:`1px solid ${app.iconColor}`,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
+                      style={{flex:1,fontSize:T.small,fontWeight:800,padding:"8px 10px",borderRadius:8,background:(app.requiresKey && !sessionStillValid) ? "transparent" : app.iconColor,color:(app.requiresKey && !sessionStillValid) ? app.iconColor : P.white,border:`1px solid ${app.iconColor}`,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
                       {sessionStillValid ? "Open app ↗" : "View details"}
                     </button>
                   </div>
@@ -2375,31 +2277,31 @@ export default function App(){
       <div style={{padding:"30px 24px",background:P.navy}}>
         <div style={{maxWidth:1080,margin:"0 auto"}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-            <span style={{fontSize:8,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.s4,color:P.navy,letterSpacing:1,textTransform:"uppercase"}}>Coming later</span>
-            <h3 style={{fontFamily:"'Fraunces',serif",fontSize:20,fontWeight:800,color:P.white,margin:0}}>Plans and Pricing</h3>
+            <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.s4,color:P.navy,letterSpacing:1,textTransform:"uppercase"}}>Coming later</span>
+            <h3 style={{fontFamily:"'Fraunces',serif",fontSize:T.h2,fontWeight:800,color:P.white,margin:0}}>Plans and Pricing</h3>
           </div>
-          <p style={{fontSize:10.5,color:"#9BBCD6",lineHeight:1.6,margin:"4px 0 16px",maxWidth:680}}>A preview of how the Tools Box will be offered. During this transition stage every app is free with a 60 minute access key. Pricing is not yet active. Subscriptions include a monthly credit allowance; heavier use adds overage credits. A bring-your-own-key option lets you connect your own AI account.</p>
+          <p style={{fontSize:T.body,color:"#9BBCD6",lineHeight:1.6,margin:"4px 0 16px",maxWidth:680}}>A preview of how the Tools Box will be offered. During this transition stage every app is free with a 60 minute access key. Pricing is not yet active. Subscriptions include a monthly credit allowance; heavier use adds overage credits. A bring-your-own-key option lets you connect your own AI account.</p>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:10,opacity:0.92}}>
             {commercialTiers.map(t=>(
               <div key={t.id} style={{background:t.featured?P.white:P.navyM,borderRadius:11,border:`1px solid ${t.featured?P.tealL:"#2E4763"}`,padding:"14px 14px",position:"relative"}}>
-                {t.featured && <span style={{position:"absolute",top:-9,left:14,fontSize:7.5,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.teal,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Most popular</span>}
-                {t.tag && <span style={{position:"absolute",top:-9,left:14,fontSize:7.5,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.greenD,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>{t.tag}</span>}
-                <div style={{fontSize:12,fontWeight:800,color:t.featured?P.navy:P.white,fontFamily:"'Fraunces',serif",marginBottom:2}}>{t.name}</div>
+                {t.featured && <span style={{position:"absolute",top:-9,left:14,fontSize:T.micro,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.teal,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Most popular</span>}
+                {t.tag && <span style={{position:"absolute",top:-9,left:14,fontSize:T.micro,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.greenD,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>{t.tag}</span>}
+                <div style={{fontSize:T.lead,fontWeight:800,color:t.featured?P.navy:P.white,fontFamily:"'Fraunces',serif",marginBottom:2}}>{t.name}</div>
                 <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:6}}>
-                  <span style={{fontSize:18,fontWeight:800,color:t.featured?P.teal:P.tealL}}>{t.price==="0"?"Free":t.price}</span>
-                  {t.cadence && <span style={{fontSize:8,color:t.featured?P.slate:"#9BBCD6"}}>{t.cadence}</span>}
+                  <span style={{fontSize:T.h2,fontWeight:800,color:t.featured?P.teal:P.tealL}}>{t.price==="0"?"Free":t.price}</span>
+                  {t.cadence && <span style={{fontSize:T.micro,color:t.featured?P.slate:"#9BBCD6"}}>{t.cadence}</span>}
                 </div>
-                <div style={{fontSize:8.5,color:t.featured?P.slate:"#9BBCD6",lineHeight:1.5,marginBottom:8,minHeight:34}}>{t.blurb}</div>
+                <div style={{fontSize:T.small,color:t.featured?P.slate:"#9BBCD6",lineHeight:1.5,marginBottom:8,minHeight:34}}>{t.blurb}</div>
                 {t.points.map((p,i)=>(
-                  <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:8.5,color:t.featured?P.charcoal:"#C3D4E5",lineHeight:1.45}}>
+                  <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:T.small,color:t.featured?P.charcoal:"#C3D4E5",lineHeight:1.45}}>
                     <span style={{color:t.featured?P.teal:P.tealL,fontWeight:800,flexShrink:0}}>✓</span><span>{p}</span>
                   </div>
                 ))}
-                <div style={{marginTop:9,padding:"6px 9px",borderRadius:6,background:t.featured?P.charcoal+"0A":"#0E2236",border:`1px dashed ${t.featured?P.charcoal+"25":"#2E4763"}`,fontSize:7.5,fontWeight:700,color:t.featured?P.slate:"#7E97AE",textAlign:"center",letterSpacing:0.5,textTransform:"uppercase"}}>Not yet active</div>
+                <div style={{marginTop:9,padding:"6px 9px",borderRadius:6,background:t.featured?P.charcoal+"0A":"#0E2236",border:`1px dashed ${t.featured?P.charcoal+"25":"#2E4763"}`,fontSize:T.micro,fontWeight:700,color:t.featured?P.slate:"#7E97AE",textAlign:"center",letterSpacing:0.5,textTransform:"uppercase"}}>Not yet active</div>
               </div>
             ))}
           </div>
-          <div style={{marginTop:12,fontSize:8.5,color:"#7E97AE",lineHeight:1.6}}>Pricing, credit sizing and billing are finalized in the next stage. Nothing here charges you today.</div>
+          <div style={{marginTop:12,fontSize:T.small,color:"#7E97AE",lineHeight:1.6}}>Pricing, credit sizing and billing are finalized in the next stage. Nothing here charges you today.</div>
         </div>
       </div>
 
@@ -2418,118 +2320,54 @@ export default function App(){
   // Routed through info@istructgroup.com via the existing FormSubmit pipeline
   // shared with all Start a Project forms. No briefing files are auto served;
   // every briefing is issued on request by the iStructural team.
+  // Light lead-capture. Replaces the heavy briefing form. It does not expose
+  // any app internals; it is a contact form so an interested person can raise
+  // their hand. Keeps the early sales signal, far less friction.
   const BriefingRequestForm = ({apps, accepted, setAccepted}) => {
     const {values, set, status, submit, captcha} = useForm({
-      _subject:"iStructural | Tools Box  Capabilities Briefing Request",
-      app:"", contact:"", role:"", company:"", email:"", phone:"",
-      country:"", audience:"", urgency:"", notes:""
+      _subject:"iStructural | Tools Box  Access / Notify Request",
+      app:"", contact:"", email:"", notes:""
     });
     return (
       <div style={{padding:"28px 24px 36px",background:`linear-gradient(180deg, ${P.sand} 0%, ${P.s2L} 100%)`,borderTop:`1px solid ${P.charcoal}15`}}>
-        <div style={{maxWidth:760,margin:"0 auto",background:P.white,borderRadius:14,boxShadow:`0 8px 26px ${P.navy}1A`,overflow:"hidden",border:`1px solid ${P.teal}25`}}>
-          {/* Header banner */}
+        <div style={{maxWidth:560,margin:"0 auto",background:P.white,borderRadius:14,boxShadow:`0 8px 26px ${P.navy}1A`,overflow:"hidden",border:`1px solid ${P.teal}25`}}>
           <div style={{padding:"14px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white}}>
-            <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Request a Capabilities Briefing</div>
-            <h3 style={{fontSize:18,fontWeight:800,fontFamily:"'Fraunces',serif",margin:"4px 0 0"}}>Tell us which app you want a briefing for</h3>
-            <p style={{fontSize:10.5,color:"#9BBCD6",marginTop:4,lineHeight:1.6}}>Briefings are issued on request, tailored to your role and audience. Our team replies from <strong style={{color:P.tealL}}>info@istructgroup.com</strong>, typically within one business day.</p>
+            <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Request Access / Get Notified</div>
+            <h3 style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif",margin:"4px 0 0"}}>Want in, or want to be told when it opens?</h3>
+            <p style={{fontSize:T.body,color:"#9BBCD6",marginTop:4,lineHeight:1.6}}>Leave your details. We reply from <strong style={{color:P.tealL}}>info@istructgroup.com</strong>, usually within one business day.</p>
           </div>
-
           <form onSubmit={submit} style={{padding:"18px 22px"}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {/* App pulled from registry */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
               <div style={{gridColumn:"1 / -1"}}>
-                <label style={labelStyle}>Which app do you want a briefing for? *</label>
+                <label style={labelStyle}>Which app are you interested in? *</label>
                 <select required style={inputStyle} value={values.app} onChange={set("app")} aria-label="App selection">
                   <option value="">Select an app...</option>
-                  {apps.map(a => (
-                    <option key={a.id} value={a.name}>{a.name}  {a.tagline}</option>
-                  ))}
-                  <option value="Other / Multiple">Other / Multiple (specify in notes)</option>
+                  {apps.map(a => (<option key={a.id} value={a.name}>{a.name}  {a.tagline}</option>))}
+                  <option value="Other / Multiple">Other / Multiple</option>
                 </select>
               </div>
-
-              {/* Contact details */}
               <div>
                 <label style={labelStyle}>Full Name *</label>
                 <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="e.g. Jane Smith" aria-label="Full name" />
               </div>
               <div>
-                <label style={labelStyle}>Role / Title *</label>
-                <input required style={inputStyle} value={values.role} onChange={set("role")} placeholder="e.g. Senior Structural Engineer" aria-label="Role or title" />
-              </div>
-              <div>
-                <label style={labelStyle}>Company / Organization</label>
-                <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. ABC Consulting" aria-label="Company or organization" />
-              </div>
-              <div>
-                <label style={labelStyle}>Country / City</label>
-                <input style={inputStyle} value={values.country} onChange={set("country")} placeholder="e.g. UAE  Dubai" aria-label="Country and city" />
-              </div>
-              <div>
                 <label style={labelStyle}>Email Address *</label>
                 <input required type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
               </div>
-              <div>
-                <label style={labelStyle}>Phone (optional)</label>
-                <input type="tel" style={inputStyle} value={values.phone} onChange={set("phone")} placeholder="+1 555 123 4567" aria-label="Phone number" />
-              </div>
-
-              {/* Audience and urgency */}
-              <div>
-                <label style={labelStyle}>I am a *</label>
-                <select required style={inputStyle} value={values.audience} onChange={set("audience")} aria-label="Audience">
-                  <option value="">Select audience...</option>
-                  <option>Student / Early Career</option>
-                  <option>Mid Career Professional</option>
-                  <option>Executive / Senior Leader</option>
-                  <option>Engineer / Technical Specialist</option>
-                  <option>Owner / Project Manager</option>
-                  <option>Educator / Trainer</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Urgency</label>
-                <select style={inputStyle} value={values.urgency} onChange={set("urgency")} aria-label="Urgency">
-                  <option value="">No rush</option>
-                  <option>Within 24 hours</option>
-                  <option>Within this week</option>
-                  <option>Within this month</option>
-                </select>
-              </div>
-
-              {/* Notes */}
               <div style={{gridColumn:"1 / -1"}}>
-                <label style={labelStyle}>What do you want covered in the briefing?</label>
-                <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Optional. Mention any specific use case, audience, format preference, or questions you want the briefing to answer." aria-label="Briefing notes" />
+                <label style={labelStyle}>Anything you want us to know? (optional)</label>
+                <textarea style={textareaStyle} value={values.notes} onChange={set("notes")} placeholder="Optional. A use case, a question, or how you plan to use the app." aria-label="Notes" />
               </div>
             </div>
-
             <CaptchaBlock captcha={captcha} status={status} />
-
-            {/* Hard-stop disclaimer (covers current and future apps) */}
-            <div style={{marginTop:12,padding:"12px 14px",borderRadius:8,background:P.coral+"10",border:`1px solid ${P.coral}45`}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1.4,textTransform:"uppercase"}}>Disclaimer  Please Read</span>
-                <span style={{fontSize:9.5,color:P.charcoal,fontWeight:700}}>Covers this page and every app on it, current and future.</span>
-              </div>
-              <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.65}}>
-                The Tools Box, and every app inside it, is provided by iStructural Group Inc. as an informational and decision-support resource only. Outputs are produced by software models and do not replace licensed professional advice (engineering, legal, financial, medical, immigration, or otherwise). iStructural Group Inc. makes no warranty of accuracy, fitness, or outcome. Apps may evolve, change, or be withdrawn at any time without notice. You remain solely responsible for any decisions made on the basis of any output. Confidentiality is enforced: inputs you submit are used only to deliver the requested output and to follow up. We do not share your data with third parties.
-              </div>
-              <label style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:10,cursor:"pointer"}}>
-                <input type="checkbox" checked={!!accepted} onChange={(e)=>setAccepted(e.target.checked)} aria-label="Accept disclaimer" style={{marginTop:3}} />
-                <span style={{fontSize:10,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>I have read the disclaimer above and I accept the terms. *</span>
-              </label>
-            </div>
-
+            <label style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:12,cursor:"pointer"}}>
+              <input type="checkbox" checked={!!accepted} onChange={(e)=>setAccepted(e.target.checked)} aria-label="Accept terms" style={{marginTop:3,flexShrink:0}} />
+              <span style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>The Tools Box apps are informational and decision-support tools only, no professional advice, no guarantee of outcome. My details are used only to follow up on this request and are not shared with third parties. *</span>
+            </label>
             <button type="submit" disabled={status==="sending"||status==="success"||!accepted} style={{...submitStyle(P.teal), opacity:(!accepted ? 0.55 : 1), cursor:(!accepted ? "not-allowed" : "pointer")}}>
-              {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : (accepted ? "Submit Briefing Request" : "Accept the disclaimer to enable submit")}
+              {status==="sending" ? "Sending..." : status==="success" ? "Received, we will be in touch" : (accepted ? "Send Request" : "Accept the terms to enable submit")}
             </button>
             <FormStatus status={status} color={P.teal} />
-
-            <div style={{marginTop:10,fontSize:9,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>
-              By submitting you confirm you have read the iStructural privacy posture. Your details are used only to deliver the requested briefing and to follow up on the request. We do not share your information with third parties.
-            </div>
           </form>
         </div>
       </div>
@@ -2556,6 +2394,50 @@ export default function App(){
     const [ownerError, setOwnerError] = useState("");
     const [courseStartedAt] = useState(Date.now());     // session start, drives the live time stat
     const [ipAgreed, setIpAgreed] = useState(false);    // LIABILITY GATE: user accepts IP responsibility before any upload
+    // ── LEARN local library (browser storage) ──
+    const [library, setLibrary] = useState([]);          // saved material for the open course
+    const [libBusy, setLibBusy] = useState(false);       // save/load in progress
+    const [libMsg, setLibMsg] = useState("");            // status or error message
+    const [sourceFolder, setSourceFolder] = useState(""); // the folder label the user is filing into / reading from
+    // Load saved material whenever a course is opened. Effect declared inside
+    // LearnModal, depends on activeCourse which is declared above it.
+    useEffect(()=>{
+      if (!activeCourse) { setLibrary([]); return; }
+      let cancelled = false;
+      setLibBusy(true); setLibMsg("");
+      isgListMaterials(activeCourse.id)
+        .then(items=>{ if(!cancelled){ setLibrary(items); setLibBusy(false); } })
+        .catch(err=>{ if(!cancelled){ setLibMsg(err.message||"Could not load saved material."); setLibBusy(false); } });
+      return ()=>{ cancelled = true; };
+    }, [activeCourse]);
+    // Save the picked files into browser storage under the open course.
+    const handleMaterialUpload = async (e)=>{
+      const files = Array.from(e.target.files||[]);
+      e.target.value = ""; // allow re-picking the same file
+      if (!files.length || !activeCourse) return;
+      setLibBusy(true); setLibMsg("");
+      try {
+        for (const f of files) {
+          await isgSaveMaterial({
+            id: `${activeCourse.id}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+            courseId: activeCourse.id,
+            folder: (sourceFolder||"").trim() || "default",
+            name: f.name, type: f.type||"file", size: f.size,
+            blob: f, savedAt: Date.now(),
+          });
+        }
+        const items = await isgListMaterials(activeCourse.id);
+        setLibrary(items);
+        setLibMsg(`${files.length} item${files.length>1?"s":""} saved to this browser.`);
+      } catch(err){ setLibMsg(err.message||"Save failed."); }
+      setLibBusy(false);
+    };
+    const removeMaterial = async (id)=>{
+      setLibBusy(true);
+      try { await isgDeleteMaterial(id); const items = await isgListMaterials(activeCourse.id); setLibrary(items); setLibMsg("Item removed."); }
+      catch(err){ setLibMsg(err.message||"Could not remove the item."); }
+      setLibBusy(false);
+    };
 
     const tryUnlock = () => {
       if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), 60); setKeyError(""); }
@@ -2583,12 +2465,12 @@ export default function App(){
           aria-label={live ? `Open module ${m.n}` : `${m.n} coming later`}
           style={{padding:"11px 12px",borderRadius:9,background:live?P.white:P.sand,border:`1px solid ${live?P.s3+"40":P.charcoal+"18"}`,cursor:live?"pointer":"default",opacity:live?1:0.7,display:"flex",flexDirection:"column",gap:6,minHeight:74}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-            <span style={{fontSize:10,fontWeight:800,color:live?P.charcoal:P.slate,lineHeight:1.3}}>{m.n}</span>
+            <span style={{fontSize:T.body,fontWeight:800,color:live?P.charcoal:P.slate,lineHeight:1.3}}>{m.n}</span>
             {live
-              ? <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`,whiteSpace:"nowrap"}}>LIVE</span>
-              : <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s4+"20",color:P.s4,border:`1px solid ${P.s4}45`,whiteSpace:"nowrap"}}>COMING LATER</span>}
+              ? <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`,whiteSpace:"nowrap"}}>LIVE</span>
+              : <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s4+"20",color:P.s4,border:`1px solid ${P.s4}45`,whiteSpace:"nowrap"}}>COMING LATER</span>}
           </div>
-          {live && <span style={{fontSize:8.5,fontWeight:700,color:P.s3}}>Open module &#x2197;</span>}
+          {live && <span style={{fontSize:T.small,fontWeight:700,color:P.s3}}>Open module &#x2197;</span>}
         </div>
       );
     };
@@ -2605,17 +2487,17 @@ export default function App(){
               <AppIcon id="book" size={26} color={P.white} accent={P.tealL}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:18,fontWeight:800,fontFamily:"'Fraunces',serif"}}>LEARN</div>
-              <div style={{fontSize:10.5,color:P.tealL,marginTop:2}}>{app.tagline}</div>
+              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>LEARN</div>
+              <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>{app.tagline}</div>
             </div>
             {ownerMode
-              ? <span style={{marginRight:6,fontSize:8,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>
+              ? <span style={{marginRight:6,fontSize:T.micro,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>
               : sessionStillValid && <div style={{marginRight:6}}><SandTimer endMs={sessionEndMs} size={28} dark={true} onExpire={()=>setSessionExpired(true)}/></div>}
-            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
           </div>
 
           {/* Disclaimer chip */}
-          <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,fontSize:9.5,color:P.charcoal,lineHeight:1.55}}>
+          <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
             <strong>Study support only.</strong> LEARN is not official Professional Engineers Ontario material and does not guarantee exam success. Answers carry accuracy and confidence estimates, not guarantees. By using LEARN you accept the full terms at the top of the Tools Box page.
           </div>
 
@@ -2623,7 +2505,7 @@ export default function App(){
           <div style={{display:"flex",gap:6,padding:"10px 22px 0",background:P.sand}}>
             {[{k:"catalog",l:"Module Catalog"},{k:"course",l:"Course"},{k:"author",l:"Course Builder (owner)"}].map(t=>(
               <div key={t.k} onClick={()=>setView(t.k)} {...kbd(()=>setView(t.k))} role="tab" aria-selected={view===t.k}
-                style={{padding:"7px 12px",borderRadius:"8px 8px 0 0",fontSize:9.5,fontWeight:800,cursor:"pointer",background:view===t.k?P.white:"transparent",color:view===t.k?P.s3:P.slate,border:`1px solid ${view===t.k?P.charcoal+"15":"transparent"}`,borderBottom:"none"}}>
+                style={{padding:"7px 12px",borderRadius:"8px 8px 0 0",fontSize:T.small,fontWeight:800,cursor:"pointer",background:view===t.k?P.white:"transparent",color:view===t.k?P.s3:P.slate,border:`1px solid ${view===t.k?P.charcoal+"15":"transparent"}`,borderBottom:"none"}}>
                 {t.l}
               </div>
             ))}
@@ -2634,13 +2516,13 @@ export default function App(){
             {/* ───── CATALOG VIEW ───── */}
             {view==="catalog" && (
               <div>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif",marginBottom:4}}>Modules</div>
-                <div style={{fontSize:9.5,color:P.slate,marginBottom:10,lineHeight:1.55}}>One catalog of modules. Professional Engineering of Ontario is live. The rest are named and arriving as iStructural authors them.</div>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif",marginBottom:4}}>Modules</div>
+                <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>One catalog of modules. Professional Engineering of Ontario is live. The rest are named and arriving as iStructural authors them.</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8}}>
                   {featured.map(moduleCard)}
                 </div>
                 <div onClick={()=>setDrawerOpen(v=>!v)} {...kbd(()=>setDrawerOpen(v=>!v))} aria-expanded={drawerOpen}
-                  style={{marginTop:12,padding:"8px 12px",borderRadius:8,background:P.charcoal+"08",border:`1px solid ${P.charcoal}15`,cursor:"pointer",fontSize:9.5,fontWeight:800,color:P.charcoal,display:"flex",justifyContent:"space-between"}}>
+                  style={{marginTop:12,padding:"8px 12px",borderRadius:8,background:P.charcoal+"08",border:`1px solid ${P.charcoal}15`,cursor:"pointer",fontSize:T.small,fontWeight:800,color:P.charcoal,display:"flex",justifyContent:"space-between"}}>
                   <span>{drawerOpen ? "Hide" : "Show"} the other {drawer.length} modules  Coming later</span>
                   <span>{drawerOpen ? "▾" : "▸"}</span>
                 </div>
@@ -2656,12 +2538,12 @@ export default function App(){
             {view==="course" && (
               <div>
                 {!activeModule && (
-                  <div style={{fontSize:10.5,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
+                  <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
                     Select a live module from the Module Catalog to begin.
                   </div>
                 )}
                 {activeModule && activeModule.status!=="live" && (
-                  <div style={{fontSize:10.5,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
+                  <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
                     {activeModule.n} is coming later. No published course yet.
                   </div>
                 )}
@@ -2672,23 +2554,23 @@ export default function App(){
                   if (!activeCourse) {
                     return (
                       <div>
-                        <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeModule.n}</div>
-                        <div style={{fontSize:9,color:P.slate,marginBottom:12}}>Choose a course to begin. Each course is a workspace: upload your study material, then ask questions, find questions for answers, request worked examples, or learn the concepts.</div>
+                        <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeModule.n}</div>
+                        <div style={{fontSize:T.small,color:P.slate,marginBottom:12}}>Choose a course to begin. Each course is a workspace: upload your study material, then ask questions, find questions for answers, request worked examples, or learn the concepts.</div>
                         {tracks.map(track=>(
                           <div key={track} style={{marginBottom:14}}>
-                            <div style={{fontSize:9,fontWeight:800,color:P.s3,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>{track}</div>
+                            <div style={{fontSize:T.small,fontWeight:800,color:P.s3,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>{track}</div>
                             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(230px, 1fr))",gap:8}}>
                               {moduleCourses.filter(c=>c.track===track).map(c=>(
                                 <div key={c.id} onClick={()=>{ setActiveCourse(c); setIpAgreed(false); }} {...kbd(()=>{ setActiveCourse(c); setIpAgreed(false); })}
                                   aria-label={`Open course ${c.title}`}
                                   style={{padding:"12px 13px",borderRadius:9,background:P.white,border:`1px solid ${P.s3}40`,cursor:"pointer",display:"flex",flexDirection:"column",gap:5}}>
                                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-                                    <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{c.code}</span>
-                                    <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`}}>LIVE</span>
+                                    <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{c.code}</span>
+                                    <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`}}>LIVE</span>
                                   </div>
-                                  <div style={{fontSize:10.5,fontWeight:800,color:P.charcoal,lineHeight:1.35}}>{c.title}</div>
-                                  <div style={{fontSize:8.5,color:P.slate,lineHeight:1.5}}>{c.summary}</div>
-                                  <span style={{fontSize:8.5,fontWeight:800,color:P.s3,marginTop:2}}>Open course &#x2197;</span>
+                                  <div style={{fontSize:T.body,fontWeight:800,color:P.charcoal,lineHeight:1.35}}>{c.title}</div>
+                                  <div style={{fontSize:T.small,color:P.slate,lineHeight:1.5}}>{c.summary}</div>
+                                  <span style={{fontSize:T.small,fontWeight:800,color:P.s3,marginTop:2}}>Open course &#x2197;</span>
                                 </div>
                               ))}
                             </div>
@@ -2701,33 +2583,33 @@ export default function App(){
                   return (
                   <div>
                     <div onClick={()=>setActiveCourse(null)} {...kbd(()=>setActiveCourse(null))} aria-label="Back to courses"
-                      style={{fontSize:8.5,fontWeight:800,color:P.s3,cursor:"pointer",marginBottom:6}}>&#8592; All {activeModule.n} courses</div>
+                      style={{fontSize:T.small,fontWeight:800,color:P.s3,cursor:"pointer",marginBottom:6}}>&#8592; All {activeModule.n} courses</div>
                     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
-                      <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{activeCourse.code}</span>
-                      <div style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeCourse.title}</div>
+                      <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{activeCourse.code}</span>
+                      <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeCourse.title}</div>
                     </div>
-                    <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>{activeCourse.summary}</div>
+                    <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>{activeCourse.summary}</div>
 
                     {/* Concepts covered */}
                     <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"11px 13px",marginBottom:12}}>
-                      <div style={{fontSize:10,fontWeight:800,color:P.s3,marginBottom:6}}>Concepts in this course</div>
+                      <div style={{fontSize:T.body,fontWeight:800,color:P.s3,marginBottom:6}}>Concepts in this course</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                         {activeCourse.concepts.map((cc,i)=>(
-                          <span key={i} style={{fontSize:8.5,fontWeight:700,color:P.charcoal,padding:"3px 8px",borderRadius:5,background:P.s3+"10",border:`1px solid ${P.s3}30`}}>{cc}</span>
+                          <span key={i} style={{fontSize:T.small,fontWeight:700,color:P.charcoal,padding:"3px 8px",borderRadius:5,background:P.s3+"10",border:`1px solid ${P.s3}30`}}>{cc}</span>
                         ))}
                       </div>
                     </div>
 
                     {/* Progress + time analytics strip */}
                     <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px",marginBottom:12}}>
-                      <div style={{fontSize:11,fontWeight:800,color:P.s3,marginBottom:8}}>Your Progress</div>
+                      <div style={{fontSize:T.body,fontWeight:800,color:P.s3,marginBottom:8}}>Your Progress</div>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                         <div style={{flex:1,height:12,borderRadius:6,background:P.charcoal+"10",overflow:"hidden"}}>
                           <div style={{height:"100%",width:"0%",background:`linear-gradient(90deg, ${P.s3} 0%, ${P.tealL} 100%)`,borderRadius:6}}></div>
                         </div>
-                        <span style={{fontSize:10,fontWeight:800,color:P.charcoal}}>0%</span>
+                        <span style={{fontSize:T.body,fontWeight:800,color:P.charcoal}}>0%</span>
                       </div>
-                      <div style={{fontSize:8.5,color:P.slate,marginBottom:10}}>Progress fills as you complete lessons, examples and practice in a published course.</div>
+                      <div style={{fontSize:T.small,color:P.slate,marginBottom:10}}>Progress fills as you complete lessons, examples and practice in a published course.</div>
                       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))",gap:8}}>
                         {[
                           {l:"Time this session", v:`${minsThisSession} min`},
@@ -2737,8 +2619,8 @@ export default function App(){
                           {l:"Current streak", v:"1 day"},
                         ].map((s,i)=>(
                           <div key={i} style={{padding:"8px 10px",borderRadius:8,background:P.s3+"0C",border:`1px solid ${P.s3}25`}}>
-                            <div style={{fontSize:13,fontWeight:800,color:P.s3}}>{s.v}</div>
-                            <div style={{fontSize:7.5,color:P.slate,marginTop:1}}>{s.l}</div>
+                            <div style={{fontSize:T.lead,fontWeight:800,color:P.s3}}>{s.v}</div>
+                            <div style={{fontSize:T.micro,color:P.slate,marginTop:1}}>{s.l}</div>
                           </div>
                         ))}
                       </div>
@@ -2746,8 +2628,8 @@ export default function App(){
 
                     {/* Study panel  the run-on-materials workspace */}
                     <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px"}}>
-                      <div style={{fontSize:11,fontWeight:800,color:P.s3,marginBottom:3}}>Study Workspace</div>
-                      <div style={{fontSize:8.5,color:P.slate,marginBottom:9,lineHeight:1.5}}>This is where you run on your material. Upload your {activeCourse.code} study material, then pick how you want to work with it.</div>
+                      <div style={{fontSize:T.body,fontWeight:800,color:P.s3,marginBottom:3}}>Study Workspace</div>
+                      <div style={{fontSize:T.small,color:P.slate,marginBottom:9,lineHeight:1.5}}>This is where you run on your material. Upload your {activeCourse.code} study material, then pick how you want to work with it.</div>
                       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
                         {[
                           {k:"ask",l:"Ask the material"},
@@ -2756,35 +2638,35 @@ export default function App(){
                           {k:"concepts",l:"Learn the concepts"},
                         ].map(t=>(
                           <div key={t.k} onClick={()=>setStudyTab(t.k)} {...kbd(()=>setStudyTab(t.k))} role="tab" aria-selected={studyTab===t.k}
-                            style={{padding:"6px 10px",borderRadius:7,fontSize:9,fontWeight:800,cursor:"pointer",background:studyTab===t.k?P.s3:"transparent",color:studyTab===t.k?P.white:P.slate,border:`1px solid ${studyTab===t.k?P.s3:"#ccc"}`}}>
+                            style={{padding:"6px 10px",borderRadius:7,fontSize:T.small,fontWeight:800,cursor:"pointer",background:studyTab===t.k?P.s3:"transparent",color:studyTab===t.k?P.white:P.slate,border:`1px solid ${studyTab===t.k?P.s3:"#ccc"}`}}>
                             {t.l}
                           </div>
                         ))}
                       </div>
                       {!sessionStillValid ? (
                         <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`}}>
-                          <div style={{fontSize:10,color:P.charcoal,marginBottom:8}}>Studying requires a free 60 minute session key during this transition stage.</div>
+                          <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8}}>Studying requires a free 60 minute session key during this transition stage.</div>
                           <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural LEARN  60 minute key request")}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the LEARN app.\n\nFull name: \nRole: \nEmail: \n\nThank you.")}`}
-                            style={{display:"inline-block",padding:"8px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:800,textDecoration:"none",marginBottom:8}}>Request 60-min key by email</a>
+                            style={{display:"inline-block",padding:"8px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.body,fontWeight:800,textDecoration:"none",marginBottom:8}}>Request 60-min key by email</a>
                           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                            <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key" aria-label="Access key" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
-                            <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
+                            <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key" aria-label="Access key" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit"}} />
+                            <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
                           </div>
-                          {keyError && <div style={{marginTop:6,fontSize:9,color:P.coral,fontWeight:600}}>{keyError}</div>}
+                          {keyError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{keyError}</div>}
                         </div>
                       ) : (
                         <div>
                           {/* ── LIABILITY GATE: required before any material upload ── */}
                           <div style={{padding:"10px 12px",borderRadius:8,background:P.coral+"0E",border:`1px solid ${P.coral}45`,marginBottom:10}}>
                             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-                              <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1,textTransform:"uppercase"}}>Before you upload</span>
+                              <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1,textTransform:"uppercase"}}>Before you upload</span>
                             </div>
-                            <div style={{fontSize:8.5,color:P.charcoal,lineHeight:1.6,marginBottom:7}}>
+                            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.6,marginBottom:7}}>
                               Material you upload is supplied by you, not by iStructural. iStructural does not own, license, verify or endorse it. CSA standards (A23.3, S16, O86) are themselves copyrighted by CSA Group. You confirm you own or are properly licensed to use everything you upload, you hold all intellectual property and copyright responsibility, and you release and indemnify iStructural Group Inc. against any claim arising from your uploaded material. LEARN answers in original wording for your personal study and does not redistribute copyrighted standards.
                             </div>
                             <label style={{display:"flex",alignItems:"flex-start",gap:7,cursor:"pointer"}}>
                               <input type="checkbox" checked={ipAgreed} onChange={(e)=>setIpAgreed(e.target.checked)} aria-label="I accept the upload and intellectual property terms" style={{marginTop:1,width:14,height:14,flexShrink:0,accentColor:P.coral}} />
-                              <span style={{fontSize:8.5,fontWeight:700,color:P.charcoal,lineHeight:1.5}}>I own or am licensed to use the material I upload, I accept full intellectual property responsibility, and I indemnify iStructural Group Inc.</span>
+                              <span style={{fontSize:T.small,fontWeight:700,color:P.charcoal,lineHeight:1.5}}>I own or am licensed to use the material I upload, I accept full intellectual property responsibility, and I indemnify iStructural Group Inc.</span>
                             </label>
                           </div>
 
@@ -2795,20 +2677,48 @@ export default function App(){
                               studyTab==="examples" ? "Name a topic or clause, for example flexural design or block shear. LEARN drafts example questions with full answers to learn from." :
                               "Name a concept, for example lateral torsional buckling or development length. LEARN explains it from the course material, step by step."}
                             aria-label="Study input"
-                            style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
+                            style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
                           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:8}}>
                             <button disabled={!ipAgreed}
-                              style={{padding:"9px 16px",borderRadius:8,background:ipAgreed?P.s3:"#bbb",color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:ipAgreed?"pointer":"not-allowed",fontFamily:"inherit"}}>
+                              style={{padding:"9px 16px",borderRadius:8,background:ipAgreed?P.s3:"#bbb",color:P.white,fontSize:T.body,fontWeight:800,border:"none",cursor:ipAgreed?"pointer":"not-allowed",fontFamily:"inherit"}}>
                               {studyTab==="ask" ? "Ask the material" : studyTab==="findq" ? "Find the questions" : studyTab==="examples" ? "Generate example Q + A" : "Explain the concept"}
                             </button>
-                            <label style={{fontSize:9,fontWeight:700,color:ipAgreed?P.s3:"#999",cursor:ipAgreed?"pointer":"not-allowed",display:"flex",alignItems:"center",gap:4}}>
-                              <span style={{fontSize:13}}>+</span> Upload {activeCourse.code} material
-                              <input type="file" multiple disabled={!ipAgreed} accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload course study material" style={{display:"none"}} />
+                            <label style={{fontSize:T.small,fontWeight:700,color:ipAgreed?P.s3:"#999",cursor:ipAgreed?"pointer":"not-allowed",display:"flex",alignItems:"center",gap:4}}>
+                              <span style={{fontSize:T.lead}}>+</span> Upload {activeCourse.code} material
+                              <input type="file" multiple disabled={!ipAgreed} onChange={handleMaterialUpload} accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload course study material" style={{display:"none"}} />
                             </label>
                           </div>
-                          {!ipAgreed && <div style={{marginTop:6,fontSize:8.5,color:P.coral,fontWeight:700}}>Tick the box above to enable upload and run.</div>}
-                          <div style={{marginTop:9,fontSize:8,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>{activeCourse.uploadHint}</div>
-                          <div style={{marginTop:9,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:9,color:P.slate,lineHeight:1.6}}>
+                          {!ipAgreed && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:700}}>Tick the box above to enable upload and run.</div>}
+                          <div style={{marginTop:9,fontSize:T.micro,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>{activeCourse.uploadHint}</div>
+
+                          {/* ── SOURCE FOLDER + SAVED MATERIAL LIBRARY (browser storage) ── */}
+                          {ipAgreed && (
+                            <div style={{marginTop:11,padding:"11px 13px",borderRadius:8,background:P.s3+"08",border:`1px solid ${P.s3}35`}}>
+                              <div style={{fontSize:T.small,fontWeight:800,color:P.s3,marginBottom:5}}>Source folder and saved material</div>
+                              <label style={{display:"block",fontSize:T.micro,fontWeight:700,color:P.charcoal,marginBottom:3}}>Source folder, the app retrieves and files material here</label>
+                              <input value={sourceFolder} onChange={(e)=>setSourceFolder(e.target.value)}
+                                placeholder={`e.g. ${activeCourse.code.toLowerCase().replace(/[^a-z0-9]/g,"-")}-notes`}
+                                aria-label="Source folder name"
+                                style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box",marginBottom:7}} />
+                              {libMsg && <div style={{fontSize:T.micro,fontWeight:700,color:libMsg.toLowerCase().includes("fail")||libMsg.toLowerCase().includes("could not")?P.coral:P.greenD,marginBottom:6}}>{libMsg}</div>}
+                              {libBusy && <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>Working...</div>}
+                              {library.length===0 && !libBusy && (
+                                <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>No saved material yet. Use Upload above. Saved material stays in this browser and is here next time you open the course.</div>
+                              )}
+                              {library.map(m=>(
+                                <div key={m.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"6px 8px",borderRadius:6,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:4}}>
+                                  <div style={{minWidth:0,flex:1}}>
+                                    <div style={{fontSize:T.micro,fontWeight:700,color:P.charcoal,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.name}</div>
+                                    <div style={{fontSize:T.micro,color:P.slate}}>{m.folder} · {(m.size/1024).toFixed(0)} KB</div>
+                                  </div>
+                                  <button onClick={()=>removeMaterial(m.id)} aria-label={`Remove ${m.name}`}
+                                    style={{flexShrink:0,fontSize:T.micro,fontWeight:700,color:P.coral,background:"transparent",border:`1px solid ${P.coral}45`,borderRadius:5,padding:"3px 8px",cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
+                                </div>
+                              ))}
+                              <div style={{marginTop:6,fontSize:T.micro,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>Browser storage, free, no account. Material is saved on this device and browser only. Clearing browser data removes it. A shared cloud folder comes in the next stage.</div>
+                            </div>
+                          )}
+                          <div style={{marginTop:9,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:T.small,color:P.slate,lineHeight:1.6}}>
                             LEARN works from the material you upload for this course. Every answer carries a source chip (from your uploaded material, from a course-provided source, or from the internet), an accuracy percentage, and a confidence percentage. If your material cannot answer, LEARN asks your permission before searching the internet and cites any external source with its date. No em dashes. Three iterations stated.
                           </div>
                         </div>
@@ -2825,45 +2735,48 @@ export default function App(){
               <div>
                 {!ownerUnlocked ? (
                   <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s2}40`,padding:"14px 16px"}}>
-                    <div style={{fontSize:12,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:6}}>Course Builder  Owner Access</div>
-                    <div style={{fontSize:10,color:P.charcoal,marginBottom:8,lineHeight:1.6}}>The Course Builder is restricted to the iStructural owner. Enter the owner passphrase to author modules and courses.</div>
+                    <div style={{fontSize:T.lead,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:6}}>Course Builder  Owner Access</div>
+                    <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8,lineHeight:1.6}}>The Course Builder is restricted to the iStructural owner. Enter the owner passphrase to author modules and courses.</div>
                     <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                      <input type="password" value={ownerPhrase} onChange={(e)=>setOwnerPhrase(e.target.value)} placeholder="Owner passphrase" aria-label="Owner passphrase" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
-                      <button onClick={tryOwner} style={{padding:"8px 14px",borderRadius:7,background:P.s2,color:P.white,fontSize:10.5,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock Builder</button>
+                      <input type="password" value={ownerPhrase} onChange={(e)=>setOwnerPhrase(e.target.value)} placeholder="Owner passphrase" aria-label="Owner passphrase" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit"}} />
+                      <button onClick={tryOwner} style={{padding:"8px 14px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock Builder</button>
                     </div>
-                    {ownerError && <div style={{marginTop:6,fontSize:9.5,color:P.coral,fontWeight:600}}>{ownerError}</div>}
+                    {ownerError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{ownerError}</div>}
                   </div>
                 ) : (
                   <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s3}40`,padding:"14px 16px"}}>
-                    <div style={{fontSize:12,fontWeight:800,color:P.s3,fontFamily:"'Fraunces',serif",marginBottom:8}}>Course Builder</div>
-                    <div style={{fontSize:9.5,color:P.slate,marginBottom:12,lineHeight:1.6}}>Author a course inside a module. Fill the form, attach source material, embed your design requirements and instructions, then publish. Adding a course is filling this form, no code.</div>
+                    <div style={{fontSize:T.lead,fontWeight:800,color:P.s3,fontFamily:"'Fraunces',serif",marginBottom:8}}>Course Builder</div>
+                    <div style={{fontSize:T.small,color:P.slate,marginBottom:12,lineHeight:1.6}}>Author a course inside a module. Fill the form, attach source material, embed your design requirements and instructions, then publish. Adding a course is filling this form, no code.</div>
                     {[
                       {l:"Module", h:"Select an existing module (PEO) or create a new one."},
                       {l:"Course title and summary", h:"What this course is and who it is for."},
                       {l:"Design requirements and instructions", h:"How LEARN should behave for this course: tone, depth, exam focus, terminology rules, what it may and may not do.", big:true},
                     ].map((f,i)=>(
                       <div key={i} style={{marginBottom:8}}>
-                        <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
+                        <label style={{display:"block",fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
                         {f.big
-                          ? <textarea placeholder={f.h} aria-label={f.l} style={{width:"100%",minHeight:70,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
-                          : <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",boxSizing:"border-box"}} />}
+                          ? <textarea placeholder={f.h} aria-label={f.l} style={{width:"100%",minHeight:70,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
+                          : <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",boxSizing:"border-box"}} />}
                       </div>
                     ))}
 
                     {/* Source material upload: images and documents, with a purpose selector */}
                     <div style={{marginBottom:8,padding:"10px 12px",borderRadius:8,background:P.s3+"0A",border:`1px solid ${P.s3}30`}}>
-                      <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>Source material  images and documents</label>
-                      <div style={{fontSize:9,color:P.slate,marginBottom:6,lineHeight:1.55}}>Upload books, notes, slides, lecture or video transcripts, and images. LEARN learns from every item. Tell LEARN what each upload is so it knows how to use it.</div>
-                      <label style={{display:"block",fontSize:8.5,fontWeight:700,color:P.charcoal,marginBottom:2}}>What is this upload?</label>
-                      <select aria-label="Upload purpose" style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit",boxSizing:"border-box",marginBottom:6}}>
+                      <label style={{display:"block",fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>Source material  images and documents</label>
+                      <div style={{fontSize:T.small,color:P.slate,marginBottom:6,lineHeight:1.55}}>Upload books, notes, slides, lecture or video transcripts, and images. LEARN learns from every item. Tell LEARN what each upload is so it knows how to use it.</div>
+                      <label style={{display:"block",fontSize:T.small,fontWeight:700,color:P.charcoal,marginBottom:2}}>What is this upload?</label>
+                      <select aria-label="Upload purpose" style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box",marginBottom:6}}>
                         <option>Study material  index and learn from it</option>
                         <option>Questions only  save as practice or exam material</option>
                         <option>Answers only  save as reference to check learner answers</option>
                         <option>Questions with answers  LEARN checks and verifies them</option>
                       </select>
                       <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload images or documents"
-                        style={{width:"100%",fontSize:9.5,fontFamily:"inherit",color:P.charcoal}} />
-                      <div style={{fontSize:8,color:P.slate,marginTop:5,fontStyle:"italic"}}>Accepted: images (JPG, PNG), PDF, Word, PowerPoint, text. Owner uploads always. Learner upload is allowed only where the course is configured to permit it.</div>
+                        style={{width:"100%",fontSize:T.small,fontFamily:"inherit",color:P.charcoal}} />
+                      <div style={{fontSize:T.micro,color:P.slate,marginTop:5,fontStyle:"italic"}}>Accepted: images (JPG, PNG), PDF, Word, PowerPoint, text. Owner uploads always. Learner upload is allowed only where the course is configured to permit it.</div>
+                      <div style={{marginTop:7,padding:"7px 9px",borderRadius:6,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:T.micro,color:P.charcoal,lineHeight:1.55}}>
+                        To save material that persists right now, open the course from the Module Catalog and use the <strong>Source folder and saved material</strong> panel in the study workspace. It saves to browser storage on this device. This Course Builder upload is the authoring shell; it connects to the shared cloud library in the next stage.
+                      </div>
                     </div>
 
                     {[
@@ -2874,14 +2787,14 @@ export default function App(){
                       {l:"Status", h:"Draft or Published. Learners see Published only."},
                     ].map((f,i)=>(
                       <div key={"b"+i} style={{marginBottom:8}}>
-                        <label style={{display:"block",fontSize:9.5,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
-                        <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10,fontFamily:"inherit",boxSizing:"border-box"}} />
+                        <label style={{display:"block",fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
+                        <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",boxSizing:"border-box"}} />
                       </div>
                     ))}
-                    <div style={{marginTop:6,padding:"9px 12px",borderRadius:8,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:9,color:P.charcoal,lineHeight:1.6}}>
+                    <div style={{marginTop:6,padding:"9px 12px",borderRadius:8,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:T.small,color:P.charcoal,lineHeight:1.6}}>
                       Phase 1 transition stage: this Course Builder is the authoring shell. Persisting authored courses and uploaded material to the per-user library, and running the Comprehension Map, are wired in the next step once you author your first PEO course.
                     </div>
-                    <button style={{marginTop:10,padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:10.5,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Save course draft</button>
+                    <button style={{marginTop:10,padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:T.body,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Save course draft</button>
                   </div>
                 )}
               </div>
@@ -2906,30 +2819,30 @@ export default function App(){
     const YN = ({on, set, locked}) => (
       <div style={{display:"flex",gap:4,flexShrink:0}}>
         <button type="button" disabled={locked} onClick={()=>!locked&&set(true)}
-          style={{padding:"3px 10px",borderRadius:6,fontSize:8.5,fontWeight:800,border:`1px solid ${on?P.greenD:"#ccc"}`,background:on?P.greenD:"transparent",color:on?P.white:P.slate,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>Yes</button>
+          style={{padding:"3px 10px",borderRadius:6,fontSize:T.small,fontWeight:800,border:`1px solid ${on?P.greenD:"#ccc"}`,background:on?P.greenD:"transparent",color:on?P.white:P.slate,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>Yes</button>
         <button type="button" disabled={locked} onClick={()=>!locked&&set(false)}
-          style={{padding:"3px 10px",borderRadius:6,fontSize:8.5,fontWeight:800,border:`1px solid ${!on?P.coral:"#ccc"}`,background:!on?P.coral:"transparent",color:!on?P.white:P.slate,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>No</button>
+          style={{padding:"3px 10px",borderRadius:6,fontSize:T.small,fontWeight:800,border:`1px solid ${!on?P.coral:"#ccc"}`,background:!on?P.coral:"transparent",color:!on?P.white:P.slate,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>No</button>
       </div>
     );
     const row = (item, on, set) => (
       <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"6px 8px",borderRadius:7,background:on?P.s3+"0C":P.white,border:`1px solid ${on?P.s3+"30":P.charcoal+"15"}`,marginBottom:5}}>
-        <span style={{fontSize:9.5,color:P.charcoal,fontWeight:600}}>{item.label}{item.locked?" (always included)":""}</span>
+        <span style={{fontSize:T.small,color:P.charcoal,fontWeight:600}}>{item.label}{item.locked?" (always included)":""}</span>
         <YN on={on} set={set} locked={item.locked} />
       </div>
     );
     return (
       <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s3}40`,padding:"14px 16px",marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:800,color:P.s3,marginBottom:4,fontFamily:"'Fraunces',serif"}}>Before You Run  Tell {app.name} What You Have and What You Want</div>
-        <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>{app.name} assembles only the environments your answers call for. The assessment and report are always produced.</div>
-        <div style={{fontSize:9,fontWeight:800,color:P.navy,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>What I have</div>
+        <div style={{fontSize:T.lead,fontWeight:800,color:P.s3,marginBottom:4,fontFamily:"'Fraunces',serif"}}>Before You Run  Tell {app.name} What You Have and What You Want</div>
+        <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>{app.name} assembles only the environments your answers call for. The assessment and report are always produced.</div>
+        <div style={{fontSize:T.small,fontWeight:800,color:P.navy,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>What I have</div>
         {(cfg.have||[]).map(i=>row(i, have[i.id], (v)=>setHave(h=>({...h,[i.id]:v}))))}
-        <div style={{fontSize:9,fontWeight:800,color:P.navy,textTransform:"uppercase",letterSpacing:1,margin:"10px 0 5px"}}>What I want delivered</div>
+        <div style={{fontSize:T.small,fontWeight:800,color:P.navy,textTransform:"uppercase",letterSpacing:1,margin:"10px 0 5px"}}>What I want delivered</div>
         {(cfg.want||[]).map(i=>row(i, want[i.id], (v)=>setWant(w=>({...w,[i.id]:v}))))}
         <button type="button" onClick={()=>{ onRun&&onRun({have,want}); setApplied(true); }}
-          style={{marginTop:10,width:"100%",padding:"11px 18px",borderRadius:9,background:applied?P.greenD:P.s3,color:P.white,fontSize:12,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.4}}>
+          style={{marginTop:10,width:"100%",padding:"11px 18px",borderRadius:9,background:applied?P.greenD:P.s3,color:P.white,fontSize:T.lead,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.4}}>
           {applied ? "Scope applied ✓  now complete the run form below" : `Apply this scope to my ${app.name} run`}
         </button>
-        <div style={{fontSize:8.5,color:P.slate,marginTop:6,textAlign:"center",lineHeight:1.5,fontStyle:"italic"}}>
+        <div style={{fontSize:T.small,color:P.slate,marginTop:6,textAlign:"center",lineHeight:1.5,fontStyle:"italic"}}>
           This sets the scope. To actually send the run, fill the form in section I below and press <strong>Submit {app.name} Run</strong>.
         </div>
       </div>
@@ -2948,24 +2861,24 @@ export default function App(){
     const setField = (i,k)=>(e)=>setPeople(p=>p.map((x,j)=>j===i?{...x,[k]:e.target.value}:x));
     return (
       <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s1}40`,padding:"14px 16px",marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:800,color:P.s1,marginBottom:4,fontFamily:"'Fraunces',serif"}}>{cfg.label}</div>
-        <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>{cfg.intro}</div>
+        <div style={{fontSize:T.lead,fontWeight:800,color:P.s1,marginBottom:4,fontFamily:"'Fraunces',serif"}}>{cfg.label}</div>
+        <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>{cfg.intro}</div>
         {people.map((p,i)=>(
-          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8,padding:"8px",borderRadius:8,background:P.s1+"0A",border:`1px solid ${P.s1}20`}}>
-            <input value={p.name} onChange={setField(i,"name")} placeholder="Full name" aria-label="Person name" style={{padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit"}} />
-            <input value={p.role} onChange={setField(i,"role")} placeholder={cfg.roleLabel} aria-label="Their role" style={{padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit"}} />
-            <input value={p.link} onChange={setField(i,"link")} placeholder="LinkedIn or public profile URL (optional)" aria-label="Public profile link" style={{gridColumn:"1 / -1",padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit"}} />
+          <div key={i} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:6,marginBottom:8,padding:"8px",borderRadius:8,background:P.s1+"0A",border:`1px solid ${P.s1}20`}}>
+            <input value={p.name} onChange={setField(i,"name")} placeholder="Full name" aria-label="Person name" style={{padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit"}} />
+            <input value={p.role} onChange={setField(i,"role")} placeholder={cfg.roleLabel} aria-label="Their role" style={{padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit"}} />
+            <input value={p.link} onChange={setField(i,"link")} placeholder="LinkedIn or public profile URL (optional)" aria-label="Public profile link" style={{gridColumn:"1 / -1",padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit"}} />
           </div>
         ))}
         <div style={{display:"flex",gap:6}}>
           <button type="button" onClick={()=>setPeople(p=>[...p,{name:"",role:"",link:""}])}
-            style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.s1}50`,color:P.s1,fontSize:9,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>+ Add another person</button>
+            style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.s1}50`,color:P.s1,fontSize:T.small,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>+ Add another person</button>
           {people.length>1 && (
             <button type="button" onClick={()=>setPeople(p=>p.slice(0,-1))}
-              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.coral}50`,color:P.coral,fontSize:9,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Remove last</button>
+              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.coral}50`,color:P.coral,fontSize:T.small,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Remove last</button>
           )}
         </div>
-        <div style={{marginTop:9,padding:"8px 10px",borderRadius:7,background:P.s4+"12",border:`1px dashed ${P.s4}45`,fontSize:8.5,color:P.charcoal,lineHeight:1.55}}>
+        <div style={{marginTop:9,padding:"8px 10px",borderRadius:7,background:P.s4+"12",border:`1px dashed ${P.s4}45`,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
           Public professional activity only. No private data, no photographs analyzed. Every profile is an estimate, each point carries a source and a date and a confidence percentage. Internet search runs only with your consent.
         </div>
       </div>
@@ -3023,25 +2936,25 @@ export default function App(){
         <div style={{maxWidth:920,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
           {/* Modal header */}
           <div style={{padding:"18px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800}}>
+            <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800}}>
               {app.icon ? <AppIcon id={app.icon} size={28} color={P.white} accent={P.tealL}/> : app.iconLetter}
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:18,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{app.name}</div>
-              <div style={{fontSize:10.5,color:P.tealL,marginTop:2}}>{app.tagline}</div>
+              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{app.name}</div>
+              <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>{app.tagline}</div>
             </div>
-            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
           </div>
 
           {/* Sub banner */}
-          <div style={{padding:"10px 22px",background:P.teal,color:P.white,fontSize:10.5,fontWeight:700,letterSpacing:0.3}}>
+          <div style={{padding:"10px 22px",background:P.teal,color:P.white,fontSize:T.body,fontWeight:700,letterSpacing:0.3}}>
             From a job description to an executive grade application package in one run. No inferred experience. References dated. No em dashes. Three iterations stated.
           </div>
 
           {/* Per-modal disclaimer chip (covers current and future apps) */}
           <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,display:"flex",alignItems:"flex-start",gap:8}}>
-            <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1.4,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer</span>
-            <div style={{flex:1,fontSize:9.5,color:P.charcoal,lineHeight:1.55}}>
+            <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1.4,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer</span>
+            <div style={{flex:1,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
               Informational use only. No professional advice. No guarantee of outcome. App content and behavior may change at any time. You remain solely responsible for any decisions made on the basis of any output. Confidentiality enforced. By submitting any input you accept the full terms shown at the top of the Tools Box page.
             </div>
           </div>
@@ -3054,10 +2967,10 @@ export default function App(){
             {app.scope && (
               <div style={{background:P.white,borderRadius:10,border:`2px solid ${app.iconColor}55`,padding:"14px 16px",marginBottom:14}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                  <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:app.iconColor,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Start here</span>
-                  <span style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>What {app.name} Needs, Includes and Delivers</span>
+                  <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:app.iconColor,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Start here</span>
+                  <span style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>What {app.name} Needs, Includes and Delivers</span>
                 </div>
-                <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>Read this before you run. It tells you what to upload, what is included, what is not, and what you receive.</div>
+                <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>Read this before you run. It tells you what to upload, what is included, what is not, and what you receive.</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
                   {[
                     {t:"What to upload", k:"upload", c:P.s2, mark:"↑"},
@@ -3066,9 +2979,9 @@ export default function App(){
                     {t:"What to expect", k:"expect", c:P.s4, mark:"★"},
                   ].map(col=>(
                     <div key={col.k} style={{background:col.c+"0C",borderRadius:8,border:`1px solid ${col.c}35`,padding:"9px 10px"}}>
-                      <div style={{fontSize:9,fontWeight:800,color:col.c,textTransform:"uppercase",letterSpacing:0.8,marginBottom:5}}>{col.t}</div>
+                      <div style={{fontSize:T.small,fontWeight:800,color:col.c,textTransform:"uppercase",letterSpacing:0.8,marginBottom:5}}>{col.t}</div>
                       {(app.scope[col.k]||[]).map((line,i)=>(
-                        <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:9,color:P.charcoal,lineHeight:1.5}}>
+                        <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
                           <span style={{color:col.c,fontWeight:800,flexShrink:0}}>{col.mark}</span>
                           <span>{line}</span>
                         </div>
@@ -3082,8 +2995,8 @@ export default function App(){
             {/* A. 8 Phase capability map */}
             {app.phases && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>A. {app.id==="ecios" ? `${app.phases.length} Phase War-Room Pipeline (APEX)` : "8 Phase Decision Pipeline (ARGO)"}</div>
-                <div style={{display:"grid",gridTemplateColumns:"40px 1fr 2fr 60px",gap:6,fontSize:10}}>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>A. {app.id==="ecios" ? `${app.phases.length} Phase War-Room Pipeline (APEX)` : "8 Phase Decision Pipeline (ARGO)"}</div>
+                <div style={{display:"grid",gridTemplateColumns:"40px 1fr 2fr 60px",gap:6,fontSize:T.body}}>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>#</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Phase</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What You Get</div>
@@ -3094,7 +3007,7 @@ export default function App(){
                       <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{ph.name}</div>
                       <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{ph.get}</div>
                       <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,textAlign:"center"}}>
-                        <span style={{fontSize:8.5,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}40`}}>READY</span>
+                        <span style={{fontSize:T.small,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}40`}}>READY</span>
                       </div>
                     </Fragment>
                   ))}
@@ -3105,9 +3018,9 @@ export default function App(){
             {/* A2. War-room environments (APEX) */}
             {app.environments && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:4,fontFamily:"'Fraunces',serif"}}>A2. War-Room Environments</div>
-                <div style={{fontSize:9.5,color:P.slate,marginBottom:8,lineHeight:1.55}}>APEX reads your resume and the job description, then activates the environments the role calls for. Bidding, engineering, architecture and business depth are all built inside APEX. Nothing is offloaded.</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.3fr 1.1fr 2fr",gap:5,fontSize:9.5}}>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:4,fontFamily:"'Fraunces',serif"}}>A2. War-Room Environments</div>
+                <div style={{fontSize:T.small,color:P.slate,marginBottom:8,lineHeight:1.55}}>APEX reads your resume and the job description, then activates the environments the role calls for. Bidding, engineering, architecture and business depth are all built inside APEX. Nothing is offloaded.</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.3fr 1.1fr 2fr",gap:5,fontSize:T.small}}>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Environment</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Activates</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What It Builds</div>
@@ -3117,8 +3030,8 @@ export default function App(){
                       <Fragment key={e.id}>
                         <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{e.name}</div>
                         <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white}}>
-                          <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:always?P.greenD+"20":P.s4+"20",color:always?P.greenD:P.s4,border:`1px solid ${always?P.greenD:P.s4}45`}}>{always?"ALWAYS ON":"JD-DRIVEN"}</span>
-                          {!always && <div style={{fontSize:7.5,color:P.slate,marginTop:2}}>{e.trigger}</div>}
+                          <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:always?P.greenD+"20":P.s4+"20",color:always?P.greenD:P.s4,border:`1px solid ${always?P.greenD:P.s4}45`}}>{always?"ALWAYS ON":"JD-DRIVEN"}</span>
+                          {!always && <div style={{fontSize:T.micro,color:P.slate,marginTop:2}}>{e.trigger}</div>}
                         </div>
                         <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{e.what}</div>
                       </Fragment>
@@ -3130,8 +3043,8 @@ export default function App(){
 
             {/* B. Capabilities bullets (always shown) */}
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>B. Core Capabilities</div>
-              <ul style={{margin:0,paddingLeft:18,fontSize:10.5,color:P.charcoal,lineHeight:1.65}}>
+              <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>B. Core Capabilities</div>
+              <ul style={{margin:0,paddingLeft:18,fontSize:T.body,color:P.charcoal,lineHeight:1.65}}>
                 {app.capabilities.map((c,i)=>(<li key={i} style={{marginBottom:3}}>{c}</li>))}
               </ul>
             </div>
@@ -3139,9 +3052,9 @@ export default function App(){
             {/* B2. Run modes (APEX): assessment-only cases */}
             {app.id==="ecios" && (
               <div style={{background:P.s3+"0C",borderRadius:10,border:`1px solid ${P.s3}35`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>B2. Run Modes  the Report Is Always the Goal</div>
-                <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.6,marginBottom:8}}>APEX adapts to what you already have. You do not need to want a cover letter. The assessment and the unified war-room report are the ultimate deliverable in every mode.</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.2fr 2fr",gap:5,fontSize:9.5}}>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>B2. Run Modes  the Report Is Always the Goal</div>
+                <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.6,marginBottom:8}}>APEX adapts to what you already have. You do not need to want a cover letter. The assessment and the unified war-room report are the ultimate deliverable in every mode.</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 2fr",gap:5,fontSize:T.small}}>
                   <div style={{fontWeight:800,color:P.white,background:P.s3,padding:"5px 7px",borderRadius:4}}>You provide</div>
                   <div style={{fontWeight:800,color:P.white,background:P.s3,padding:"5px 7px",borderRadius:4}}>APEX delivers</div>
                   {[
@@ -3162,12 +3075,12 @@ export default function App(){
             {/* C. Shortcuts */}
             {app.shortcuts && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>C. Trigger Shortcuts</div>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>C. Trigger Shortcuts</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {app.shortcuts.map((s,i)=>(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 9px",borderRadius:7,background:chipFill(s.t),border:`1px solid ${chipColor(s.t)}40`}}>
-                      <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:10,fontWeight:800,color:chipColor(s.t)}}>{s.k}</span>
-                      <span style={{fontSize:9.5,color:P.charcoal}}>{s.a}</span>
+                      <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:T.body,fontWeight:800,color:chipColor(s.t)}}>{s.k}</span>
+                      <span style={{fontSize:T.small,color:P.charcoal}}>{s.a}</span>
                     </div>
                   ))}
                 </div>
@@ -3177,8 +3090,8 @@ export default function App(){
             {/* D. Expected outputs */}
             {app.outputs && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>D. Expected Outputs Per Run</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1.2fr 2.4fr",gap:5,fontSize:10}}>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>D. Expected Outputs Per Run</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1.2fr 2.4fr",gap:5,fontSize:T.body}}>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>File</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Format</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What It Contains</div>
@@ -3196,25 +3109,25 @@ export default function App(){
             {/* E. Probability funnel */}
             {app.bars && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>E. {app.id==="ecios" ? "APEX Hiring Outcome Probability (illustrative)" : "ARGO Decision Probability (illustrative)"}</div>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>E. {app.id==="ecios" ? "APEX Hiring Outcome Probability (illustrative)" : "ARGO Decision Probability (illustrative)"}</div>
                 {app.bars.map((b,i)=>(
                   <div key={i} style={{display:"grid",gridTemplateColumns:"160px 1fr 50px",gap:8,alignItems:"center",marginBottom:5}}>
-                    <div style={{fontSize:10,color:P.charcoal,fontWeight:600}}>{b.label}</div>
+                    <div style={{fontSize:T.body,color:P.charcoal,fontWeight:600}}>{b.label}</div>
                     <div style={{height:12,borderRadius:6,background:P.charcoal+"10",overflow:"hidden"}}>
                       <div style={{height:"100%",width:`${b.pct}%`,background:`linear-gradient(90deg, ${P.teal} 0%, ${P.tealL} 100%)`,borderRadius:6}}></div>
                     </div>
-                    <div style={{fontSize:10,color:P.charcoal,fontWeight:700,textAlign:"right"}}>{b.pct}%</div>
+                    <div style={{fontSize:T.body,color:P.charcoal,fontWeight:700,textAlign:"right"}}>{b.pct}%</div>
                   </div>
                 ))}
-                <div style={{fontSize:8.5,color:P.slate,marginTop:6,fontStyle:"italic"}}>Illustrative ranges. Each run produces user specific values from the engine.</div>
+                <div style={{fontSize:T.small,color:P.slate,marginTop:6,fontStyle:"italic"}}>Illustrative ranges. Each run produces user specific values from the engine.</div>
               </div>
             )}
 
             {/* F. Tips */}
             {app.tips && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>F. Tips to Get the Most Out of {app.name}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:5,fontSize:10}}>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>F. Tips to Get the Most Out of {app.name}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:5,fontSize:T.body}}>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Tip</div>
                   <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Why It Matters</div>
                   {app.tips.map((t,i)=>(
@@ -3230,8 +3143,8 @@ export default function App(){
             {/* G. Boundaries */}
             {app.boundaries && (
               <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.coral}40`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.coral,marginBottom:8,fontFamily:"'Fraunces',serif"}}>G. Boundaries: What {app.name} Will Not Do</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:5,fontSize:10}}>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.coral,marginBottom:8,fontFamily:"'Fraunces',serif"}}>G. Boundaries: What {app.name} Will Not Do</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:5,fontSize:T.body}}>
                   <div style={{fontWeight:800,color:P.white,background:P.coral,padding:"5px 7px",borderRadius:4}}>Will Not Do</div>
                   <div style={{fontWeight:800,color:P.white,background:P.coral,padding:"5px 7px",borderRadius:4}}>Why</div>
                   {app.boundaries.map((b,i)=>(
@@ -3245,7 +3158,7 @@ export default function App(){
             )}
 
             {/* H. Briefing request hint (no in-modal download; request form lives at the bottom of the page) */}
-            <div style={{background:P.s2L,borderRadius:10,border:`1px dashed ${P.s2}40`,padding:"10px 14px",marginBottom:14,color:P.charcoal,fontSize:10}}>
+            <div style={{background:P.s2L,borderRadius:10,border:`1px dashed ${P.s2}40`,padding:"10px 14px",marginBottom:14,color:P.charcoal,fontSize:T.body}}>
               Want a printed capabilities briefing for <strong>{app.name}</strong>? Briefings are issued on request. Scroll to the bottom of the Tools Box page and submit the Briefing Request form. Our team replies from <strong>info@istructgroup.com</strong>.
             </div>
 
@@ -3279,14 +3192,14 @@ export default function App(){
             {/* I. Access key gate + intake */}
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                <div style={{fontSize:12,fontWeight:800,color:P.teal,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
+                <div style={{fontSize:T.lead,fontWeight:800,color:P.teal,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
                 {ownerMode ? (
                   <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.s2+"15",border:`1px solid ${P.s2}40`}}>
-                    <span style={{fontSize:8,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner  Unlimited</span>
+                    <span style={{fontSize:T.micro,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner  Unlimited</span>
                   </div>
                 ) : sessionStillValid && (
                   <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}35`}}>
-                    <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
+                    <span style={{fontSize:T.micro,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
                     <SandTimer endMs={sessionEndMs} size={28} dark={false} onExpire={()=>setSessionExpired(true)}/>
                   </div>
                 )}
@@ -3294,18 +3207,18 @@ export default function App(){
 
               {!sessionStillValid && (
                 <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`,marginBottom:10}}>
-                  <div style={{fontSize:10.5,color:P.charcoal,marginBottom:8}}>This app requires a time limited access key. During this transition stage every key unlocks a free <strong>60 minute</strong> session. Request a key, then paste it here to start the countdown.</div>
+                  <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8}}>This app requires a time limited access key. During this transition stage every key unlocks a free <strong>60 minute</strong> session. Request a key, then paste it here to start the countdown.</div>
                   <a
                     href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural Tools Box  60 minute key request  " + app.name)}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the following app on the Tools Box page.\n\nApp: " + app.name + "\nTagline: " + app.tagline + "\n\nMy details:\nFull name: \nRole / title: \nCompany / organization: \nEmail: \nPhone (optional): \n\nThank you.")}`}
-                    style={{display:"inline-block",padding:"9px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10.5,fontWeight:800,textDecoration:"none",marginBottom:10,letterSpacing:0.3}}>
+                    style={{display:"inline-block",padding:"9px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.body,fontWeight:800,textDecoration:"none",marginBottom:10,letterSpacing:0.3}}>
                     Request 60-min key by email
                   </a>
-                  <div style={{fontSize:9,color:P.slate,marginBottom:8,lineHeight:1.5}}>The request goes to <strong>info@istructgroup.com</strong>. You can also use the Briefing and Access request form at the bottom of the Tools Box page.</div>
+                  <div style={{fontSize:T.small,color:P.slate,marginBottom:8,lineHeight:1.5}}>The request goes to <strong>info@istructgroup.com</strong>. You can also use the Briefing and Access request form at the bottom of the Tools Box page.</div>
                   <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                    <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key  e.g. ISG-XXXXX-XXXXX" aria-label="Access key" style={{flex:"1 1 220px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:11,fontFamily:"inherit"}} />
-                    <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:10.5,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
+                    <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key  e.g. ISG-XXXXX-XXXXX" aria-label="Access key" style={{flex:"1 1 220px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit"}} />
+                    <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
                   </div>
-                  {keyError && <div style={{marginTop:6,fontSize:9.5,color:P.coral,fontWeight:600}}>{keyError}</div>}
+                  {keyError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{keyError}</div>}
                 </div>
               )}
 
@@ -3313,81 +3226,114 @@ export default function App(){
                 <form onSubmit={submitIntake}>
                   {app.intakeFields.map(f=>(
                     <div key={f.key} style={{marginBottom:8}}>
-                      <label style={{display:"block",fontSize:10,fontWeight:700,color:P.charcoal,marginBottom:3}}>{f.label}{f.required?" *":""}</label>
-                      <textarea value={intake[f.key]||""} onChange={setIntakeField(f.key)} placeholder={f.placeholder} required={f.required} aria-label={f.label} style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
+                      <label style={{display:"block",fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:3}}>{f.label}{f.required?" *":""}</label>
+                      <textarea value={intake[f.key]||""} onChange={setIntakeField(f.key)} placeholder={f.placeholder} required={f.required} aria-label={f.label} style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
                     </div>
                   ))}
-                  <div style={{marginTop:8,padding:"8px 10px",borderRadius:7,background:app.iconColor+"10",border:`1px dashed ${app.iconColor}45`,fontSize:8.5,color:P.slate,lineHeight:1.5,textAlign:"center"}}>
+                  <div style={{marginTop:8,padding:"8px 10px",borderRadius:7,background:app.iconColor+"10",border:`1px dashed ${app.iconColor}45`,fontSize:T.small,color:P.slate,lineHeight:1.5,textAlign:"center"}}>
                     This is the run button. Pressing it sends your {app.name} run request to info@istructgroup.com. Our team replies with your output package.
                   </div>
-                  <button type="submit" disabled={submitStatus==="sending"||submitStatus==="success"} style={{marginTop:8,width:"100%",padding:"14px 18px",borderRadius:9,background:submitStatus==="success"?P.greenD:app.iconColor,color:P.white,fontSize:13,fontWeight:800,border:"none",cursor:submitStatus==="success"?"default":"pointer",fontFamily:"inherit",letterSpacing:0.6,textTransform:"uppercase"}}>
+                  <button type="submit" disabled={submitStatus==="sending"||submitStatus==="success"} style={{marginTop:8,width:"100%",padding:"14px 18px",borderRadius:9,background:submitStatus==="success"?P.greenD:app.iconColor,color:P.white,fontSize:T.lead,fontWeight:800,border:"none",cursor:submitStatus==="success"?"default":"pointer",fontFamily:"inherit",letterSpacing:0.6,textTransform:"uppercase"}}>
                     {submitStatus==="sending" ? "Sending your run..." : submitStatus==="success" ? "Run received ✓  we will be in touch" : `▶  Run ${app.name}`}
                   </button>
-                  {submitStatus==="error" && <div style={{marginTop:6,fontSize:10,color:P.coral,fontWeight:600}}>Please complete the required fields and try again.</div>}
-                  {submitStatus==="success" && <div style={{marginTop:6,fontSize:10,color:P.greenD,fontWeight:600}}>Run request received. Our team will follow up by email with your output package.</div>}
+                  {submitStatus==="error" && <div style={{marginTop:6,fontSize:T.body,color:P.coral,fontWeight:600}}>Please complete the required fields and try again.</div>}
+                  {submitStatus==="success" && <div style={{marginTop:6,fontSize:T.body,color:P.greenD,fontWeight:600}}>Run request received. Our team will follow up by email with your output package.</div>}
                 </form>
               )}
             </div>
 
-            {/* ═══ OWNER DEMO RESULT VIEW ═══ */}
-            {/* Visible only in owner mode. Lets the author test the full run
-                flow visually with a clearly labelled sample output. This is a
-                static demo, no real AI, no backend. The live analysis arrives
-                with the Phase 2 backend. */}
-            {ownerMode && (
-              <div style={{marginTop:14,background:P.white,borderRadius:10,border:`1px solid ${P.s2}40`,overflow:"hidden"}}>
-                <div style={{padding:"10px 14px",background:P.s2+"12",borderBottom:`1px solid ${P.s2}30`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+            {/* ═══ REPORT PREVIEW  TIERED DEPTH ═══ */}
+            {/* Output depth is gated by tier so the real value cannot be copied
+                by a free user:
+                  Owner          full report, every section in full detail
+                  Free 60-min    verdict + a short summary of every section,
+                                 full detail locked
+                  No session     not shown (minimum shared info)
+                HONEST NOTE: this gates what is GENERATED and shown. Ironclad
+                server-side enforcement (the server never sends locked detail)
+                is the Phase 2 backend. The rule now: never render full detail
+                to a tier that has not earned it. */}
+            {(ownerMode || sessionStillValid) && (() => {
+              const tierFull = ownerMode;                       // owner sees everything
+              const sections = app.id==="ecios" ? [
+                {n:"01 Fit summary", s:"Candidate-to-JD alignment, scored across required and preferred criteria, with strengths and gaps.", d:"Full criterion-by-criterion scoring table, every requirement matched or flagged, ranked gap list, and the one-line fit verdict with its reasoning."},
+                {n:"02 ATS score", s:"Multi-vendor ATS pass simulation with an overall score out of 100.", d:"Per-vendor ATS scores, the complete keyword coverage table with matched and missing terms, formatting flags, and the exact edits to raise the score."},
+                {n:"03 Cover letter", s:"A tailored one A4 page cover letter, executive tone, no inferred experience.", d:"The complete ready-to-send cover letter, three iterations stated, references dated, plus the rationale for each paragraph."},
+                {n:"04 Hiring risk", s:"Risk factors and the probability of advancing through each stage.", d:"Full risk register, stage-by-stage probability, and the complete bank of 100+ scenario interview questions with model answers."},
+                {n:"05 Submit verdict", s:"A yes or no recommendation on whether to apply.", d:"The full verdict with reasoning, the single highest-leverage improvement, and the 30 / 60 / 90 day success plan."},
+              ] : app.id==="bid" ? [
+                {n:"01 Go / No-go", s:"The eight-phase decision pipeline result and headline verdict.", d:"Every phase scored and explained, the binding conditions for a conditional go, and the full decision rationale."},
+                {n:"02 Risk math", s:"Probability times Impact times Detectability scoring with a composite risk index.", d:"The complete ranked risk register, every category scored, top risks flagged, and the mitigation actions."},
+                {n:"03 Commercial ranking", s:"Delivery and commercial models ranked with a win probability estimate.", d:"Full ranking of every delivery model, the commercial strategy, win probability with all assumptions stated."},
+                {n:"04 Dashboard", s:"An executive decision dashboard with the recommendation.", d:"The complete dashboard with gauges, the full recommendation summary, exportable to DOCX and PDF."},
+              ] : [
+                {n:"01 Participant profiles", s:"Each named attendee profiled from public professional activity.", d:"The full profile of every participant, source labels, dates, confidence percentages, and what each one rewards."},
+                {n:"02 Agenda map", s:"The meeting agenda broken into objectives and likely positions.", d:"The complete agenda map, every topic, the questions to expect, and the risks per item."},
+                {n:"03 Prep brief", s:"A one-page room strategy brief.", d:"The full brief: what to say, what to avoid, the outcome to push for, and the per-person talking points."},
+              ];
+              const verdict = app.id==="ecios" ? "Sample ATS score 94 / 100, recommendation: apply"
+                : app.id==="bid" ? "Sample verdict: conditional go"
+                : "Sample: room strategy ready, 3 participants profiled";
+              return (
+              <div style={{marginTop:14,background:P.white,borderRadius:10,border:`1px solid ${(tierFull?P.s2:P.s4)}40`,overflow:"hidden"}}>
+                <div style={{padding:"10px 14px",background:(tierFull?P.s2:P.s4)+"14",borderBottom:`1px solid ${(tierFull?P.s2:P.s4)}30`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Owner</span>
-                    <span style={{fontSize:11,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif"}}>Sample run preview</span>
+                    <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:tierFull?P.s2:P.s4,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>{tierFull?"Owner · Full":"Free · Limited"}</span>
+                    <span style={{fontSize:T.body,fontWeight:800,color:tierFull?P.s2:P.charcoal,fontFamily:"'Fraunces',serif"}}>{tierFull?"Full report preview":"Limited report preview"}</span>
                   </div>
-                  <button onClick={()=>setDemoOpen(o=>!o)} style={{padding:"6px 12px",borderRadius:7,background:demoOpen?"transparent":P.s2,color:demoOpen?P.s2:P.white,border:`1px solid ${P.s2}`,fontSize:9.5,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-                    {demoOpen ? "Hide sample" : "Preview a sample run"}
+                  <button onClick={()=>setDemoOpen(o=>!o)} style={{padding:"6px 12px",borderRadius:7,background:demoOpen?"transparent":(tierFull?P.s2:P.s4),color:demoOpen?(tierFull?P.s2:P.charcoal):P.white,border:`1px solid ${tierFull?P.s2:P.s4}`,fontSize:T.small,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+                    {demoOpen ? "Hide" : "Preview a sample run"}
                   </button>
                 </div>
                 {demoOpen && (
                   <div style={{padding:"14px 16px"}}>
-                    <div style={{padding:"8px 10px",borderRadius:7,background:P.s4+"15",border:`1px dashed ${P.s4}50`,fontSize:9,color:P.charcoal,lineHeight:1.55,marginBottom:12}}>
-                      <strong>Demo only.</strong> This is a static illustration of what a completed {app.name} run looks like. No AI has run, no data was processed. The live analysis engine is delivered in the Phase 2 backend. Use this to test layout, scroll, and flow.
+                    <div style={{padding:"8px 10px",borderRadius:7,background:P.charcoal+"08",border:`1px dashed ${P.charcoal}25`,fontSize:T.small,color:P.charcoal,lineHeight:1.55,marginBottom:12}}>
+                      <strong>Sample preview.</strong> A static illustration of a completed {app.name} run. No AI has run yet, the live engine arrives with the Phase 2 backend. {tierFull ? "As owner you see the full report, every section in detail." : "On the free 60-minute tier you see the verdict and a short summary of each section. Full detail is part of a paid plan."}
                     </div>
-                    {(app.id==="ecios" ? [
-                      {n:"01 Fit summary", b:"Candidate-to-JD alignment scored across required and preferred criteria. Strengths, gaps, and one-line verdict."},
-                      {n:"02 ATS score", b:"Multi-vendor ATS pass simulation. Sample: 94 / 100. Keyword coverage table with matched and missing terms."},
-                      {n:"03 Cover letter", b:"One A4 page, executive tone, no inferred experience. Three iterations stated. References dated."},
-                      {n:"04 Hiring risk", b:"Risk factors, probability of advancing, twelve scenario-based interview questions with model answers."},
-                      {n:"05 Submit verdict", b:"Yes or No recommendation, with the reasoning and the single highest-leverage improvement."},
-                    ] : app.id==="bid" ? [
-                      {n:"01 Go / No-go", b:"Eight-phase decision pipeline result. Sample verdict: conditional go, with the binding conditions listed."},
-                      {n:"02 Risk math", b:"P x I x D scoring per risk. Sample composite: 0.42. Ranked register, top five risks flagged."},
-                      {n:"03 Commercial ranking", b:"Delivery and commercial options ranked. Win probability estimate with the assumptions stated."},
-                      {n:"04 Dashboard", b:"Executive dashboard with gauges and a recommendation summary, exportable to DOCX and PDF."},
-                    ] : [
-                      {n:"01 Participant profiles", b:"Each named attendee profiled from public professional activity, with source labels, dates, and a confidence percentage."},
-                      {n:"02 Agenda map", b:"Meeting agenda broken into objectives, likely positions, and the questions to expect."},
-                      {n:"03 Prep brief", b:"One-page brief: what to say, what to avoid, and the single outcome to push for."},
-                    ]).map((s,i)=>(
+                    {/* Headline verdict, shown to every tier */}
+                    <div style={{padding:"10px 12px",borderRadius:8,background:P.greenD+"10",border:`1px solid ${P.greenD}35`,marginBottom:12}}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>Headline verdict</div>
+                      <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal}}>{verdict}</div>
+                    </div>
+                    {sections.map((sec,i)=>(
                       <div key={i} style={{marginBottom:8,padding:"9px 11px",borderRadius:7,background:P.sand,border:`1px solid ${P.charcoal}12`}}>
-                        <div style={{fontSize:10,fontWeight:800,color:P.charcoal,marginBottom:2}}>{s.n}</div>
-                        <div style={{fontSize:9,color:P.slate,lineHeight:1.55}}>{s.b}</div>
+                        <div style={{fontSize:T.body,fontWeight:800,color:P.charcoal,marginBottom:2}}>{sec.n}</div>
+                        <div style={{fontSize:T.small,color:P.slate,lineHeight:1.55}}>{sec.s}</div>
+                        {tierFull ? (
+                          <div style={{marginTop:5,paddingTop:5,borderTop:`1px solid ${P.charcoal}12`,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>{sec.d}</div>
+                        ) : (
+                          <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6,fontSize:T.micro,fontWeight:700,color:P.s4}}>
+                            <span style={{fontSize:T.small}}>🔒</span> Full detail in a paid plan
+                          </div>
+                        )}
                       </div>
                     ))}
-                    {/* Sample chart placeholder */}
-                    <div style={{marginTop:10,padding:"12px",borderRadius:8,background:P.navy,display:"flex",alignItems:"flex-end",gap:8,height:96}}>
-                      {[62,88,45,94,71].map((h,i)=>(
-                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                          <div style={{width:"100%",height:`${h*0.6}px`,background:i===3?P.tealL:P.teal,borderRadius:"4px 4px 0 0"}}></div>
-                          <span style={{fontSize:7,color:"#9BBCD6",fontWeight:700}}>{h}</span>
+                    {tierFull ? (
+                      <>
+                        <div style={{marginTop:10,padding:"12px",borderRadius:8,background:P.navy,display:"flex",alignItems:"flex-end",gap:8,height:96}}>
+                          {[62,88,45,94,71].map((h,i)=>(
+                            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                              <div style={{width:"100%",height:`${h*0.6}px`,background:i===3?P.tealL:P.teal,borderRadius:"4px 4px 0 0"}}></div>
+                              <span style={{fontSize:T.micro,color:"#9BBCD6",fontWeight:700}}>{h}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    <div style={{fontSize:7.5,color:P.slate,marginTop:5,textAlign:"center",fontStyle:"italic"}}>Sample chart. Final runs render scored metrics from the Phase 2 engine.</div>
+                        <div style={{fontSize:T.micro,color:P.slate,marginTop:5,textAlign:"center",fontStyle:"italic"}}>Sample chart. Final runs render scored metrics from the Phase 2 engine.</div>
+                      </>
+                    ) : (
+                      <div style={{marginTop:10,padding:"12px 14px",borderRadius:8,background:P.s4+"12",border:`1px solid ${P.s4}40`,textAlign:"center"}}>
+                        <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>This is the limited preview</div>
+                        <div style={{fontSize:T.micro,color:P.slate,lineHeight:1.55}}>The full {app.name} report, every section in detail, scored charts, and the exportable DOCX and PDF are part of a paid plan. Pricing arrives in the next stage.</div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
 
             {/* Footer banner */}
-            <div style={{marginTop:14,padding:"10px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:9.5,fontWeight:700,letterSpacing:0.3}}>
+            <div style={{marginTop:14,padding:"10px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.small,fontWeight:700,letterSpacing:0.3}}>
               {app.id==="ecios"
                 ? "APEX. Three iterations stated. References dated. No em dashes. One A4 cover letter. Multi vendor ATS. Mission vision values. Twelve interview scenarios. Full report in DOCX and PDF."
                 : "ARGO. Three iterations stated. References dated. No em dashes. Eight phase decision pipeline. Risk math P x I x D. Delivery and commercial ranking. Win probability. Full dashboard in DOCX and PDF."}
@@ -3403,18 +3349,18 @@ export default function App(){
   const ProjectsPage=()=>(
     <div>
       <HeroBg color1={P.navy}><div style={{padding:"28px 28px 24px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Selected Portfolio</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Projects</h2>
-        <p style={{fontSize:10,color:"#9BBCD6",marginTop:4,maxWidth:680,lineHeight:1.6}}>A curated selection of representative projects across buildings, bridges, and infrastructure in the UAE, KSA, Qatar, Lebanon, and internationally.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase"}}>Selected Portfolio</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Projects</h2>
+        <p style={{fontSize:T.body,color:"#9BBCD6",marginTop:4,maxWidth:680,lineHeight:1.6}}>A curated selection of representative projects across buildings, bridges, and infrastructure in the UAE, KSA, Qatar, Lebanon, and internationally.</p>
       </div></HeroBg>
       <div style={{padding:"10px 24px 6px",background:P.sand,display:"flex",gap:16,alignItems:"center",borderBottom:"1px solid #e0e0e0",flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
-          <span style={{fontSize:9,color:P.slate,fontWeight:600}}>Type:</span>
-          {cats.map(c=><div key={c} onClick={()=>{setPCat(c);setShowAll(false);}} {...kbd(()=>{setPCat(c);setShowAll(false);})} aria-pressed={pCat===c} aria-label={`Filter category: ${c}`} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pCat===c?P.charcoal:"transparent",color:pCat===c?P.white:P.slate,border:`1px solid ${pCat===c?P.charcoal:"#ccc"}`}}>{c}</div>)}
+          <span style={{fontSize:T.small,color:P.slate,fontWeight:600}}>Type:</span>
+          {cats.map(c=><div key={c} onClick={()=>{setPCat(c);setShowAll(false);}} {...kbd(()=>{setPCat(c);setShowAll(false);})} aria-pressed={pCat===c} aria-label={`Filter category: ${c}`} style={{padding:"4px 10px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",background:pCat===c?P.charcoal:"transparent",color:pCat===c?P.white:P.slate,border:`1px solid ${pCat===c?P.charcoal:"#ccc"}`}}>{c}</div>)}
         </div>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
-          <span style={{fontSize:9,color:P.slate,fontWeight:600}}>Region:</span>
-          {regions.map(r=><div key={r} onClick={()=>{setPReg(r);setShowAll(false);}} {...kbd(()=>{setPReg(r);setShowAll(false);})} aria-pressed={pReg===r} aria-label={`Filter region: ${r}`} style={{padding:"4px 10px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",background:pReg===r?P.charcoal:"transparent",color:pReg===r?P.white:P.slate,border:`1px solid ${pReg===r?P.charcoal:"#ccc"}`}}>{r}</div>)}
+          <span style={{fontSize:T.small,color:P.slate,fontWeight:600}}>Region:</span>
+          {regions.map(r=><div key={r} onClick={()=>{setPReg(r);setShowAll(false);}} {...kbd(()=>{setPReg(r);setShowAll(false);})} aria-pressed={pReg===r} aria-label={`Filter region: ${r}`} style={{padding:"4px 10px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",background:pReg===r?P.charcoal:"transparent",color:pReg===r?P.white:P.slate,border:`1px solid ${pReg===r?P.charcoal:"#ccc"}`}}>{r}</div>)}
         </div>
       </div>
       <div style={{padding:"8px 24px"}}>
@@ -3422,22 +3368,22 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 240px",background:P.white,border:`1px solid ${P.charcoal}1A`,borderRadius:8,padding:"6px 10px"}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.slate} strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-            <input value={projSearchQ} onChange={(e)=>{setProjSearchQ(e.target.value);setShowAll(false);}} placeholder="Search projects by name, type, region, country..." aria-label="Search projects" style={{border:"none",outline:"none",fontSize:11,flex:1,fontFamily:"inherit",color:P.charcoal,background:"transparent"}} />
-            {projSearchQ && <button onClick={()=>setProjSearchQ("")} aria-label="Clear search" style={{border:"none",background:"transparent",cursor:"pointer",fontSize:14,color:P.slate,padding:0,fontFamily:"inherit"}}>×</button>}
+            <input value={projSearchQ} onChange={(e)=>{setProjSearchQ(e.target.value);setShowAll(false);}} placeholder="Search projects by name, type, region, country..." aria-label="Search projects" style={{border:"none",outline:"none",fontSize:T.body,flex:1,fontFamily:"inherit",color:P.charcoal,background:"transparent"}} />
+            {projSearchQ && <button onClick={()=>setProjSearchQ("")} aria-label="Clear search" style={{border:"none",background:"transparent",cursor:"pointer",fontSize:T.h3,color:P.slate,padding:0,fontFamily:"inherit"}}>×</button>}
           </div>
-          <div style={{fontSize:9,color:P.slate,whiteSpace:"nowrap"}}>{filteredP.length} {filteredP.length===1?"project":"projects"} shown</div>
+          <div style={{fontSize:T.small,color:P.slate,whiteSpace:"nowrap"}}>{filteredP.length} {filteredP.length===1?"project":"projects"} shown</div>
         </div>
-        <div style={{fontSize:9,color:P.slate,marginBottom:6}}>Project details are shared after inquiry. Use the Inquire button on each row.</div>
+        <div style={{fontSize:T.small,color:P.slate,marginBottom:6}}>Project details are shared after inquiry. Use the Inquire button on each row.</div>
         {displayed.map((p,i)=>(
           <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 130px 110px 80px",gap:8,padding:"6px 10px",borderRadius:5,background:i%2===0?"#f8f9fa":"transparent",borderBottom:"1px solid #f2f2f2",alignItems:"center"}}>
-            <div style={{fontSize:9.5,color:P.charcoal,lineHeight:1.4}}>{p.n}</div>
-            <span style={{fontSize:7.5,fontWeight:600,padding:"2px 5px",borderRadius:5,background:(catCol[p.c]||P.slate)+"12",color:catCol[p.c]||P.slate,textAlign:"center"}}>{p.c}</span>
-            <span style={{fontSize:8.5,color:P.slate,textAlign:"right",whiteSpace:"nowrap"}}>{p.country || p.r}</span>
-            <button onClick={()=>setInquiryProj(p)} {...kbd(()=>setInquiryProj(p))} aria-label={`Inquire about ${p.n}`} style={{fontSize:8.5,fontWeight:700,padding:"5px 10px",borderRadius:6,background:P.teal,color:P.white,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>Inquire →</button>
+            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.4}}>{p.n}</div>
+            <span style={{fontSize:T.micro,fontWeight:600,padding:"2px 5px",borderRadius:5,background:(catCol[p.c]||P.slate)+"12",color:catCol[p.c]||P.slate,textAlign:"center"}}>{p.c}</span>
+            <span style={{fontSize:T.small,color:P.slate,textAlign:"right",whiteSpace:"nowrap"}}>{p.country || p.r}</span>
+            <button onClick={()=>setInquiryProj(p)} {...kbd(()=>setInquiryProj(p))} aria-label={`Inquire about ${p.n}`} style={{fontSize:T.small,fontWeight:700,padding:"5px 10px",borderRadius:6,background:P.teal,color:P.white,border:"none",cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>Inquire →</button>
           </div>
         ))}
-        {displayed.length===0 && <div style={{padding:"24px 0",fontSize:11,color:P.slate,textAlign:"center",fontStyle:"italic"}}>No projects match your search. Try clearing filters or simplifying the query.</div>}
-        {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} {...kbd(()=>setShowAll(true))} aria-label="Show more projects" style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:10,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
+        {displayed.length===0 && <div style={{padding:"24px 0",fontSize:T.body,color:P.slate,textAlign:"center",fontStyle:"italic"}}>No projects match your search. Try clearing filters or simplifying the query.</div>}
+        {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} {...kbd(()=>setShowAll(true))} aria-label="Show more projects" style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.body,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
       </div>
     </div>
   );
@@ -3446,21 +3392,21 @@ export default function App(){
   const TrainingPage=()=>(
     <div>
       <HeroBg color1={P.s2}><div style={{padding:"28px 28px 24px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Certified Training</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Training Programs</h2>
-        <p style={{fontSize:10,color:P.white+"BB",marginTop:4}}>CSiAmerica Licensed Instructor since 2010. Over 1,400 engineers trained across MENA and North America. Advanced support for international firms.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.white+"80",textTransform:"uppercase"}}>Certified Training</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:"6px 0 0"}}>Training Programs</h2>
+        <p style={{fontSize:T.body,color:P.white+"BB",marginTop:4}}>CSiAmerica Licensed Instructor since 2010. Over 1,400 engineers trained across MENA and North America. Advanced support for international firms.</p>
       </div></HeroBg>
       <div style={{padding:"18px 24px"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:7}}>
           {[{n:"ETABS",d:"Multi-story building. Lateral systems, P-delta, response spectrum.",sw:"ETABS (CSi)"},{n:"SAP2000",d:"General purpose. Linear/nonlinear, static/dynamic.",sw:"SAP2000 (CSi)"},{n:"CSiBridge",d:"Bridge modeling, staging, tendon layout, seismic.",sw:"CSiBridge (CSi)"},{n:"SAFE",d:"Slab and foundation. PT and RC. FEA + strip design.",sw:"SAFE (CSi)"},{n:"RAM Concept",d:"PT slab specialist. Tendon profiling, load balancing.",sw:"RAM Concept (Bentley Systems)"},{n:"ADAPT PT",d:"PT analysis. Continuous beam, one-way slab.",sw:"ADAPT PT (RISA Tech)"},{n:"Others",d:"Other third-party software. Specify on request.",sw:"Other"}].map((s,i)=>
             <div key={i} onClick={()=>{setPage("start");setSTab("s4");setTrainingSw(s.sw);}} {...kbd(()=>{setPage("start");setSTab("s4");setTrainingSw(s.sw);})} aria-label={`Request training for ${s.n}`} style={{padding:"12px 14px",borderRadius:8,background:P.s2L,border:`1px solid ${P.s2}15`,cursor:"pointer",transition:"all 0.2s"}}
               onMouseEnter={e=>{e.currentTarget.style.background=P.s2+"15";}}
               onMouseLeave={e=>{e.currentTarget.style.background=P.s2L;}}>
-              <div style={{fontSize:11,fontWeight:700,color:P.s2}}>{s.n}</div>
-              <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>{s.d}</div>
+              <div style={{fontSize:T.body,fontWeight:700,color:P.s2}}>{s.n}</div>
+              <div style={{fontSize:T.small,color:P.slate,marginTop:3,lineHeight:1.5}}>{s.d}</div>
             </div>)}
         </div>
-        <div onClick={()=>{setPage("start");setSTab("s4");}} {...kbd(()=>{setPage("start");setSTab("s4");})} aria-label="Request Training" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
+        <div onClick={()=>{setPage("start");setSTab("s4");}} {...kbd(()=>{setPage("start");setSTab("s4");})} aria-label="Request Training" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
       </div>
     </div>
   );
@@ -3474,9 +3420,9 @@ export default function App(){
     });
     return (
       <form onSubmit={submit}>
-        <div style={{fontSize:13,fontWeight:700,color:P.s1,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Management & Business Support Inquiry</div>
-        <div style={{fontSize:10,color:P.slate,marginBottom:14,lineHeight:1.6}}>Project management, strategy, risk, V.E., or ROI analysis. We respond with scope, timeline, and proposal within 24 hours.</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{fontSize:T.lead,fontWeight:700,color:P.s1,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Management & Business Support Inquiry</div>
+        <div style={{fontSize:T.body,color:P.slate,marginBottom:14,lineHeight:1.6}}>Project management, strategy, risk, V.E., or ROI analysis. We respond with scope, timeline, and proposal within 24 hours.</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
           <div>
             <label style={labelStyle}>Company / Organization *</label>
             <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. ABC Developments" aria-label="Company or organization" />
@@ -3520,7 +3466,7 @@ export default function App(){
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s1)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Submit Management Inquiry"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received, we will be in touch" : "Submit Management Inquiry"}
         </button>
         <FormStatus status={status} color={P.s1} />
       </form>
@@ -3534,9 +3480,9 @@ export default function App(){
     });
     return (
       <form onSubmit={submit}>
-        <div style={{fontSize:13,fontWeight:700,color:P.s2,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Design & Consultancy Inquiry</div>
-        <div style={{fontSize:10,color:P.slate,marginBottom:14,lineHeight:1.6}}>Structural design, third-party review, seismic, PT, heritage, or training. We respond within 24 hours.</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{fontSize:T.lead,fontWeight:700,color:P.s2,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Design & Consultancy Inquiry</div>
+        <div style={{fontSize:T.body,color:P.slate,marginBottom:14,lineHeight:1.6}}>Structural design, third-party review, seismic, PT, heritage, or training. We respond within 24 hours.</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
           <div>
             <label style={labelStyle}>Company / Organization *</label>
             <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. XYZ Engineering" aria-label="Company or organization" />
@@ -3553,8 +3499,8 @@ export default function App(){
               <option>Seismic & Wind Engineering</option>
               <option>Nonlinear / Thermal Analysis</option>
               <option>Third-Party Review</option>
-              <option>Structural Assessment Platform | Phase 1 (Preliminary Advisory)</option>
-              <option>Structural Assessment Platform | Phase 2 (Stamped Engineering)</option>
+              <option>Structural Assessment Platform -  Phase 1 (Preliminary Advisory)</option>
+              <option>Structural Assessment Platform - Phase 2 (Stamped Engineering)</option>
               <option>Other / Multiple</option>
             </select>
           </div>
@@ -3578,9 +3524,9 @@ export default function App(){
             <label style={labelStyle}>Existing Drawings Available?</label>
             <select style={inputStyle} value={values.drawings} onChange={set("drawings")} aria-label="Existing drawings available">
               <option value="">Select...</option>
-              <option>Yes | full set available</option>
-              <option>Yes | partial drawings</option>
-              <option>No | new design</option>
+              <option>Yes, full set available</option>
+              <option>Yes, partial drawings</option>
+              <option>No, new design</option>
             </select>
           </div>
           <div>
@@ -3598,7 +3544,7 @@ export default function App(){
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s2)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Submit Design Inquiry"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received, we will be in touch" : "Submit Design Inquiry"}
         </button>
         <FormStatus status={status} color={P.s2} />
       </form>
@@ -3612,15 +3558,15 @@ export default function App(){
     });
     return (
       <form onSubmit={submit}>
-        <div style={{fontSize:13,fontWeight:700,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>AI & Technology | Start a Project</div>
-        <div style={{fontSize:10,color:P.slate,marginBottom:12,lineHeight:1.6}}>AI literacy workshop, tool integration, or structural assessment platform. Select your path below.</div>
+        <div style={{fontSize:T.lead,fontWeight:700,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>AI & Technology · Start a Project</div>
+        <div style={{fontSize:T.body,color:P.slate,marginBottom:12,lineHeight:1.6}}>AI literacy workshop, tool integration, or structural assessment platform. Select your path below.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8,marginBottom:12}}>
           <div style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${P.s3b}20`,background:P.s3bL}}>
-            <div style={{fontSize:11,fontWeight:700,color:P.s3b}}>AI Literacy & Readiness</div>
-            <div style={{fontSize:9,color:P.slate,marginTop:3,lineHeight:1.5}}>AI 101 workshops, readiness assessment, tool selection, implementation support. For structural assessment requests, see the Design Inquiry intake form.</div>
+            <div style={{fontSize:T.body,fontWeight:700,color:P.s3b}}>AI Literacy & Readiness</div>
+            <div style={{fontSize:T.small,color:P.slate,marginTop:3,lineHeight:1.5}}>AI 101 workshops, readiness assessment, tool selection, implementation support. For structural assessment requests, see the Design Inquiry intake form.</div>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
           <div>
             <label style={labelStyle}>Company / Organization *</label>
             <input required style={inputStyle} value={values.company} onChange={set("company")} placeholder="e.g. City of Toronto" aria-label="Company or organization" />
@@ -3637,7 +3583,7 @@ export default function App(){
               <option>AI Literacy: Readiness Assessment</option>
               <option>AI Literacy: Tool Selection & Integration</option>
               <option>Implementation Support</option>
-              <option>Cross-reference: Structural Assessment Platform | see Design intake</option>
+              <option>Cross-reference: Structural Assessment Platform, see Design intake</option>
             </select>
           </div>
           <div>
@@ -3684,7 +3630,7 @@ export default function App(){
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s3)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Submit Project"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received, we will be in touch" : "Submit Project"}
         </button>
         <FormStatus status={status} color={P.s3} />
       </form>
@@ -3701,9 +3647,9 @@ export default function App(){
     const showOther = values.software === "Other";
     return (
       <form onSubmit={submit}>
-        <div style={{fontSize:13,fontWeight:700,color:P.s2,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Training | CSi Licensed Instructor</div>
-        <div style={{fontSize:9.5,color:P.slate,marginBottom:14,lineHeight:1.55}}>Join over 1,400 engineers who have completed our CSi-licensed curriculum since 2010. Corporate and university training on structural analysis software, tailored to your team and software focus.</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div style={{fontSize:T.lead,fontWeight:700,color:P.s2,marginBottom:6,fontFamily:"'Fraunces',serif"}}>Training · CSi Licensed Instructor</div>
+        <div style={{fontSize:T.small,color:P.slate,marginBottom:14,lineHeight:1.55}}>Join over 1,400 engineers who have completed our CSi-licensed curriculum since 2010. Corporate and university training on structural analysis software, tailored to your team and software focus.</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:10}}>
           <div>
             <label style={labelStyle}>Contact Name *</label>
             <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Contact name" />
@@ -3772,7 +3718,7 @@ export default function App(){
         </div>
         <CaptchaBlock captcha={captcha} status={status} />
         <button type="submit" disabled={status==="sending"||status==="success"} style={submitStyle(P.s2)}>
-          {status==="sending" ? "Sending..." : status==="success" ? "Received | we will be in touch" : "Request Training"}
+          {status==="sending" ? "Sending..." : status==="success" ? "Received, we will be in touch" : "Request Training"}
         </button>
         <FormStatus status={status} color={P.s2} />
       </form>
@@ -3782,12 +3728,12 @@ export default function App(){
   const StartPage=()=>(
     <div>
       <div style={{background:P.navy,padding:"28px 28px 22px"}}>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:0}}>Start a Project</h2>
-        <p style={{fontSize:10,color:"#9BBCD6",marginTop:4}}>Choose your service. We respond within 24 hours with scope, timeline, and proposal.</p>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:0}}>Start a Project</h2>
+        <p style={{fontSize:T.body,color:"#9BBCD6",marginTop:4}}>Choose your service. We respond within 24 hours with scope, timeline, and proposal.</p>
       </div>
       <div style={{display:"flex",gap:0,borderBottom:"1px solid #e0e0e0"}}>
         {[{id:"s1",l:"Management & Business",c:P.s1},{id:"s2",l:"Design & Consultancy",c:P.s2},{id:"s3",l:"AI & Technology",c:P.s3},{id:"s4",l:"Training",c:P.s2}].map(t=>
-          <div key={t.id} onClick={()=>setSTab(t.id)} {...kbd(()=>setSTab(t.id))} role="tab" aria-selected={sTab===t.id} aria-label={t.l} style={{flex:1,padding:"10px 14px",textAlign:"center",cursor:"pointer",borderBottom:sTab===t.id?`3px solid ${t.c}`:"3px solid transparent",background:sTab===t.id?t.c+"08":"transparent",fontSize:10.5,fontWeight:sTab===t.id?700:500,color:sTab===t.id?t.c:P.slate,transition:"all 0.2s"}}>{t.l}</div>)}
+          <div key={t.id} onClick={()=>setSTab(t.id)} {...kbd(()=>setSTab(t.id))} role="tab" aria-selected={sTab===t.id} aria-label={t.l} style={{flex:1,padding:"10px 14px",textAlign:"center",cursor:"pointer",borderBottom:sTab===t.id?`3px solid ${t.c}`:"3px solid transparent",background:sTab===t.id?t.c+"08":"transparent",fontSize:T.body,fontWeight:sTab===t.id?700:500,color:sTab===t.id?t.c:P.slate,transition:"all 0.2s"}}>{t.l}</div>)}
       </div>
       <div style={{padding:"20px 24px"}}>
         {sTab==="s1" && <S1Form />}
@@ -3843,17 +3789,17 @@ export default function App(){
            style={{position:"fixed",inset:0,zIndex:1010,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto"}}>
         <div style={{position:"relative",width:"100%",maxWidth:580,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55)",overflow:"hidden",animation:"fadeUp 0.22s ease-out"}}>
           <div style={{height:4,background:P.teal}}></div>
-          <button onClick={onClose} aria-label="Close inquiry" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",fontSize:16,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
+          <button onClick={onClose} aria-label="Close inquiry" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",fontSize:T.h3,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
           <div style={{padding:"22px 26px 26px"}}>
-            <div style={{fontSize:8,fontWeight:700,letterSpacing:2.5,color:P.teal,textTransform:"uppercase",marginBottom:6}}>Project Inquiry</div>
-            <div style={{fontFamily:"'Fraunces',serif",fontSize:16,fontWeight:800,color:P.charcoal,lineHeight:1.25,marginBottom:6}}>{project.n}</div>
-            <div style={{fontSize:9,color:P.slate,marginBottom:12}}>{project.c} · {project.country || project.r}{project.y ? " · "+project.y : ""}</div>
-            <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px dashed ${P.teal}40`,fontSize:9.5,color:P.slate,lineHeight:1.6,marginBottom:14}}>
+            <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:2.5,color:P.teal,textTransform:"uppercase",marginBottom:6}}>Project Inquiry</div>
+            <div style={{fontFamily:"'Fraunces',serif",fontSize:T.h3,fontWeight:800,color:P.charcoal,lineHeight:1.25,marginBottom:6}}>{project.n}</div>
+            <div style={{fontSize:T.small,color:P.slate,marginBottom:12}}>{project.c} · {project.country || project.r}{project.y ? " · "+project.y : ""}</div>
+            <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px dashed ${P.teal}40`,fontSize:T.small,color:P.slate,lineHeight:1.6,marginBottom:14}}>
               Project details, scope, role, and deliverables are shared on inquiry. Tell us what you want to know and we will respond.
             </div>
 
             {status === "success" ? (
-              <div style={{padding:"16px 18px",background:"#E8F7F4",borderRadius:8,border:`1px solid ${P.teal}40`,fontSize:11,color:P.charcoal,lineHeight:1.6}}>
+              <div style={{padding:"16px 18px",background:"#E8F7F4",borderRadius:8,border:`1px solid ${P.teal}40`,fontSize:T.body,color:P.charcoal,lineHeight:1.6}}>
                 <strong style={{color:P.teal}}>Inquiry received.</strong> We will reply within 1–2 business days. Thank you.
               </div>
             ) : (
@@ -3861,7 +3807,7 @@ export default function App(){
                 <label style={labelStyle}>Your question or interest</label>
                 <textarea style={textareaStyle} value={values.message} onChange={set("message")} placeholder="What would you like to know about this project? (scope, role, deliverables, software, software used, schedule, lessons learned...)" aria-label="Your question or interest" />
 
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:4}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8,marginTop:4}}>
                   <div>
                     <label style={labelStyle}>Company / Organization</label>
                     <input style={inputStyle} value={values.company} onChange={set("company")} placeholder="Optional" aria-label="Company or organization" />
@@ -3875,7 +3821,7 @@ export default function App(){
                 <label style={labelStyle}>Your Name *</label>
                 <input required style={inputStyle} value={values.contact} onChange={set("contact")} placeholder="Full name" aria-label="Your name" />
 
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
                   <div>
                     <label style={labelStyle}>Email {!contactOK && <span style={{color:P.coral}}>*</span>}</label>
                     <input type="email" style={inputStyle} value={values.email} onChange={set("email")} placeholder="your@email.com" aria-label="Email address" />
@@ -3885,7 +3831,7 @@ export default function App(){
                     <input style={inputStyle} value={values.phone} onChange={set("phone")} placeholder="+country code & number" aria-label="Phone number" />
                   </div>
                 </div>
-                <div style={{fontSize:8.5,color:P.slate,marginTop:-2,marginBottom:8,fontStyle:"italic"}}>Provide at least Email or Phone so we can reply.</div>
+                <div style={{fontSize:T.small,color:P.slate,marginTop:-2,marginBottom:8,fontStyle:"italic"}}>Provide at least Email or Phone so we can reply.</div>
 
                 <CaptchaBlock captcha={captcha} status={status}/>
 
@@ -3905,20 +3851,20 @@ export default function App(){
   const ContactPage=()=>(
     <div>
       <div style={{background:P.navy,padding:"28px 28px 22px"}}>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:800,color:P.white,margin:0}}>Contact Us</h2>
-        <p style={{fontSize:10,color:"#9BBCD6",marginTop:4}}>iStructural Group Inc. | Canada | info@istructgroup.com</p>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:0}}>Contact Us</h2>
+        <p style={{fontSize:T.body,color:"#9BBCD6",marginTop:4}}>iStructural Group Inc. · Canada · info@istructgroup.com</p>
       </div>
-      <div style={{padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+      <div style={{padding:"20px 24px",display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:10}}>
         {[{t:"General Inquiry",d:"Management, design, or consultancy.",a:"info@istructgroup.com",c:P.slate,href:"mailto:info@istructgroup.com"},
           {t:"Start a Project",d:"Management, design, or AI assessment.",a:"Start a Project",c:P.s1,href:null},
           {t:"Training",d:"CSi training for your team.",a:"Request Training",c:P.s2,href:null}].map((c,i)=>
           <div key={i} style={{padding:"16px",borderRadius:10,border:"1px solid #e0e0e0"}}>
-            <div style={{fontSize:11,fontWeight:700,color:P.charcoal}}>{c.t}</div>
-            <div style={{fontSize:9.5,color:P.slate,marginTop:5,lineHeight:1.6}}>{c.d}</div>
+            <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal}}>{c.t}</div>
+            <div style={{fontSize:T.small,color:P.slate,marginTop:5,lineHeight:1.6}}>{c.d}</div>
             <div onClick={()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s1":i===2?"s4":"s1");}}}
               {...kbd(()=>{if(c.href){window.location.href=c.href;}else{setPage("start");setSTab(i===1?"s1":i===2?"s4":"s1");}})}
               aria-label={c.a}
-              style={{marginTop:10,fontSize:10,fontWeight:700,color:c.c,cursor:"pointer"}}>{c.a} &#8594;</div>
+              style={{marginTop:10,fontSize:T.body,fontWeight:700,color:c.c,cursor:"pointer"}}>{c.a} &#8594;</div>
           </div>)}
       </div>
     </div>
@@ -3974,13 +3920,13 @@ export default function App(){
              style={{position:"fixed",inset:0,zIndex:1100,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)"}}>
           <div style={{position:"absolute",top:0,right:0,height:"100vh",width:"min(86vw,340px)",background:P.navy,boxShadow:"-10px 0 40px rgba(0,0,0,0.5)",padding:"20px 18px",animation:"slideInRight 0.22s ease-out",display:"flex",flexDirection:"column",gap:6}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
-              <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:16,fontWeight:700,fontFamily:"inherit"}}>×</button>
+              <div style={{fontSize:T.body,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
+              <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:T.h3,fontWeight:700,fontFamily:"inherit"}}>×</button>
             </div>
             {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>(
-              <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
+              <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:T.lead,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
             ))}
-            <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
+            <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:T.lead,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
           </div>
         </div>
       )}
@@ -4009,33 +3955,33 @@ export default function App(){
           <div style={{width:"100%",maxWidth:640,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55)",overflow:"hidden",animation:"fadeUp 0.2s ease-out"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",background:P.white,borderBottom:`1px solid ${P.charcoal}1A`}}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={P.slate} strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input autoFocus value={searchQ} onChange={(e)=>setSearchQ(e.target.value)} placeholder="Search pages, projects, resources..." aria-label="Site search input" style={{flex:1,border:"none",outline:"none",fontSize:13,background:"transparent",fontFamily:"inherit",color:P.charcoal}} />
-              <button onClick={()=>{setShowSearch(false);setSearchQ("");}} aria-label="Close search" style={{width:28,height:28,borderRadius:7,background:"transparent",border:`1px solid ${P.charcoal}25`,cursor:"pointer",fontSize:14,color:P.charcoal,fontWeight:700,fontFamily:"inherit"}}>×</button>
+              <input autoFocus value={searchQ} onChange={(e)=>setSearchQ(e.target.value)} placeholder="Search pages, projects, resources..." aria-label="Site search input" style={{flex:1,border:"none",outline:"none",fontSize:T.lead,background:"transparent",fontFamily:"inherit",color:P.charcoal}} />
+              <button onClick={()=>{setShowSearch(false);setSearchQ("");}} aria-label="Close search" style={{width:28,height:28,borderRadius:7,background:"transparent",border:`1px solid ${P.charcoal}25`,cursor:"pointer",fontSize:T.h3,color:P.charcoal,fontWeight:700,fontFamily:"inherit"}}>×</button>
             </div>
             <div style={{padding:"14px 16px",maxHeight:"60vh",overflowY:"auto"}}>
-              <div style={{fontSize:8,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:8}}>{q ? `Pages (${pageHits.length})` : "Browse pages"}</div>
-              {pageHits.length===0 && <div style={{fontSize:10,color:P.slate,fontStyle:"italic",padding:"6px 0"}}>No page matches.</div>}
+              <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:8}}>{q ? `Pages (${pageHits.length})` : "Browse pages"}</div>
+              {pageHits.length===0 && <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",padding:"6px 0"}}>No page matches.</div>}
               {pageHits.map(p=>(
                 <div key={p.id} onClick={()=>{setPage(p.id);setShowSearch(false);setSearchQ("");}} {...kbd(()=>{setPage(p.id);setShowSearch(false);setSearchQ("");})} style={{padding:"9px 11px",borderRadius:7,cursor:"pointer",marginBottom:4,background:P.white,border:`1px solid ${P.charcoal}10`}}>
-                  <div style={{fontSize:10.5,fontWeight:700,color:P.charcoal}}>{p.l}</div>
-                  <div style={{fontSize:8.5,color:P.slate,marginTop:1}}>{p.d}</div>
+                  <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal}}>{p.l}</div>
+                  <div style={{fontSize:T.small,color:P.slate,marginTop:1}}>{p.d}</div>
                 </div>
               ))}
               {q && (
                 <>
-                  <div style={{fontSize:8,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",margin:"14px 0 8px"}}>Projects ({projHits.length})</div>
-                  {projHits.length===0 && <div style={{fontSize:10,color:P.slate,fontStyle:"italic",padding:"6px 0"}}>No project matches.</div>}
+                  <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",margin:"14px 0 8px"}}>Projects ({projHits.length})</div>
+                  {projHits.length===0 && <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",padding:"6px 0"}}>No project matches.</div>}
                   {projHits.map((p,i)=>(
                     <div key={i} onClick={()=>{setSelectedProj(p);setShowSearch(false);setSearchQ("");}} {...kbd(()=>{setSelectedProj(p);setShowSearch(false);setSearchQ("");})} style={{padding:"8px 11px",borderRadius:7,cursor:"pointer",marginBottom:4,background:P.white,border:`1px solid ${P.s2}15`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6}}>
-                      <div style={{fontSize:10,color:P.charcoal,flex:1}}>{p.n}</div>
-                      <span style={{fontSize:7.5,fontWeight:600,padding:"1px 6px",borderRadius:5,background:(catCol[p.c]||P.slate)+"15",color:catCol[p.c]||P.slate}}>{p.c}</span>
-                      <span style={{fontSize:8,color:P.slate,whiteSpace:"nowrap"}}>{p.country||p.r}</span>
+                      <div style={{fontSize:T.body,color:P.charcoal,flex:1}}>{p.n}</div>
+                      <span style={{fontSize:T.micro,fontWeight:600,padding:"1px 6px",borderRadius:5,background:(catCol[p.c]||P.slate)+"15",color:catCol[p.c]||P.slate}}>{p.c}</span>
+                      <span style={{fontSize:T.micro,color:P.slate,whiteSpace:"nowrap"}}>{p.country||p.r}</span>
                     </div>
                   ))}
                 </>
               )}
               {!q && (
-                <div style={{fontSize:9,color:P.slate,marginTop:14,padding:"10px 12px",background:P.white,borderRadius:7,border:`1px dashed ${P.charcoal}1F`,lineHeight:1.6}}>
+                <div style={{fontSize:T.small,color:P.slate,marginTop:14,padding:"10px 12px",background:P.white,borderRadius:7,border:`1px dashed ${P.charcoal}1F`,lineHeight:1.6}}>
                   Tip: type a project name, region, code (ACI, Eurocode, CSA), or topic. Press Esc to close.
                 </div>
               )}
@@ -4054,36 +4000,36 @@ export default function App(){
              style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,24,40,0.78)",backdropFilter:"blur(4px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto"}}>
           <div style={{position:"relative",width:"100%",maxWidth:560,background:P.sand,borderRadius:12,boxShadow:"0 20px 60px rgba(0,0,0,0.55)",overflow:"hidden",animation:"fadeUp 0.22s ease-out"}}>
             <div style={{height:4,background:catCol[selectedProj.c]||P.teal}}></div>
-            <button onClick={()=>setSelectedProj(null)} aria-label="Close project details" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
+            <button onClick={()=>setSelectedProj(null)} aria-label="Close project details" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}25`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:T.h3,color:P.charcoal,fontWeight:700,zIndex:2,fontFamily:"inherit"}}>×</button>
             <div style={{padding:"24px 28px 26px"}}>
-              <div style={{fontSize:8,fontWeight:700,letterSpacing:2.5,color:catCol[selectedProj.c]||P.slate,textTransform:"uppercase",marginBottom:6}}>{selectedProj.c} · Project</div>
-              <div style={{fontFamily:"'Fraunces',serif",fontSize:17,fontWeight:800,color:P.charcoal,lineHeight:1.25,marginBottom:14}}>{selectedProj.n}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+              <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:2.5,color:catCol[selectedProj.c]||P.slate,textTransform:"uppercase",marginBottom:6}}>{selectedProj.c} · Project</div>
+              <div style={{fontFamily:"'Fraunces',serif",fontSize:T.h3,fontWeight:800,color:P.charcoal,lineHeight:1.25,marginBottom:14}}>{selectedProj.n}</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:10,marginBottom:14}}>
                 <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
-                  <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Type</div>
-                  <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.c}</div>
+                  <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Type</div>
+                  <div style={{fontSize:T.body,fontWeight:600,color:P.charcoal}}>{selectedProj.c}</div>
                 </div>
                 <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
-                  <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Region</div>
-                  <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.r}</div>
+                  <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Region</div>
+                  <div style={{fontSize:T.body,fontWeight:600,color:P.charcoal}}>{selectedProj.r}</div>
                 </div>
                 {selectedProj.country && (
                   <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
-                    <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Country</div>
-                    <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.country}</div>
+                    <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Country</div>
+                    <div style={{fontSize:T.body,fontWeight:600,color:P.charcoal}}>{selectedProj.country}</div>
                   </div>
                 )}
                 {selectedProj.y && (
                   <div style={{padding:"10px 12px",background:P.white,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
-                    <div style={{fontSize:7.5,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Year</div>
-                    <div style={{fontSize:10.5,fontWeight:600,color:P.charcoal}}>{selectedProj.y}</div>
+                    <div style={{fontSize:T.micro,fontWeight:700,letterSpacing:1.5,color:P.slate,textTransform:"uppercase",marginBottom:3}}>Year</div>
+                    <div style={{fontSize:T.body,fontWeight:600,color:P.charcoal}}>{selectedProj.y}</div>
                   </div>
                 )}
               </div>
-              <div style={{padding:"12px 14px",background:P.white,borderRadius:8,border:`1px dashed ${P.charcoal}25`,fontSize:9.5,color:P.slate,lineHeight:1.6}}>
+              <div style={{padding:"12px 14px",background:P.white,borderRadius:8,border:`1px dashed ${P.charcoal}25`,fontSize:T.small,color:P.slate,lineHeight:1.6}}>
                 Detailed project information, scope, role, and deliverables are shared under NDA per engagement. Contact <a href="mailto:info@istructgroup.com" style={{color:P.teal,fontWeight:700}}>info@istructgroup.com</a> to request specifics.
               </div>
-              <div onClick={()=>{setSelectedProj(null);setPage("start");setSTab("s2");}} {...kbd(()=>{setSelectedProj(null);setPage("start");setSTab("s2");})} aria-label="Discuss a similar project" style={{marginTop:14,background:P.teal,color:P.white,padding:"10px 18px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Discuss a Similar Project →</div>
+              <div onClick={()=>{setSelectedProj(null);setPage("start");setSTab("s2");}} {...kbd(()=>{setSelectedProj(null);setPage("start");setSTab("s2");})} aria-label="Discuss a similar project" style={{marginTop:14,background:P.teal,color:P.white,padding:"10px 18px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Discuss a Similar Project →</div>
             </div>
           </div>
         </div>

@@ -27,6 +27,23 @@ const P = {
   coral:"#C0553A",redD:"#8B2020",greenD:"#1B6B35",s3b:"#1565C0",s3bL:"#E3F2FD",
 };
 
+// ── TYPE SCALE (T) ───────────────────────────────────────────────────────
+// One readable type scale, used in place of scattered raw fontSize numbers.
+// Body copy floors at 14 to 15px. Replaces the old 7 to 10px fine print.
+// Applied to the Home page first as a review sample, then site-wide once
+// approved. Plain module-scope const, no hooks, no temporal-dead-zone risk.
+const T = {
+  eyebrow:11,   // uppercase kicker labels above headings
+  micro:12,     // smallest legal / caption text, was 7 to 8
+  small:13,     // secondary text, list items, was 9 to 9.5
+  body:15,      // primary body copy, was 10 to 11
+  lead:17,      // intro paragraphs
+  h3:21,        // sub-section headings
+  h2:27,        // section headings
+  h1:36,        // hero heading
+  stat:30,      // large numeric stats
+};
+
 // ── ALL 87 PROJECTS ──
 const allProjects = [
   // Residential & Hotel (26)
@@ -598,20 +615,20 @@ export default function App(){
   const HomePage=()=>(
     <div>
       <HeroBg color1={P.navy} color2={P.navyM}>
-        <div style={{padding:"44px 28px 40px",maxWidth:560}}>
-          <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Since 2010 | Structural Solutions | Management | AI Assessment</div>
-          <h1 style={{fontFamily:"'Fraunces',serif",fontSize:32,fontWeight:800,color:P.white,lineHeight:1.15,margin:0}}>Engineering intelligence<br/>for the built world</h1>
-          <p style={{fontSize:12,color:"#9BBCD6",lineHeight:1.7,marginTop:12,maxWidth:500}}>iStructural Group Inc. has championed advanced structural engineering for complex and unconventional projects for over two decades. Hybrid structural systems, structural forensics, seismic and wind engineering, and finite element modeling | now powered by AI-driven assessment and next-generation digital tools.</p>
-          <div style={{display:"flex",gap:8,marginTop:18}}>
-            <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management page" style={{background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Management</div>
-            <div onClick={()=>setPage("s2")} {...kbd(()=>setPage("s2"))} aria-label="Open Design and Consultancy page" style={{background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Design & Consultancy</div>
-            <div onClick={()=>setPage("s3")} {...kbd(()=>setPage("s3"))} aria-label="Open AI and Technology page" style={{background:P.teal,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>AI & Technology</div>
+        <div style={{padding:"52px 28px 46px",maxWidth:600}}>
+          <div style={{fontSize:T.eyebrow,fontWeight:700,letterSpacing:2.5,color:P.tealL,textTransform:"uppercase",marginBottom:12}}>Since 2010 · Structural Solutions · Management · AI Assessment</div>
+          <h1 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,lineHeight:1.15,margin:0}}>Engineering intelligence<br/>for the built world</h1>
+          <p style={{fontSize:T.body,color:"#AFC4D8",lineHeight:1.7,marginTop:14,maxWidth:520}}>iStructural Group Inc. has championed advanced structural engineering for complex and unconventional projects for over two decades. Hybrid structural systems, structural forensics, seismic and wind engineering, and finite element modeling, now powered by AI-driven assessment and next-generation digital tools.</p>
+          <div style={{display:"flex",gap:10,marginTop:22,flexWrap:"wrap"}}>
+            <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management page" style={{background:P.s1,color:P.white,padding:"11px 22px",borderRadius:8,fontSize:T.small,fontWeight:700,cursor:"pointer"}}>Management</div>
+            <div onClick={()=>setPage("s2")} {...kbd(()=>setPage("s2"))} aria-label="Open Design and Consultancy page" style={{background:P.s2,color:P.white,padding:"11px 22px",borderRadius:8,fontSize:T.small,fontWeight:700,cursor:"pointer"}}>Design & Consultancy</div>
+            <div onClick={()=>setPage("s3")} {...kbd(()=>setPage("s3"))} aria-label="Open AI and Technology page" style={{background:P.teal,color:P.white,padding:"11px 22px",borderRadius:8,fontSize:T.small,fontWeight:700,cursor:"pointer"}}>AI & Technology</div>
           </div>
         </div>
       </HeroBg>
 
       {/* 3 EQUAL PILLARS */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(260px, 1fr))",gap:0}}>
         {[
           {key:"s1",title:"Management & Business Support",color:P.s1,bg:P.s1L,tag:"Strategy that builds before construction begins",
            items:["Project & Construction Management","Business Strategy & Growth","Risk & Financial Management","Value Engineering (V.E.)","ROI & Investment Analysis"]},
@@ -620,37 +637,37 @@ export default function App(){
           {key:"s3",title:"AI & Technology Services",color:P.s3,bg:P.s3L,tag:"From AI literacy to stamped engineering drawings",
            items:["AI Literacy and Organizational Readiness (AI 101)","Tool Integration and Process Automation","AI Readiness Assessment","Knowledge Hub (free resources for all)","Cross-link: Structural Assessment Platform under Design"]},
         ].map((s,i)=>(
-          <div key={s.key} onClick={()=>setPage(s.key)} {...kbd(()=>setPage(s.key))} aria-label={`Open ${s.title}`} style={{padding:"24px 20px 20px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
+          <div key={s.key} onClick={()=>setPage(s.key)} {...kbd(()=>setPage(s.key))} aria-label={`Open ${s.title}`} style={{padding:"28px 24px 24px",cursor:"pointer",background:P.white,borderRight:i<2?"1px solid #E8E8E8":"none",borderBottom:"3px solid transparent",transition:"all 0.25s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=s.bg;e.currentTarget.style.borderBottom=`3px solid ${s.color}`;}}
             onMouseLeave={e=>{e.currentTarget.style.background=P.white;e.currentTarget.style.borderBottom="3px solid transparent";}}>
-            <div style={{fontSize:13,fontWeight:700,color:s.color,marginTop:0}}>{s.title}</div>
-            <div style={{fontSize:10,color:P.warm,fontStyle:"italic",marginTop:3,fontFamily:"'Fraunces',serif"}}>{s.tag}</div>
-            <div style={{marginTop:10}}>{s.items.map((it,j)=><div key={j} style={{fontSize:9.5,color:P.charcoal,padding:"2px 0",display:"flex",gap:5}}><span style={{color:s.color,fontWeight:800,fontSize:8}}>+</span>{it}</div>)}</div>
-            <div style={{fontSize:10,fontWeight:700,color:s.color,marginTop:12}}>Explore services &#8594;</div>
+            <div style={{fontSize:T.h3,fontWeight:800,color:s.color,marginTop:0,fontFamily:"'Fraunces',serif",lineHeight:1.25}}>{s.title}</div>
+            <div style={{fontSize:T.small,color:P.warm,fontStyle:"italic",marginTop:5,fontFamily:"'Fraunces',serif"}}>{s.tag}</div>
+            <div style={{marginTop:14}}>{s.items.map((it,j)=><div key={j} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",display:"flex",gap:6}}><span style={{color:s.color,fontWeight:800,fontSize:T.micro}}>+</span>{it}</div>)}</div>
+            <div style={{fontSize:T.small,fontWeight:700,color:s.color,marginTop:16}}>Explore services &#8594;</div>
           </div>
         ))}
       </div>
 
       {/* DAMAGE SUB-MARKETS */}
-      <div style={{background:P.sand,padding:"22px 24px"}}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:10}}>Three damage assessment sub-markets</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+      <div style={{background:P.sand,padding:"26px 24px"}}>
+        <div style={{fontSize:T.eyebrow,fontWeight:700,letterSpacing:2,color:P.slate,textTransform:"uppercase",marginBottom:12}}>Three damage assessment sub-markets</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:10}}>
           {[{t:"Post-natural disaster",c:P.coral},
-            {t:"Post-conflict / war zones",c:P.redD},
+            {t:"Post-conflict and war zones",c:P.redD},
             {t:"Heritage and aging assets",c:P.s2}].map((m,i)=>
-            <div key={i} style={{padding:"14px 16px",borderRadius:10,background:P.white,border:`1px solid ${m.c}15`}}>
-              <div style={{fontSize:10,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:1.6}}>{m.t}</div>
+            <div key={i} style={{padding:"16px 18px",borderRadius:10,background:P.white,border:`1px solid ${m.c}15`}}>
+              <div style={{fontSize:T.small,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:1.4}}>{m.t}</div>
             </div>
           )}
         </div>
       </div>
 
-      <div onClick={()=>setPage("hub")} {...kbd(()=>setPage("hub"))} aria-label="Open Knowledge Hub" style={{padding:"16px 24px",background:P.greenD+"08",borderTop:`1px solid ${P.greenD}15`,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
+      <div onClick={()=>setPage("hub")} {...kbd(()=>setPage("hub"))} aria-label="Open Knowledge Hub" style={{padding:"20px 24px",background:P.greenD+"08",borderTop:`1px solid ${P.greenD}15`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:P.greenD}}>Knowledge Hub | Free for every engineer, architect, safety officer, and developers</div>
-          <div style={{fontSize:9,color:P.slate,marginTop:2}}>Forms, crack library, calculators, software directory, standards, management templates</div>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.greenD}}>Knowledge Hub, free for every engineer, architect, safety officer, and developer</div>
+          <div style={{fontSize:T.small,color:P.slate,marginTop:3}}>Forms, crack library, calculators, software directory, standards, management templates</div>
         </div>
-        <div style={{background:P.greenD,color:P.white,padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Browse &#8594;</div>
+        <div style={{background:P.greenD,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Browse &#8594;</div>
       </div>
 
       {/* TOOLS BOX teaser  introduces the modular app launcher */}
@@ -674,18 +691,18 @@ export default function App(){
             <path d="M 19 14 L 23 14 M 16 16 L 30 16" stroke={P.tealL} strokeWidth="1" opacity="0.7"/>
           </svg>
           <div>
-            <div style={{fontSize:11,fontWeight:700,color:P.tealL}}>Tools Box | A growing collection of iStructural apps</div>
-            <div style={{fontSize:9,color:"#9BBCD6",marginTop:2}}>APEX career war room, ARGO bid decisions, LEARN courses. More apps arriving as we draft them. Open the box.</div>
+            <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
+            <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career war room, ARGO bid decisions, LEARN courses. More apps arriving as we draft them. Open the box.</div>
           </div>
         </div>
-        <div style={{background:P.teal,color:P.white,padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
+        <div style={{background:P.teal,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:0,background:P.navy}}>
+      <div style={{display:"flex",background:P.navy}}>
         {[{v:"2010",l:"Founded"}].map((s,i)=>
-          <div key={i} style={{padding:"14px 10px",textAlign:"center",borderRight:i<4?"1px solid #1E3A55":"none"}}>
-            <div style={{fontSize:18,fontWeight:800,color:P.tealL,fontFamily:"'Fraunces',serif"}}>{s.v}</div>
-            <div style={{fontSize:8,color:"#7A96AE",marginTop:2}}>{s.l}</div>
+          <div key={i} style={{padding:"18px 24px",textAlign:"center"}}>
+            <div style={{fontSize:T.stat,fontWeight:800,color:P.tealL,fontFamily:"'Fraunces',serif"}}>{s.v}</div>
+            <div style={{fontSize:T.micro,color:"#8FA8BE",marginTop:3,letterSpacing:0.5}}>{s.l}</div>
           </div>
         )}
       </div>

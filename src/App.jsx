@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from "react";
+import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 
 // ── Meta injection (for Vercel / Next.js move, use next/head instead) ──
 if (typeof document !== "undefined") {
@@ -320,20 +320,70 @@ export default function App(){
   const [accessRequest,setAccessRequest]=useState(null);  // app object when access-request form is open
   const [toolsDisclaimerOpen,setToolsDisclaimerOpen]=useState(false); // top-of-page disclaimer expand toggle
   const [toolsDisclaimerAccepted,setToolsDisclaimerAccepted]=useState(false); // checkbox above briefing form
-  const [nowTick,setNowTick]=useState(Date.now());        // 1s heartbeat so the 60 min session timer counts down live
-  useEffect(()=>{ const id=setInterval(()=>setNowTick(Date.now()),1000); return ()=>clearInterval(id); },[]);
-  const [ownerMode,setOwnerMode]=useState(false);         // owner unlimited access: no 60 min cap on any app
+  // SCROLL-FIX: no per-second `nowTick` in App state. A 1s tick here would
+  // re-render App every second; because the modal components are defined
+  // inside App they become new function references each render, so React
+  // unmounts + remounts the open modal every second, resetting its scroll.
+  // Instead the live countdown lives in an isolated <LiveSandTimer/> leaf
+  // component that owns its own tick. App only flips `sessionExpired` once,
+  // when the timer reaches zero (via onExpire), which is a real state change.
+  const [sessionExpired,setSessionExpired]=useState(false);
+  // Owner unlimited access (no 60 min cap on any app). PERSISTENCE: the initial
+  // value is read once from sessionStorage via a lazy initializer, so an owner
+  // who signed in stays signed in across page refreshes for the browser
+  // session. sessionStorage (not localStorage) means it clears when the tab
+  // closes, which is appropriate for a soft, client-side owner gate.
+  const [ownerMode,setOwnerMode]=useState(()=>{
+    try { return typeof sessionStorage !== "undefined" && sessionStorage.getItem("isg_owner") === "1"; }
+    catch(e){ return false; }
+  });
   const [ownerSignInOpen,setOwnerSignInOpen]=useState(false); // inline owner sign-in field toggle
   const [ownerSignInInput,setOwnerSignInInput]=useState("");  // owner passphrase field value
   const [ownerSignInError,setOwnerSignInError]=useState("");  // owner sign-in error message
-  // Body scroll lock. Minimal and safe: only set overflow:hidden while a modal is open.
-  // No position:fixed, no scrollTo. The position:fixed approach was fighting normal page
-  // scroll and snapping the page back up, which is the bug we are removing here.
+  // Persist owner mode whenever it changes. Declared AFTER ownerMode so the
+  // dependency array never references it in the temporal dead zone.
+  useEffect(()=>{
+    try {
+      if (typeof sessionStorage === "undefined") return;
+      if (ownerMode) sessionStorage.setItem("isg_owner","1");
+      else sessionStorage.removeItem("isg_owner");
+    } catch(e){ /* storage blocked, owner mode still works for this render */ }
+  }, [ownerMode]);
+  // ── SCROLL-FIX (the real one) ─────────────────────────────────────────────
+  // The snap-back-to-top bug after opening/closing an app modal was caused by
+  // setting `document.body.style.overflow = "hidden"`. Locking the BODY element
+  // discards the page's scroll offset; clearing it on close lands the page at
+  // the top, and any re-render afterwards keeps fighting the user's scroll.
+  //
+  // Correct technique: pin the body with `position:fixed` and a NEGATIVE top
+  // offset equal to the captured scrollY, then on unlock remove the pin and
+  // restore scrollY exactly once. The captured offset lives in a ref so a
+  // re-render (e.g. the 1s session timer) never re-captures or re-restores it.
+  const lockedScrollY = useRef(0);
+  const isLocked = useRef(false);
   useEffect(()=>{
     if (typeof document === "undefined") return;
     const anyOverlayOpen = !!activeApp || !!accessRequest || !!inquiryProj || mobileNavOpen;
-    document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
-    return ()=>{ document.body.style.overflow = ""; };
+    const body = document.body;
+    if (anyOverlayOpen && !isLocked.current) {
+      // LOCK: capture current scroll, pin the body in place.
+      lockedScrollY.current = window.scrollY || window.pageYOffset || 0;
+      body.style.position = "fixed";
+      body.style.top = `-${lockedScrollY.current}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      isLocked.current = true;
+    } else if (!anyOverlayOpen && isLocked.current) {
+      // UNLOCK: remove the pin and restore the exact scroll position.
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      isLocked.current = false;
+      window.scrollTo(0, lockedScrollY.current);
+    }
   }, [activeApp, accessRequest, inquiryProj, mobileNavOpen]);
   const [toolsSession,setToolsSession]=useState({
     userId:"default_user",                                 // dormant — single-user mode for Phase 1
@@ -342,6 +392,14 @@ export default function App(){
     tier:"trial",                                          // dormant — Phase 2 will set free/pro/enterprise
     entitlements:["ecios","bid"],                          // dormant — Phase 2 will gate per subscription
   });
+  // When a new key is granted the session is fresh again, so clear the expired flag.
+  // (grantSession updates toolsSession.keyValidUntil.) Declared AFTER toolsSession
+  // so the dependency array does not reference it in the temporal dead zone.
+  useEffect(()=>{
+    if (toolsSession.keyValidUntil && new Date(toolsSession.keyValidUntil).getTime() > Date.now()) {
+      setSessionExpired(false);
+    }
+  }, [toolsSession.keyValidUntil]);
 
   const filteredP = useMemo(()=>{
     let f=allProjects;
@@ -485,7 +543,7 @@ export default function App(){
       </div>
       {/* Desktop nav tabs (≥720px) */}
       <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:2}}>
-        {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>
+        {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>
           <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:9.5,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
         )}
         {/* Search icon */}
@@ -1331,6 +1389,37 @@ export default function App(){
       icon:"summit",
       requiresKey:true,
       requiresEntitlement:"ecios",
+      plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
+      // scope: the Yes-No inclusion / exclusion card shown at the start of the
+      // app so the user knows up front what to upload, what is included, what
+      // is excluded, and what to expect back. Rendered before the pre-run panel.
+      scope:{
+        upload:[
+          "Your CV or resume (PDF or Word)",
+          "The job description or a link to it",
+          "Your existing cover letter, if you have one (optional)",
+          "Names of interviewers, if known (optional, for profiling)",
+        ],
+        included:[
+          "JD discipline scan and full war-room assessment",
+          "ATS scoring out of 100 across multiple vendors",
+          "Tailored one A4 cover letter, executive tone",
+          "CV optimization with no inferred experience",
+          "Interview war room with 100+ scenario questions and answers",
+          "Hiring risk, submit yes or no, and probability of advancing",
+        ],
+        excluded:[
+          "No fabricated or inferred experience beyond your CV",
+          "No guaranteed job offer or interview outcome",
+          "No legal, immigration or contractual advice",
+          "Not a substitute for your own final judgment",
+        ],
+        expect:[
+          "A full war-room report in DOCX and PDF",
+          "Three iterations stated, references dated, no em dashes",
+          "Turnaround confirmed by email after you submit a run",
+        ],
+      },
       briefing:{
         docx:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.docx",
         pdf:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.pdf",
@@ -1367,7 +1456,31 @@ export default function App(){
         {id:"architecture", name:"Architecture Environment", trigger:"JD is architecture", what:"Design-stage coordination, heritage, adaptive reuse, multidisciplinary conflicts"},
         {id:"business", name:"Business and Commercial Environment", trigger:"JD is business or management", what:"Utilization, billability, profitability, change orders, scope creep, market intelligence"},
         {id:"advisory", name:"Strategic Advisory", trigger:"Always on", what:"Apply decision, probability, salary, 30 / 60 / 90 day plan"},
+        {id:"profiling", name:"Interviewer Profiling", trigger:"You name your interviewers", what:"Profiles each interviewer from public professional activity: background, achievements, recent interests, likely questions and the answers they listen for"},
       ],
+      profiling:{
+        label:"Interviewer Profiling",
+        intro:"If you know who will interview you, name them. APEX profiles each person from public professional activity only and tunes your prep to them.",
+        roleLabel:"Their interview role (HR, technical, hiring manager, final panel)",
+      },
+      preRun:{
+        have:[
+          {id:"cv", label:"I have my CV or resume"},
+          {id:"coverLetter", label:"I already have a cover letter"},
+          {id:"jd", label:"I have the job description"},
+          {id:"interviewers", label:"I know who will interview me"},
+          {id:"interviewStage", label:"I have an interview scheduled (HR, technical or final)"},
+        ],
+        want:[
+          {id:"assessment", label:"Full assessment and war-room report", locked:true},
+          {id:"newCover", label:"A new tailored cover letter"},
+          {id:"cvOpt", label:"CV optimization"},
+          {id:"interviewPrep", label:"Interview war room and 100+ question bank"},
+          {id:"profiling", label:"Interviewer profiling"},
+          {id:"plan", label:"30 / 60 / 90 day success plan"},
+          {id:"salary", label:"Salary and negotiation intelligence"},
+        ],
+      },
       shortcuts:[
         {k:"A", a:"Full APEX war-room run, all environments", t:"green"},
         {k:"A scan", a:"JD discipline scan only", t:"blue"},
@@ -1422,7 +1535,10 @@ export default function App(){
         {key:"coverLetter",label:"Your Cover Letter, if you already have one (optional)",type:"textarea",required:false,placeholder:"Optional. If provided, APEX assesses it against the JD. It is not overwritten unless you ask for a new one."},
         {key:"refLetter",label:"Reference Cover Letter for style anchors only (optional)",type:"textarea",required:false,placeholder:"Optional. Company names will be stripped on ingest."},
         {key:"jd",label:"Target Job Description",type:"textarea",required:true,placeholder:"Paste the job description text or a URL."},
-        {key:"want",label:"What do you want from this run?",type:"textarea",required:true,placeholder:"For example: full war-room report and assessment only. Or: assessment plus a new cover letter. Or: CV optimization and interview prep. The assessment and report are always produced."},
+        // NOTE: no "want" field here. What the user wants is already captured
+        // by the Yes-No "What I want delivered" toggles in the PreRunPanel,
+        // which writes the selection into intake.want. Asking again would be
+        // a duplicate question at the form stage.
       ],
     },
     {
@@ -1436,6 +1552,38 @@ export default function App(){
       icon:"compass",
       requiresKey:true,
       requiresEntitlement:"bid",
+      plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
+      scope:{
+        upload:[
+          "The RFP, tender or scope document (PDF or Word)",
+          "Project description or a link to the opportunity",
+          "Names of the selection panel or evaluators, if known (optional)",
+          "Your delivery and commercial constraints, if any (optional)",
+        ],
+        included:[
+          "Eight phase GO / CONDITIONAL GO / NO-GO decision pipeline",
+          "Delivery model ranking: DBB, DB, CMAR, EPC, Progressive DB, Alliance",
+          "Commercial model evaluation and risk math (P x I x D)",
+          "Win probability estimate with assumptions stated",
+          "Executive decision dashboard with gauges",
+        ],
+        excluded:[
+          "No guaranteed bid win or award",
+          "No binding price or estimate, this is decision support",
+          "No legal or contractual advice",
+          "Not a replacement for your formal bid governance",
+        ],
+        expect:[
+          "A full decision dashboard in DOCX and PDF",
+          "Three iterations stated, references dated, no em dashes",
+          "Turnaround confirmed by email after you submit a run",
+        ],
+      },
+      profiling:{
+        label:"Client and Evaluator Profiling",
+        intro:"If you know who sits on the selection panel or who evaluates the bid, name them. ARGO profiles each from public professional activity and tells you what they reward.",
+        roleLabel:"Their role (procurement, technical evaluator, decision maker)",
+      },
       capabilities:[
         "Technical analysis, constructability, interface dependencies",
         "Delivery model ranking: DBB / DB / CMAR / EPC / Progressive DB / Alliance",
@@ -1488,10 +1636,31 @@ export default function App(){
         {label:"Risk acceptable", pct:60},
         {label:"Win probability", pct:45},
       ],
+      preRun:{
+        have:[
+          {id:"rfp", label:"I have the RFP or tender documents"},
+          {id:"scope", label:"I have a project scope or description"},
+          {id:"constraints", label:"I know the key constraints"},
+          {id:"panel", label:"I know who evaluates the bid"},
+          {id:"competitors", label:"I know the likely competitors"},
+        ],
+        want:[
+          {id:"decision", label:"GO / CONDITIONAL GO / NO-GO decision and report", locked:true},
+          {id:"delivery", label:"Delivery model ranking"},
+          {id:"commercial", label:"Commercial model evaluation"},
+          {id:"risk", label:"Risk math across 8 categories"},
+          {id:"win", label:"Win probability"},
+          {id:"profiling", label:"Client and evaluator profiling"},
+        ],
+      },
       intakeFields:[
         {key:"projectDesc",label:"Project Description / Scope",type:"textarea",required:true,placeholder:"Describe the project: sector, scale, delivery context, known constraints."},
         {key:"rfp",label:"RFP Text / Email Exchange (optional)",type:"textarea",required:false,placeholder:"Paste relevant procurement signals, deadlines, scoring criteria."},
         {key:"constraints",label:"Known Constraints",type:"textarea",required:false,placeholder:"Budget, timeline, regulatory, stakeholder, geographic."},
+        // NOTE: no "want" field here. What the user wants is already captured
+        // by the Yes-No "What I want delivered" toggles in the PreRunPanel,
+        // which writes the selection into intake.want. Asking again would be
+        // a duplicate question at the form stage.
       ],
     },
     {
@@ -1505,6 +1674,30 @@ export default function App(){
       icon:"book",
       requiresKey:true,
       requiresEntitlement:"learn",
+      plan:{tier:"Free preview",priceHint:"Free during transition stage",status:"coming"}, // dormant: commercialization, shown faded
+      scope:{
+        upload:[
+          "Nothing required to start, courses are pre-authored",
+          "Images or documents as study material, where the course allows it (optional)",
+          "Your questions and practice attempts as you study",
+        ],
+        included:[
+          "Owner-authored modules and courses grounded in verified material",
+          "Question answering, practice drafting, step by step solutions",
+          "Every answer labelled by source with an accuracy and confidence score",
+          "Progress bar, time on course and daily use analytics",
+        ],
+        excluded:[
+          "Not a formal certification or accredited qualification",
+          "Internet search only with your explicit consent",
+          "No professional engineering sign off, study support only",
+        ],
+        expect:[
+          "Interactive study inside this app, progress saved for the session",
+          "Sourced, dated answers, no em dashes",
+          "New modules added by the author over time",
+        ],
+      },
       customModal:"learn",
       capabilities:[
         "Modules and courses authored by iStructural, grounded in verified source material",
@@ -1513,6 +1706,92 @@ export default function App(){
         "Accuracy and confidence percentages shown on every answer",
         "Internet search only with explicit consent, external sources cited with dates",
         "Progress bar, total time on course, average use per day analytics",
+      ],
+    },
+    {
+      id:"meet",
+      name:"MEET",
+      tagline:"Profile the room before you walk in",
+      category:"Career & Hiring",
+      shortDesc:"Meeting preparation for interviews, client pitches, negotiations and board meetings. MEET profiles the people on the other side of the table from public professional activity, reads the agenda and shared documents, and builds a room strategy.",
+      iconColor:P.s1,
+      iconLetter:"M",
+      icon:"compass",
+      requiresKey:true,
+      requiresEntitlement:"meet",
+      plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
+      scope:{
+        upload:[
+          "Names and roles of the people you will meet",
+          "The meeting agenda or purpose",
+          "Any shared documents or pre-read, if available (optional)",
+          "Your goal for the meeting and any known sensitivities (optional)",
+        ],
+        included:[
+          "Profile of each named participant from public professional activity",
+          "Agenda intelligence: talking points, risks and likely questions",
+          "Room strategy: who cares about what, alignment and friction points",
+          "Predicted questions and answers tuned to each participant",
+          "A one page room brief",
+        ],
+        excluded:[
+          "Public professional information only, no private or personal data",
+          "No facial recognition or image gathering",
+          "No guarantee of meeting outcome",
+          "Profiles are indicative, confirm anything decision critical",
+        ],
+        expect:[
+          "A room strategy brief in DOCX and PDF",
+          "Every profile claim labelled by public source, dated, with a confidence percentage",
+          "Turnaround confirmed by email after you submit a run",
+        ],
+      },
+      capabilities:[
+        "Counterparty profiling: background, achievements, recent public interests, likely questions",
+        "Agenda intelligence: parses the meeting agenda and shared documents into talking points and risks",
+        "Room strategy: who cares about what, where alignment is, where friction is",
+        "Question and answer prediction tuned to each named participant",
+        "Works for interviews, client pitches, negotiations, board and review meetings",
+        "Every profile claim labelled by public source with a date and a confidence percentage",
+      ],
+      phases:[
+        {n:1, name:"Meeting Intake", get:"Meeting type, participants, agenda, shared documents, your goal"},
+        {n:2, name:"Counterparty Profiling", get:"Profiles each participant from public professional activity"},
+        {n:3, name:"Agenda Intelligence", get:"Agenda and documents parsed into talking points and risks"},
+        {n:4, name:"Question Prediction", get:"Likely questions per person and the answers they listen for"},
+        {n:5, name:"Room Strategy", get:"Combined map of interests, alignment and friction"},
+        {n:6, name:"Brief Export", get:"Meeting prep brief in DOCX and PDF"},
+      ],
+      profiling:{
+        label:"Meeting Participant Profiling",
+        intro:"Name the people you will meet. MEET profiles each from public professional activity only and predicts what they will care about.",
+        roleLabel:"Their role in the meeting",
+      },
+      preRun:{
+        have:[
+          {id:"participants", label:"I know who will be in the meeting"},
+          {id:"agenda", label:"I have the meeting agenda"},
+          {id:"docs", label:"I have documents shared for the meeting"},
+          {id:"goal", label:"I know my goal for this meeting"},
+        ],
+        want:[
+          {id:"brief", label:"Full meeting prep brief", locked:true},
+          {id:"profiles", label:"Participant profiles"},
+          {id:"questions", label:"Predicted questions and answers"},
+          {id:"strategy", label:"Room strategy map"},
+        ],
+      },
+      boundaries:[
+        {will:"Analyze photographs or gather facial data", why:"Public professional text activity only"},
+        {will:"Use private or non-public personal data", why:"Public sources only, cited with dates"},
+        {will:"Promise a meeting outcome", why:"Profiling is preparation, not a guarantee"},
+        {will:"Share your data outside this project", why:"Confidentiality enforced"},
+      ],
+      intakeFields:[
+        {key:"meetingType",label:"Meeting type",type:"textarea",required:true,placeholder:"For example: final-round interview, client pitch, fee negotiation, board review."},
+        {key:"agenda",label:"Meeting agenda (optional)",type:"textarea",required:false,placeholder:"Paste the agenda or the key topics to be discussed."},
+        {key:"docs",label:"Shared documents (optional)",type:"textarea",required:false,placeholder:"Paste text from any documents shared for the meeting."},
+        {key:"goal",label:"Your goal for this meeting",type:"textarea",required:true,placeholder:"What outcome do you want from this meeting?"},
       ],
     },
   ];
@@ -1558,18 +1837,40 @@ export default function App(){
 
   // Owner passphrase. When entered, ownerMode unlocks unlimited access on every app, no 60 min cap.
   const OWNER_PHRASE = "ISG-OWNER";
-  // Session validity recomputes every second via nowTick so the timer is live.
-  // Owner mode bypasses the cap entirely: always valid, no countdown.
-  const sessionMsLeft = toolsSession.keyValidUntil ? (new Date(toolsSession.keyValidUntil).getTime() - nowTick) : 0;
-  const sessionStillValid = ownerMode || sessionMsLeft > 0;
+  // Session validity. SCROLL-FIX: computed WITHOUT a per-second tick. It is
+  // evaluated once per real render (modal open/close, key grant, onExpire).
+  // The live mm:ss countdown is rendered by <LiveSandTimer/> which ticks on
+  // its own and never re-renders App or the modal. `sessionExpired` flips to
+  // true once when the timer hits zero, so an expiring session is still caught.
+  const sessionEndMs = toolsSession.keyValidUntil ? new Date(toolsSession.keyValidUntil).getTime() : 0;
+  const sessionMsLeft = sessionEndMs ? (sessionEndMs - Date.now()) : 0;
+  const sessionStillValid = ownerMode || (sessionMsLeft > 0 && !sessionExpired);
   const sessionSecondsLeft = sessionMsLeft > 0 ? Math.floor(sessionMsLeft / 1000) : 0;
   const sessionMinutesLeft = Math.floor(sessionSecondsLeft / 60);
   const SESSION_TOTAL_SECONDS = 60 * 60; // 60 minute slot during this transition stage
 
-  // SandTimer: a small sand-clock that drains as the 60 min session runs down.
-  // fraction = seconds remaining / total. Renders the hourglass plus mm:ss.
-  const SandTimer = ({secondsLeft, size=34, dark=false}) => {
+  // SandTimer: a small self-ticking sand-clock that drains as the 60 min
+  // session runs down. SCROLL-FIX: this is a LEAF component. It owns its own
+  // 1-second tick internally, so only this tiny SVG re-renders each second,
+  // never App and never the open modal. The modal's scroll is therefore
+  // never reset. It calls onExpire ONCE when the clock reaches zero so App
+  // can flip `sessionExpired`. `endMs` is the absolute expiry timestamp.
+  const SandTimer = ({endMs, size=34, dark=false, onExpire}) => {
     const total = SESSION_TOTAL_SECONDS;
+    const [, force] = useState(0);
+    const firedExpire = useRef(false);
+    useEffect(()=>{
+      if (!endMs) return;
+      const id = setInterval(()=>{
+        force(n=>n+1); // re-render only this leaf
+        if (Date.now() >= endMs && !firedExpire.current) {
+          firedExpire.current = true;
+          if (onExpire) onExpire();
+        }
+      }, 1000);
+      return ()=>clearInterval(id);
+    }, [endMs]);
+    const secondsLeft = endMs ? Math.max(0, Math.floor((endMs - Date.now())/1000)) : 0;
     const frac = Math.max(0, Math.min(1, secondsLeft / total)); // 1 full, 0 empty
     const mm = String(Math.floor(secondsLeft / 60)).padStart(2,"0");
     const ss = String(secondsLeft % 60).padStart(2,"0");
@@ -1619,11 +1920,13 @@ export default function App(){
             <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:10,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1}}>OWNER</span>
               <span>Unlimited access  no session cap on any app</span>
+              <button onClick={()=>setOwnerMode(false)} aria-label="Sign out of owner mode"
+                style={{padding:"2px 8px",borderRadius:5,background:"transparent",border:`1px solid ${P.s2L}`,fontSize:8,fontWeight:700,color:"#E9D6F0",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>Sign out</button>
             </div>
           ) : sessionStillValid ? (
             <div style={{padding:"6px 12px",borderRadius:7,background:P.greenD+"25",border:`1px solid ${P.tealL}40`,fontSize:10,fontWeight:700,color:"#7EE8DA",display:"flex",alignItems:"center",gap:8}}>
               <span>Session active</span>
-              <SandTimer secondsLeft={sessionSecondsLeft} size={30} dark={true}/>
+              <SandTimer endMs={sessionEndMs} size={30} dark={true} onExpire={()=>setSessionExpired(true)}/>
             </div>
           ) : (
             <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:10,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
@@ -1869,9 +2172,39 @@ export default function App(){
             <text x="0" y="-14" fontFamily="'Fraunces',serif" fontSize="7" fontWeight="800" fill={P.white} textAnchor="middle" letterSpacing="2.4" opacity="0.92">INTELLIGENCE INSIDE</text>
           </g>
 
-          {/* Ground shadow */}
-          <ellipse cx="178" cy="278" rx="128" ry="7" fill="#000" opacity="0.45"/>
+          {/* Ground shadow  rectangular footprint to match the box, follows its perspective */}
+          <defs>
+            <linearGradient id="chShadowFade" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#000000" stopOpacity="0.5"/>
+              <stop offset="100%" stopColor="#000000" stopOpacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 64 274 L 296 274 L 312 286 L 48 286 Z" fill="#000000" opacity="0.42"/>
+          <path d="M 56 286 L 304 286 L 300 292 L 60 292 Z" fill="url(#chShadowFade)" opacity="0.6"/>
         </svg>
+      </div>
+
+      {/* ═══ EDGE PRINCIPLES  what makes these apps beyond a regular AI run ═══ */}
+      <div style={{padding:"18px 24px",background:P.navy}}>
+        <div style={{maxWidth:1100,margin:"0 auto"}}>
+          <div style={{fontSize:9,fontWeight:800,letterSpacing:2.5,color:P.tealL,textTransform:"uppercase",marginBottom:4}}>The iStructural Edge</div>
+          <div style={{fontSize:13,fontWeight:800,color:P.white,fontFamily:"'Fraunces',serif",marginBottom:10}}>Beyond a regular search. Beyond a regular AI run.</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
+            {[
+              {t:"Multi-angle verification", d:"Every answer cross-checked from several independent angles, not a single pass"},
+              {t:"Sourced and dated", d:"Every claim labelled: from your material, a provided source, or the internet, with a date"},
+              {t:"Accuracy and confidence shown", d:"Two honest percentages on every output, never a confident guess"},
+              {t:"Harsh self-analysis", d:"The system stress-tests its own output and surfaces what could go wrong before delivery"},
+              {t:"Input-driven assembly", d:"The environment is built around your actual JD, bid or meeting, not a fixed template"},
+              {t:"Iteration discipline", d:"Three to five iterations stated on every run"},
+            ].map((e,i)=>(
+              <div key={i} style={{padding:"10px 12px",borderRadius:9,background:P.navyM,border:`1px solid ${P.tealL}25`}}>
+                <div style={{fontSize:10,fontWeight:800,color:P.tealL,marginBottom:3}}>{e.t}</div>
+                <div style={{fontSize:8.5,color:"#9BBCD6",lineHeight:1.55}}>{e.d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* APP GRID: grouped by category */}
@@ -1916,7 +2249,7 @@ export default function App(){
                       ) : sessionStillValid ? (
                         <>
                           <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session live</span>
-                          <SandTimer secondsLeft={sessionSecondsLeft} size={26} dark={false}/>
+                          <SandTimer endMs={sessionEndMs} size={26} dark={false} onExpire={()=>setSessionExpired(true)}/>
                         </>
                       ) : (
                         <>
@@ -1924,6 +2257,14 @@ export default function App(){
                           <span style={{fontSize:8,color:P.slate}}>Free  transition stage</span>
                         </>
                       )}
+                    </div>
+                  )}
+
+                  {/* Dormant commercialization tag: faded, marked Coming later */}
+                  {app.plan && (
+                    <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.55}}>
+                      <span style={{fontSize:7,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.charcoal+"12",color:P.slate,border:`1px solid ${P.charcoal}25`,letterSpacing:0.6,textTransform:"uppercase"}}>{app.plan.tier}</span>
+                      <span style={{fontSize:7.5,color:P.slate,fontStyle:"italic"}}>{app.plan.priceHint}  pricing coming later</span>
                     </div>
                   )}
 
@@ -2116,8 +2457,11 @@ export default function App(){
 
     const featured = modules.filter(m=>m.group==="featured");
     const drawer = modules.filter(m=>m.group==="drawer");
-    // Live session-time minutes for the analytics demo strip
-    const minsThisSession = Math.max(0, Math.floor((nowTick - courseStartedAt)/60000));
+    // Session-time minutes for the analytics strip. SCROLL-FIX: computed from
+    // Date.now() at render time, not from a per-second App tick, so the LEARN
+    // modal is never remounted under the user. It refreshes on any real
+    // interaction (coarse minute counter, so this is fine).
+    const minsThisSession = Math.max(0, Math.floor((Date.now() - courseStartedAt)/60000));
 
     const moduleCard = (m) => {
       const live = m.status==="live";
@@ -2155,7 +2499,7 @@ export default function App(){
             </div>
             {ownerMode
               ? <span style={{marginRight:6,fontSize:8,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>
-              : sessionStillValid && <div style={{marginRight:6}}><SandTimer secondsLeft={sessionSecondsLeft} size={28} dark={true}/></div>}
+              : sessionStillValid && <div style={{marginRight:6}}><SandTimer endMs={sessionEndMs} size={28} dark={true} onExpire={()=>setSessionExpired(true)}/></div>}
             <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
           </div>
 
@@ -2361,6 +2705,85 @@ export default function App(){
     );
   };
 
+  // ══════════════════════ PRE-RUN PANEL ══════════════════════
+  // Shared Yes-No front door for every app. The user states what they have and what
+  // they want delivered. A single Run command at the bottom assembles only the scope
+  // the toggles define. Each toggle row is a Yes / No pair.
+  const PreRunPanel = ({app, onRun}) => {
+    const cfg = app.preRun;
+    const [have, setHave] = useState(()=>Object.fromEntries((cfg ? (cfg.have||[]) : []).map(i=>[i.id,false])));
+    const [want, setWant] = useState(()=>Object.fromEntries((cfg ? (cfg.want||[]) : []).map(i=>[i.id, !!i.locked])));
+    const [applied, setApplied] = useState(false);
+    if (!cfg) return null;
+    const YN = ({on, set, locked}) => (
+      <div style={{display:"flex",gap:4,flexShrink:0}}>
+        <button type="button" disabled={locked} onClick={()=>!locked&&set(true)}
+          style={{padding:"3px 10px",borderRadius:6,fontSize:8.5,fontWeight:800,border:`1px solid ${on?P.greenD:"#ccc"}`,background:on?P.greenD:"transparent",color:on?P.white:P.slate,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>Yes</button>
+        <button type="button" disabled={locked} onClick={()=>!locked&&set(false)}
+          style={{padding:"3px 10px",borderRadius:6,fontSize:8.5,fontWeight:800,border:`1px solid ${!on?P.coral:"#ccc"}`,background:!on?P.coral:"transparent",color:!on?P.white:P.slate,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>No</button>
+      </div>
+    );
+    const row = (item, on, set) => (
+      <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"6px 8px",borderRadius:7,background:on?P.s3+"0C":P.white,border:`1px solid ${on?P.s3+"30":P.charcoal+"15"}`,marginBottom:5}}>
+        <span style={{fontSize:9.5,color:P.charcoal,fontWeight:600}}>{item.label}{item.locked?" (always included)":""}</span>
+        <YN on={on} set={set} locked={item.locked} />
+      </div>
+    );
+    return (
+      <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s3}40`,padding:"14px 16px",marginBottom:14}}>
+        <div style={{fontSize:12,fontWeight:800,color:P.s3,marginBottom:4,fontFamily:"'Fraunces',serif"}}>Before You Run  Tell {app.name} What You Have and What You Want</div>
+        <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>{app.name} assembles only the environments your answers call for. The assessment and report are always produced.</div>
+        <div style={{fontSize:9,fontWeight:800,color:P.navy,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>What I have</div>
+        {(cfg.have||[]).map(i=>row(i, have[i.id], (v)=>setHave(h=>({...h,[i.id]:v}))))}
+        <div style={{fontSize:9,fontWeight:800,color:P.navy,textTransform:"uppercase",letterSpacing:1,margin:"10px 0 5px"}}>What I want delivered</div>
+        {(cfg.want||[]).map(i=>row(i, want[i.id], (v)=>setWant(w=>({...w,[i.id]:v}))))}
+        <button type="button" onClick={()=>{ onRun&&onRun({have,want}); setApplied(true); }}
+          style={{marginTop:10,width:"100%",padding:"11px 18px",borderRadius:9,background:applied?P.greenD:P.s3,color:P.white,fontSize:12,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.4}}>
+          {applied ? "Scope applied ✓  now complete the run form below" : `Apply this scope to my ${app.name} run`}
+        </button>
+        <div style={{fontSize:8.5,color:P.slate,marginTop:6,textAlign:"center",lineHeight:1.5,fontStyle:"italic"}}>
+          This sets the scope. To actually send the run, fill the form in section I below and press <strong>Submit {app.name} Run</strong>.
+        </div>
+      </div>
+    );
+  };
+
+  // ══════════════════════ COUNTERPARTY PROFILING PANEL ══════════════════════
+  // Shared module. Profiles the people on the other side of the table from public
+  // professional activity only. Surfaces in APEX as Interviewer Profiling and in
+  // ARGO as Client Profiling. Public, professional data only. No private data,
+  // no facial data. Every inference is an estimate with a source and a date.
+  const ProfilingPanel = ({app}) => {
+    const cfg = app.profiling;
+    const [people, setPeople] = useState([{name:"",role:"",link:""}]);
+    if (!cfg) return null;
+    const setField = (i,k)=>(e)=>setPeople(p=>p.map((x,j)=>j===i?{...x,[k]:e.target.value}:x));
+    return (
+      <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s1}40`,padding:"14px 16px",marginBottom:14}}>
+        <div style={{fontSize:12,fontWeight:800,color:P.s1,marginBottom:4,fontFamily:"'Fraunces',serif"}}>{cfg.label}</div>
+        <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>{cfg.intro}</div>
+        {people.map((p,i)=>(
+          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8,padding:"8px",borderRadius:8,background:P.s1+"0A",border:`1px solid ${P.s1}20`}}>
+            <input value={p.name} onChange={setField(i,"name")} placeholder="Full name" aria-label="Person name" style={{padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit"}} />
+            <input value={p.role} onChange={setField(i,"role")} placeholder={cfg.roleLabel} aria-label="Their role" style={{padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit"}} />
+            <input value={p.link} onChange={setField(i,"link")} placeholder="LinkedIn or public profile URL (optional)" aria-label="Public profile link" style={{gridColumn:"1 / -1",padding:"7px 9px",borderRadius:6,border:`1px solid ${P.charcoal}30`,fontSize:9.5,fontFamily:"inherit"}} />
+          </div>
+        ))}
+        <div style={{display:"flex",gap:6}}>
+          <button type="button" onClick={()=>setPeople(p=>[...p,{name:"",role:"",link:""}])}
+            style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.s1}50`,color:P.s1,fontSize:9,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>+ Add another person</button>
+          {people.length>1 && (
+            <button type="button" onClick={()=>setPeople(p=>p.slice(0,-1))}
+              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.coral}50`,color:P.coral,fontSize:9,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Remove last</button>
+          )}
+        </div>
+        <div style={{marginTop:9,padding:"8px 10px",borderRadius:7,background:P.s4+"12",border:`1px dashed ${P.s4}45`,fontSize:8.5,color:P.charcoal,lineHeight:1.55}}>
+          Public professional activity only. No private data, no photographs analyzed. Every profile is an estimate, each point carries a source and a date and a confidence percentage. Internet search runs only with your consent.
+        </div>
+      </div>
+    );
+  };
+
   // ══════════════════════ APP DETAIL MODAL ══════════════════════
   // Opens when a user clicks an app card on ToolsPage. Renders full capabilities depth,
   // intake form bound to FormSubmit (same pattern as S1Form), access-key gate, and
@@ -2370,6 +2793,7 @@ export default function App(){
     const [keyError, setKeyError] = useState("");
     const [intake, setIntake] = useState({});
     const [submitStatus, setSubmitStatus] = useState("idle");
+    const [demoOpen, setDemoOpen] = useState(false);   // owner-only sample run preview
     const setIntakeField = (k) => (e) => setIntake(prev => ({...prev, [k]: e.target.value}));
 
     const chipColor = (t) => t==="green" ? P.greenD : t==="yellow" ? P.s4 : t==="blue" ? P.s2 : P.slate;
@@ -2392,6 +2816,12 @@ export default function App(){
         body.append("app", app.name);
         body.append("tagline", app.tagline);
         Object.keys(intake).forEach(k => body.append(k, intake[k]));
+        // The "What do you want" free-text field was removed; scope now comes
+        // from the PreRunPanel toggles. If the user skipped that panel, fall
+        // back to the default so a run is never sent with no stated scope.
+        if (app.preRun && !(intake.want||"").trim()) {
+          body.append("want_default", "Full assessment and report (user did not adjust the pre-run scope toggles)");
+        }
         body.append("session_key", toolsSession.accessKey || "");
         const res = await fetch("https://formsubmit.co/ajax/info@istructgroup.com", { method:"POST", body });
         if (res.ok) setSubmitStatus("success"); else setSubmitStatus("error");
@@ -2429,6 +2859,37 @@ export default function App(){
           </div>
 
           <div style={{padding:"18px 22px",background:P.sand}}>
+
+            {/* SCOPE CARD — Yes-No inclusion / exclusion shown FIRST so the user
+                knows up front what to upload, what is included, what is
+                excluded, and what to expect back. Driven by app.scope. */}
+            {app.scope && (
+              <div style={{background:P.white,borderRadius:10,border:`2px solid ${app.iconColor}55`,padding:"14px 16px",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:app.iconColor,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Start here</span>
+                  <span style={{fontSize:12,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>What {app.name} Needs, Includes and Delivers</span>
+                </div>
+                <div style={{fontSize:9,color:P.slate,marginBottom:10,lineHeight:1.55}}>Read this before you run. It tells you what to upload, what is included, what is not, and what you receive.</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
+                  {[
+                    {t:"What to upload", k:"upload", c:P.s2, mark:"↑"},
+                    {t:"Included", k:"included", c:P.greenD, mark:"✓"},
+                    {t:"Not included", k:"excluded", c:P.coral, mark:"✗"},
+                    {t:"What to expect", k:"expect", c:P.s4, mark:"★"},
+                  ].map(col=>(
+                    <div key={col.k} style={{background:col.c+"0C",borderRadius:8,border:`1px solid ${col.c}35`,padding:"9px 10px"}}>
+                      <div style={{fontSize:9,fontWeight:800,color:col.c,textTransform:"uppercase",letterSpacing:0.8,marginBottom:5}}>{col.t}</div>
+                      {(app.scope[col.k]||[]).map((line,i)=>(
+                        <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:9,color:P.charcoal,lineHeight:1.5}}>
+                          <span style={{color:col.c,fontWeight:800,flexShrink:0}}>{col.mark}</span>
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* A. 8 Phase capability map */}
             {app.phases && (
@@ -2600,6 +3061,33 @@ export default function App(){
               Want a printed capabilities briefing for <strong>{app.name}</strong>? Briefings are issued on request. Scroll to the bottom of the Tools Box page and submit the Briefing Request form. Our team replies from <strong>info@istructgroup.com</strong>.
             </div>
 
+            {/* H2. Pre-run Yes-No panel (shared front door). It is the SINGLE
+                source for "what the user wants" — the duplicate free-text
+                "want" intake field was removed. onRun always overwrites
+                intake.want with the current toggle selection (human-readable
+                labels) so changing the toggles and re-applying stays in sync. */}
+            {app.preRun && sessionStillValid && (
+              <PreRunPanel app={app} onRun={(sel)=>{
+                const labelFor = (id)=>{
+                  const item = (app.preRun.want||[]).find(w=>w.id===id);
+                  return item ? item.label : id;
+                };
+                const wantLabels = Object.entries(sel.want).filter(([k,v])=>v).map(([k])=>labelFor(k));
+                const haveLabels = Object.entries(sel.have).filter(([k,v])=>v).map(([k])=>{
+                  const item = (app.preRun.have||[]).find(h=>h.id===k);
+                  return item ? item.label : k;
+                });
+                setIntake(prev=>({
+                  ...prev,
+                  want: wantLabels.length ? wantLabels.join("; ") : "Full assessment and report",
+                  have: haveLabels.length ? haveLabels.join("; ") : "",
+                }));
+              }} />
+            )}
+
+            {/* H3. Counterparty profiling panel (shared module) */}
+            {app.profiling && sessionStillValid && <ProfilingPanel app={app} />}
+
             {/* I. Access key gate + intake */}
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8,flexWrap:"wrap"}}>
@@ -2611,7 +3099,7 @@ export default function App(){
                 ) : sessionStillValid && (
                   <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}35`}}>
                     <span style={{fontSize:8,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
-                    <SandTimer secondsLeft={sessionSecondsLeft} size={28} dark={false}/>
+                    <SandTimer endMs={sessionEndMs} size={28} dark={false} onExpire={()=>setSessionExpired(true)}/>
                   </div>
                 )}
               </div>
@@ -2641,14 +3129,74 @@ export default function App(){
                       <textarea value={intake[f.key]||""} onChange={setIntakeField(f.key)} placeholder={f.placeholder} required={f.required} aria-label={f.label} style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:10.5,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
                     </div>
                   ))}
-                  <button type="submit" disabled={submitStatus==="sending"||submitStatus==="success"} style={{marginTop:4,padding:"10px 18px",borderRadius:8,background:app.iconColor,color:P.white,fontSize:11,fontWeight:800,border:"none",cursor:submitStatus==="success"?"default":"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
-                    {submitStatus==="sending" ? "Sending..." : submitStatus==="success" ? "Received | we will be in touch" : `Submit ${app.name} Run`}
+                  <div style={{marginTop:8,padding:"8px 10px",borderRadius:7,background:app.iconColor+"10",border:`1px dashed ${app.iconColor}45`,fontSize:8.5,color:P.slate,lineHeight:1.5,textAlign:"center"}}>
+                    This is the run button. Pressing it sends your {app.name} run request to info@istructgroup.com. Our team replies with your output package.
+                  </div>
+                  <button type="submit" disabled={submitStatus==="sending"||submitStatus==="success"} style={{marginTop:8,width:"100%",padding:"14px 18px",borderRadius:9,background:submitStatus==="success"?P.greenD:app.iconColor,color:P.white,fontSize:13,fontWeight:800,border:"none",cursor:submitStatus==="success"?"default":"pointer",fontFamily:"inherit",letterSpacing:0.6,textTransform:"uppercase"}}>
+                    {submitStatus==="sending" ? "Sending your run..." : submitStatus==="success" ? "Run received ✓  we will be in touch" : `▶  Run ${app.name}`}
                   </button>
                   {submitStatus==="error" && <div style={{marginTop:6,fontSize:10,color:P.coral,fontWeight:600}}>Please complete the required fields and try again.</div>}
                   {submitStatus==="success" && <div style={{marginTop:6,fontSize:10,color:P.greenD,fontWeight:600}}>Run request received. Our team will follow up by email with your output package.</div>}
                 </form>
               )}
             </div>
+
+            {/* ═══ OWNER DEMO RESULT VIEW ═══ */}
+            {/* Visible only in owner mode. Lets the author test the full run
+                flow visually with a clearly labelled sample output. This is a
+                static demo, no real AI, no backend. The live analysis arrives
+                with the Phase 2 backend. */}
+            {ownerMode && (
+              <div style={{marginTop:14,background:P.white,borderRadius:10,border:`1px solid ${P.s2}40`,overflow:"hidden"}}>
+                <div style={{padding:"10px 14px",background:P.s2+"12",borderBottom:`1px solid ${P.s2}30`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:8,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Owner</span>
+                    <span style={{fontSize:11,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif"}}>Sample run preview</span>
+                  </div>
+                  <button onClick={()=>setDemoOpen(o=>!o)} style={{padding:"6px 12px",borderRadius:7,background:demoOpen?"transparent":P.s2,color:demoOpen?P.s2:P.white,border:`1px solid ${P.s2}`,fontSize:9.5,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+                    {demoOpen ? "Hide sample" : "Preview a sample run"}
+                  </button>
+                </div>
+                {demoOpen && (
+                  <div style={{padding:"14px 16px"}}>
+                    <div style={{padding:"8px 10px",borderRadius:7,background:P.s4+"15",border:`1px dashed ${P.s4}50`,fontSize:9,color:P.charcoal,lineHeight:1.55,marginBottom:12}}>
+                      <strong>Demo only.</strong> This is a static illustration of what a completed {app.name} run looks like. No AI has run, no data was processed. The live analysis engine is delivered in the Phase 2 backend. Use this to test layout, scroll, and flow.
+                    </div>
+                    {(app.id==="ecios" ? [
+                      {n:"01 Fit summary", b:"Candidate-to-JD alignment scored across required and preferred criteria. Strengths, gaps, and one-line verdict."},
+                      {n:"02 ATS score", b:"Multi-vendor ATS pass simulation. Sample: 94 / 100. Keyword coverage table with matched and missing terms."},
+                      {n:"03 Cover letter", b:"One A4 page, executive tone, no inferred experience. Three iterations stated. References dated."},
+                      {n:"04 Hiring risk", b:"Risk factors, probability of advancing, twelve scenario-based interview questions with model answers."},
+                      {n:"05 Submit verdict", b:"Yes or No recommendation, with the reasoning and the single highest-leverage improvement."},
+                    ] : app.id==="bid" ? [
+                      {n:"01 Go / No-go", b:"Eight-phase decision pipeline result. Sample verdict: conditional go, with the binding conditions listed."},
+                      {n:"02 Risk math", b:"P x I x D scoring per risk. Sample composite: 0.42. Ranked register, top five risks flagged."},
+                      {n:"03 Commercial ranking", b:"Delivery and commercial options ranked. Win probability estimate with the assumptions stated."},
+                      {n:"04 Dashboard", b:"Executive dashboard with gauges and a recommendation summary, exportable to DOCX and PDF."},
+                    ] : [
+                      {n:"01 Participant profiles", b:"Each named attendee profiled from public professional activity, with source labels, dates, and a confidence percentage."},
+                      {n:"02 Agenda map", b:"Meeting agenda broken into objectives, likely positions, and the questions to expect."},
+                      {n:"03 Prep brief", b:"One-page brief: what to say, what to avoid, and the single outcome to push for."},
+                    ]).map((s,i)=>(
+                      <div key={i} style={{marginBottom:8,padding:"9px 11px",borderRadius:7,background:P.sand,border:`1px solid ${P.charcoal}12`}}>
+                        <div style={{fontSize:10,fontWeight:800,color:P.charcoal,marginBottom:2}}>{s.n}</div>
+                        <div style={{fontSize:9,color:P.slate,lineHeight:1.55}}>{s.b}</div>
+                      </div>
+                    ))}
+                    {/* Sample chart placeholder */}
+                    <div style={{marginTop:10,padding:"12px",borderRadius:8,background:P.navy,display:"flex",alignItems:"flex-end",gap:8,height:96}}>
+                      {[62,88,45,94,71].map((h,i)=>(
+                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                          <div style={{width:"100%",height:`${h*0.6}px`,background:i===3?P.tealL:P.teal,borderRadius:"4px 4px 0 0"}}></div>
+                          <span style={{fontSize:7,color:"#9BBCD6",fontWeight:700}}>{h}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{fontSize:7.5,color:P.slate,marginTop:5,textAlign:"center",fontStyle:"italic"}}>Sample chart. Final runs render scored metrics from the Phase 2 engine.</div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Footer banner */}
             <div style={{marginTop:14,padding:"10px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:9.5,fontWeight:700,letterSpacing:0.3}}>
@@ -3210,18 +3758,26 @@ export default function App(){
         /* A11Y: visually-hidden helper for screen readers */
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
       `}</style>
-      <Nav/>
-      {page==="home"&&<HomePage/>}
-      {page==="s1"&&<S1Page/>}
-      {page==="s2"&&<S2Page/>}
-      {page==="s3"&&<S3Page/>}
-      {page==="hub"&&<HubPage/>}
-      {page==="tools"&&<ToolsPage/>}
-      {page==="projects"&&<ProjectsPage/>}
-      {page==="training"&&<TrainingPage/>}
-      {page==="start"&&<StartPage/>}
-      {page==="contact"&&<ContactPage/>}
-      <Footer/>
+      {/* SCROLL-FIX: page components are defined inside App, so on every App
+          re-render they become NEW function references. Rendering them as
+          elements (<HomePage/>) makes React see a new component type each
+          render and unmount + remount the whole page DOM, which resets the
+          scroll position to the top. Calling them as plain functions
+          ({HomePage()}) inlines their output into App's own render tree, so
+          React only diffs the DOM and never remounts. This is the true fix
+          for the scroll-snaps-back-up bug. */}
+      {Nav()}
+      {page==="home"&&HomePage()}
+      {page==="s1"&&S1Page()}
+      {page==="s2"&&S2Page()}
+      {page==="s3"&&S3Page()}
+      {page==="hub"&&HubPage()}
+      {page==="tools"&&ToolsPage()}
+      {page==="projects"&&ProjectsPage()}
+      {page==="training"&&TrainingPage()}
+      {page==="start"&&StartPage()}
+      {page==="contact"&&ContactPage()}
+      {Footer()}
 
       {/* ═══ MOBILE NAV DRAWER ═══ */}
       {mobileNavOpen && (
@@ -3233,7 +3789,7 @@ export default function App(){
               <div style={{fontSize:11,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
               <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:16,fontWeight:700,fontFamily:"inherit"}}>×</button>
             </div>
-            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"contact",l:"Contact"}].map(n=>(
+            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>(
               <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
             ))}
             <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
@@ -3250,10 +3806,10 @@ export default function App(){
           {id:"s1",l:"Management & Business Support",d:"V.E., ROI, risk, strategy"},
           {id:"s2",l:"Design Services & Consultancy",d:"High-rise, bridges, irregular, structural assessment"},
           {id:"s3",l:"AI & Technology Services",d:"AI literacy, readiness, implementation"},
-          {id:"hub",l:"Knowledge Hub",d:"Free documents, calculators, standards, training links"},
-          {id:"tools",l:"Tools Box",d:"Modular apps: APEX career intelligence, ARGO bid decision system, more coming"},
           {id:"projects",l:"Projects",d:"Selected portfolio across MENA, Europe and beyond"},
           {id:"training",l:"Training Programs",d:"CSi licensed training, MENA and North America"},
+          {id:"hub",l:"Knowledge Hub",d:"Free documents, calculators, standards, training links"},
+          {id:"tools",l:"Tools Box",d:"Modular apps: APEX career intelligence, ARGO bid decision system, more coming"},
           {id:"contact",l:"Contact",d:"Reach iStructural Group Inc."},
         ];
         const pageHits = q ? pages.filter(p=>p.l.toLowerCase().includes(q)||p.d.toLowerCase().includes(q)) : pages;

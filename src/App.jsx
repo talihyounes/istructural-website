@@ -551,21 +551,23 @@ function buildCapGridDemo(){
   const lib=CG_DEPT_LIBRARY.Structural;
   // one shared task set; each office's department gets its own task IDs
   const makeTasks=()=> lib.tasks.map(t=>({id:id("t"),category:t.category,detail:t.detail,level:t.level||"Engineer",area:t.area||"General"}));
-  const lvlBase={Technician:1,Graduate:2,Engineer:3,Senior:4};
-  // score one person across a task list: base by level, lifted on the office's
-  // forte area, with light variation. clamp 0..5 for exp/freq, 1..5 challenge.
+  // probability a person at a level knows a task. higher levels know more; the
+  // office forte area lifts the odds; senior-tagged stretch tasks lower them.
+  const knowProb={Technician:0.45,Graduate:0.6,Engineer:0.78,Senior:0.92};
+  // score one person across a task list. Knowledge is binary 0 or 1, drawn from
+  // the probability above. Frequency 0..5 and Challenge 1..5 are kept as before.
   const scoreFor=(tasks,level,forteArea,seed)=>{
     const m={}; let k=seed;
     const rnd=()=>{ k=(k*1103515245+12345)&0x7fffffff; return (k/0x7fffffff); };
     tasks.forEach(t=>{
-      let exp=lvlBase[level]||3;
-      if(t.area===forteArea) exp+=1;                 // forte lift
-      if((t.level==="Senior")&&level!=="Senior") exp-=1; // stretch tasks harder
-      exp+=Math.round(rnd()*2-1);                    // -1..+1 jitter
-      exp=Math.max(0,Math.min(5,exp));
-      let freq=Math.max(0,Math.min(5,(t.area===forteArea?4:2)+Math.round(rnd()*2-1)));
+      let p=knowProb[level]||0.7;
+      if(t.area===forteArea) p+=0.15;                  // forte lift
+      if((t.level==="Senior")&&level!=="Senior") p-=0.2; // stretch tasks harder
+      const know=(rnd()<Math.max(0.05,Math.min(0.98,p)))?1:0;
+      // frequency only meaningful when the task is known; forte tasks recur more
+      let freq=know? Math.max(1,Math.min(5,(t.area===forteArea?4:2)+Math.round(rnd()*2-1))) : 0;
       let chal=Math.max(1,Math.min(5, (t.level==="Senior"?4:t.level==="Engineer"?3:2)+Math.round(rnd()*1-0.5)));
-      m[t.id]={exp,freq,chal};
+      m[t.id]={exp:know,freq,chal};
     });
     return m;
   };
@@ -1028,6 +1030,33 @@ export default function App(){
   );
 
   // ══════════════════════ S1 ══════════════════════
+  // Reusable Tools Box cross-link strip. Dropped at the foot of the service,
+  // Projects and Training pages so the Tools Box is reachable everywhere, the
+  // same way the Knowledge Hub strip is surfaced across the site.
+  const ToolsBoxStrip=()=>(
+    <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Tools Box"
+      style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <svg width="40" height="40" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
+          <line x1="22" y1="22" x2="11" y2="11" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+          <line x1="22" y1="22" x2="33" y2="11" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+          <line x1="22" y1="22" x2="11" y2="33" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+          <line x1="22" y1="22" x2="33" y2="33" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
+          <rect x="5" y="5" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+          <rect x="27" y="5" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+          <rect x="5" y="27" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+          <rect x="27" y="27" width="12" height="12" rx="3" fill="none" stroke={P.tealL} strokeWidth="1.6" opacity="0.85"/>
+          <circle cx="22" cy="22" r="6.5" fill={P.tealL}/>
+        </svg>
+        <div>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
+          <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career intelligence, ARGO bid decisions, CapacityGrid workforce intelligence, LEARN courses. Open the box.</div>
+        </div>
+      </div>
+      <div style={{background:P.teal,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
+    </div>
+  );
+
   const S1Page=()=>(
     <div>
       <HeroBg color1={P.s1}><div style={{padding:"32px 28px 28px"}}>
@@ -1045,6 +1074,7 @@ export default function App(){
           <div style={{fontSize:T.body,fontWeight:700,color:P.s1}}>{o.n}</div><div style={{fontSize:T.body,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
         <div onClick={()=>{setPage("start");setSTab("s1");}} {...kbd(()=>{setPage("start");setSTab("s1");})} aria-label="Start a Management Inquiry" style={{marginTop:14,background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Management Inquiry &#8594;</div>
       </div>
+      <ToolsBoxStrip/>
     </div>
   );
 
@@ -1138,6 +1168,7 @@ export default function App(){
 
         <div onClick={()=>{setPage("start");setSTab("s2");}} {...kbd(()=>{setPage("start");setSTab("s2");})} aria-label="Start a Design Inquiry" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Design Inquiry &#8594;</div>
       </div>
+      <ToolsBoxStrip/>
     </div>
   );
 
@@ -1180,7 +1211,7 @@ export default function App(){
         </div>
         <div onClick={()=>{setPage("start");setSTab("s3");}} {...kbd(()=>{setPage("start");setSTab("s3");})} aria-label="Start an AI Literacy Inquiry" style={{marginTop:14,background:P.s3,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start an AI Literacy Inquiry &#8594;</div>
       </div>
-
+      <div style={{marginTop:18}}><ToolsBoxStrip/></div>
     </div>
   );
 
@@ -2035,7 +2066,7 @@ export default function App(){
         included:[
           "Org tree: group, company, offices, locations, departments, sectors and services",
           "Task library by category, with a configurable scoring scale",
-          "Per-person self-assessment on Experience, Frequency and Challenge",
+          "Per-person self-assessment on Knowledge, Frequency and Challenge",
           "Auto-generated capability cards per employee",
           "Key-task fetch by employee and by position",
         ],
@@ -2048,14 +2079,14 @@ export default function App(){
         expect:[
           "A working capability platform inside this site",
           "Your data saved privately in this browser, never shared",
-          "Phases B4 to B6 (dashboards, priorities, follow-up) added after review",
+          "Dashboards, priorities and follow-up tools build on the assessment data",
         ],
       },
       capabilities:[
         "Multi-office, multi-location, multi-department org modelling",
         "People placed under titles and job descriptions",
         "Task library grouped by category (General, Grading, Drainage, Utilities, Production, QA/QC, or your own)",
-        "Assessment on Experience (0 to 5), Frequency (0 to 5), Challenge (1 to 5)",
+        "Assessment on Knowledge (0 or 1), Frequency (0 to 5), Challenge (1 to 5)",
         "Capability cards generated from live assessment data",
         "Key persons and higher-authority approvers flagged per position",
       ],
@@ -2823,6 +2854,31 @@ export default function App(){
         },
       }];
     });
+    // Second route: the author imports a task set from a filled CSV template
+    // instead of fetching the built-in library. Tasks land as approved:null so
+    // they go through the same Yes/No approval gate. Positions and services
+    // start empty; the author adds any in the proposal panel. deptName is the
+    // chosen consultancy department; rows is the parsed task list.
+    const importDepartment = (officeId,deptName,empCount,rows)=> patch(s=>{
+      if (s.departments.some(d=>d.officeId===officeId && d.name===deptName)) return; // one of each per office
+      const validLvl=(L)=>{ const m=CG_LEVELS.find(x=>x.toLowerCase()===String(L||"").trim().toLowerCase()); return m||"Engineer"; };
+      const validArea=(A)=>{ const m=CG_STRUCT_AREAS.find(x=>x.toLowerCase()===String(A||"").trim().toLowerCase()); return m||"General"; };
+      const validStage=(St)=>{ const m=CG_STRUCT_STAGES.find(x=>x.toLowerCase()===String(St||"").trim().toLowerCase()); return m||(String(St||"").trim()||"General"); };
+      const tasks=rows.map(r=>({
+        id:cgId(),
+        category:validStage(r.stage),
+        detail:String(r.task||"").trim(),
+        level:validLvl(r.level),
+        area:validArea(r.area),
+        approved:null,
+      })).filter(t=>t.detail);
+      s.departments=[...s.departments,{
+        id:cgId(), officeId, name:deptName, sectors:[], services:[],
+        empCount:Math.max(1,parseInt(empCount,10)||1),
+        active:true, phase:"proposal",
+        proposal:{ positions:[], services:[], tasks },
+      }];
+    });
     const setDeptEmpCount = (deptId,n)=> patch(s=>{
       s.departments=s.departments.map(d=> d.id===deptId?{...d,empCount:Math.max(1,parseInt(n,10)||1)}:d);
     });
@@ -2833,6 +2889,9 @@ export default function App(){
     const resetWorkflow = ()=> patch(s=>{
       s.setup=null; s.offices=[]; s.departments=[]; s.people=[]; s.assess={};
     });
+    // Owner-only: load a fully worked two-office demo so the platform can be
+    // shown end to end without entering real data. Overwrites the current state.
+    const loadDemo = ()=>{ setState({...blankState(),...buildCapGridDemo()}); setMsg("Demo data loaded: two offices, ten people, full assessments. Open the Executive tab."); };
     // approve/reject a proposal item: kind = positions|services|tasks
     const judgeItem = (deptId,kind,idx,val)=> patch(s=>{
       s.departments=s.departments.map(d=>{
@@ -2934,7 +2993,7 @@ export default function App(){
         const scores=s.assess[p.id]||{};
         const myRank=Math.max(0,CG_LEVELS.indexOf(p.level||"Engineer"));
         const exp=s.tasks.filter(t=>Math.max(0,CG_LEVELS.indexOf(t.level||"Engineer"))<=myRank && (t.id in scores));
-        const cov=exp.length? Math.round((exp.filter(t=>scores[t.id].exp>=3).length/exp.length)*100):0;
+        const cov=exp.length? Math.round((exp.filter(t=>scores[t.id].exp===1).length/exp.length)*100):0;
         snap[p.id]=cov;
       });
       const today=new Date().toISOString().slice(0,10);
@@ -2944,6 +3003,38 @@ export default function App(){
 
     // ---- CSV: export a per-department blank assessment sheet ----
     const csvEscape = (v)=>{ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+    // ---- CSV: task-set import template (Import tasks route) ----
+    // The author downloads this blank template, fills the task rows, and imports
+    // it as a department's task set. Columns: Stage, Task, Expected Level,
+    // Capability Area. A few example rows show the expected shape.
+    const downloadTaskTemplate = (deptName)=>{
+      const lines=[];
+      lines.push(["CapacityGrid Task Import Template"]);
+      lines.push(["Department",deptName||""]);
+      lines.push(["Fill one row per task. Keep the header row below. Stage, Level and Area should match the lists in the app."]);
+      lines.push([]);
+      lines.push(["Stage","Task","Expected Level","Capability Area"]);
+      lines.push(["Concept","Example: prepare concept structural scheme","Engineer","General"]);
+      lines.push(["Detailed Design","Example: size primary beams and columns","Engineer","High-rise Towers"]);
+      lines.push(["Analysis","Example: build and run the ETABS model","Senior","High-rise Towers"]);
+      lines.push(["Drawings","Example: produce general arrangement drawings","Technician","General"]);
+      const csv=lines.map(row=>row.map(csvEscape).join(",")).join("\r\n");
+      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=`CapacityGrid_TaskImport_Template_${(deptName||"Department").replace(/\W+/g,"_")}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    };
+    // Parse a filled task-import template into {stage,task,level,area} rows.
+    const parseTaskTemplate = (text)=>{
+      const rows=parseCsv(text);
+      const hdr=rows.findIndex(x=>x[0] && x[0].trim().toLowerCase()==="stage");
+      if(hdr<0) return null;
+      return rows.slice(hdr+1)
+        .filter(x=>x[1] && x[1].trim())
+        .map(x=>({stage:(x[0]||"").trim(),task:(x[1]||"").trim(),level:(x[2]||"").trim(),area:(x[3]||"").trim()}));
+    };
     // Build and download an assessment sheet for a given task list. Used for the
     // full sheet and for a top-up sheet (only the not-yet-assessed tasks).
     const downloadSheet = (dept,tasks,suffix)=>{
@@ -2954,7 +3045,7 @@ export default function App(){
       lines.push(["Employee Full Name","","Employee Number",""]);
       lines.push(["Position","","Level (Technician/Graduate/Engineer/Senior)",""]);
       lines.push([]);
-      lines.push(["TaskID","Stage","Capability Area","Task","Expected Level","Experience (0-5)","Frequency (0-5)","Challenge (1-5)"]);
+      lines.push(["TaskID","Stage","Capability Area","Task","Expected Level","Knowledge (0 or 1)","Frequency (0-5)","Challenge (1-5)"]);
       tasks.forEach(t=> lines.push([t.id,t.category,t.area||"General",t.detail,t.level||"Engineer","","",""]));
       const csv=lines.map(row=>row.map(csvEscape).join(",")).join("\r\n");
       const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
@@ -3013,6 +3104,8 @@ export default function App(){
       if(hdrIdx<0){ setMsg("This sheet has no task table. Check the file."); return false; }
       const scoreRows=rows.slice(hdrIdx+1).filter(x=>x[0] && x[0].trim());
       const clamp=(v,min,max)=>{ const n=parseInt(v,10); return isNaN(n)?min:Math.max(min,Math.min(max,n)); };
+      // Knowledge is binary. Accept 1, yes, y, true, x, checked (any of these) as 1; everything else 0.
+      const know=(v)=>{ const s=String(v==null?"":v).trim().toLowerCase(); return (s==="1"||s==="yes"||s==="y"||s==="true"||s==="x"||s==="checked"||(parseInt(s,10)>0))?1:0; };
       const nm=fullName.trim(), en=String(empNo).trim();
       // Match an existing person in this department by name, and employee
       // number when both have one. A match means this is a top-up return: merge
@@ -3025,8 +3118,9 @@ export default function App(){
         scoreRows.forEach(r=>{
           const tid=(r[0]||"").trim();
           if(!tid) return;
-          // columns: TaskID, Stage, Capability Area, Task, Expected Level, Experience, Frequency, Challenge
-          incoming[tid]={exp:clamp(r[5],0,5),freq:clamp(r[6],0,5),chal:clamp(r[7],1,5)};
+          // columns: TaskID, Stage, Capability Area, Task, Expected Level, Knowledge, Frequency, Challenge
+          // Knowledge is binary: any non-zero entry reads as 1 (knows it), blank or 0 reads as 0.
+          incoming[tid]={exp:know(r[5]),freq:clamp(r[6],0,5),chal:clamp(r[7],1,5)};
         });
         if(existing){
           s.assess={...s.assess,[existing.id]:{...(s.assess[existing.id]||{}),...incoming}};
@@ -3052,20 +3146,23 @@ export default function App(){
       const rows = state.tasks.map(t=>({ t, assessed:(t.id in scores), s:scores[t.id]||{exp:0,freq:0,chal:0} }));
       const done = rows.filter(r=>r.assessed);
       const pending = rows.filter(r=>!r.assessed);
-      const capable = done.filter(r=>r.s.exp>=1);
-      const strong  = done.filter(r=>r.s.exp>=4);
-      const gaps    = done.filter(r=>r.s.exp===0 && r.s.freq>=1); // expected to do, not yet capable
-      const keyTasks = [...done].filter(r=>r.s.freq>=3).sort((a,b)=>(b.s.freq-a.s.freq)||(b.s.exp-a.s.exp)).slice(0,8);
-      const avgExp = done.length? (done.reduce((x,r)=>x+r.s.exp,0)/done.length):0;
-      return { rows, done, pending, capable, strong, gaps, keyTasks, avgExp };
+      // Knowledge is binary: 1 means the person knows the task or tool, 0 means not.
+      const capable = done.filter(r=>r.s.exp===1);
+      // strong / forte: knows it AND does it often (Frequency 4 or 5)
+      const strong  = done.filter(r=>r.s.exp===1 && r.s.freq>=4);
+      const gaps    = done.filter(r=>r.s.exp===0); // assessed and not known = a gap
+      const keyTasks = [...done].filter(r=>r.s.exp===1 && r.s.freq>=3).sort((a,b)=>(b.s.freq-a.s.freq)).slice(0,8);
+      // share of assessed tasks the person knows, 0 to 100
+      const knownPct = done.length? Math.round((capable.length/done.length)*100):0;
+      return { rows, done, pending, capable, strong, gaps, keyTasks, avgExp:knownPct };
     };
     // Gap and target-list report for one engineer. A task is "expected" when its
-    // tagged level is at or below the engineer's own level. A gap is an expected
-    // task where the engineer's experience is below the target threshold (3).
-    // Each gap is paired with the strongest peer in the same department who can
-    // mentor it. This is the junior-learns-from-senior output.
+    // tagged level is at or below the engineer's own level. Knowledge is binary,
+    // so a gap is simply an expected task the engineer does not know (Knowledge 0).
+    // Each gap is paired with a peer in the same department who knows it and so
+    // can mentor it. This is the junior-learns-from-senior output.
     const lvlRank = (L)=> Math.max(0, CG_LEVELS.indexOf(L));
-    const gapReport = (p, target=3)=>{
+    const gapReport = (p, target=1)=>{
       const scores=(state.assess[p.id])||{};
       const myRank=lvlRank(p.level||"Engineer");
       const peers=state.people.filter(x=>x.deptId===p.deptId && x.id!==p.id);
@@ -3073,32 +3170,32 @@ export default function App(){
         const lvl=t.level||"Engineer";
         const expected = lvlRank(lvl)<=myRank;
         const assessed = (t.id in scores);
-        const mine=(scores[t.id]||{exp:0,freq:0,chal:0}).exp;
+        const mine=(scores[t.id]||{exp:0,freq:0,chal:0}).exp; // 0 or 1
         return { t, lvl, expected, assessed, mine };
       });
       // expected AND assessed tasks count toward coverage and gaps. Expected but
       // not-yet-assessed tasks are pending (added after this person's return).
       const expectedRows=rows.filter(r=>r.expected && r.assessed);
       const pending=rows.filter(r=>r.expected && !r.assessed);
-      const gaps=expectedRows.filter(r=>r.mine<target).map(r=>{
-        // best mentor: highest experience peer on this task
-        let mentor=null,best=r.mine;
+      const gaps=expectedRows.filter(r=>r.mine===0).map(r=>{
+        // best mentor: a peer who knows this task; prefer the one who does it most
+        let mentor=null,bestFreq=-1;
         peers.forEach(pe=>{
           const sc=state.assess[pe.id]||{};
           if(!(r.t.id in sc)) return;
-          const e=(sc[r.t.id]||{exp:0}).exp;
-          if(e>best){ best=e; mentor={name:pe.name,level:pe.level||"Engineer",exp:e}; }
+          const c=sc[r.t.id]||{exp:0,freq:0};
+          if(c.exp===1 && c.freq>bestFreq){ bestFreq=c.freq; mentor={name:pe.name,level:pe.level||"Engineer",exp:1,freq:c.freq}; }
         });
         return { ...r, mentor };
       });
-      const coverage = expectedRows.length? Math.round((expectedRows.filter(r=>r.mine>=target).length/expectedRows.length)*100):0;
+      const coverage = expectedRows.length? Math.round((expectedRows.filter(r=>r.mine===1).length/expectedRows.length)*100):0;
       return { rows, expectedRows, gaps, pending, coverage, target };
     };
     // Suggested follow-up person for an employee: the department peer who is the
     // strongest mentor across the most of that employee's gap tasks. This is the
     // automatic pairing the support card proposes; the author can reassign it.
     const suggestedMentor = (p)=>{
-      const g=gapReport(p,3);
+      const g=gapReport(p);
       if(g.gaps.length===0) return null;
       const tally={};
       g.gaps.forEach(r=>{
@@ -3115,12 +3212,13 @@ export default function App(){
     };
 
     // Office forte engine. For one office, for each capability area, score the
-    // office on the tasks tagged to that area: depth is the mean experience of
-    // every person on every area task, activity is the mean frequency. The area
-    // strength is the blend (depth weighted higher: it is real capability that
-    // matters, not just how often a task recurs). The forte is the top-ranked
-    // non-General area. This is what makes one office read as Towers and
-    // another as Bridges, from the engineers' own scores, not from a label.
+    // office on the tasks tagged to that area. Knowledge is binary, so depth is
+    // the share of person-task pairs the office knows (rescaled 0 to 5 so the
+    // blend math is unchanged), activity is the mean frequency. The area strength
+    // is the blend (depth weighted higher: real capability matters more than how
+    // often a task recurs). The forte is the top-ranked non-General area. This is
+    // what makes one office read as Towers and another as Bridges, from the
+    // engineers' own scores, not from a label.
     const officeForte = (officeId)=>{
       const ppl=state.people.filter(p=>p.officeId===officeId);
       const areas={};
@@ -3128,17 +3226,17 @@ export default function App(){
       CG_STRUCT_AREAS.forEach(a=>{
         const areaTasks=state.tasks.filter(t=>(t.area||"General")===a);
         if(areaTasks.length===0 || ppl.length===0) return;
-        let expSum=0,freqSum=0,n=0;
+        let knowSum=0,freqSum=0,n=0;
         let bestPerson=null,bestAvg=-1;
         ppl.forEach(p=>{
           const sc=state.assess[p.id]||{};
-          let pExp=0,pn=0;
+          let pKnow=0,pn=0;
           // only assessed area tasks count; a not-yet-assessed task is skipped
-          areaTasks.forEach(t=>{ if(!(t.id in sc)) return; const c=sc[t.id]; expSum+=c.exp; freqSum+=c.freq; n++; pExp+=c.exp; pn++; });
-          const pAvg=pn?pExp/pn:0;
-          if(pn>0 && pAvg>bestAvg){ bestAvg=pAvg; bestPerson={name:p.name,level:p.level||"Engineer",avg:pAvg}; }
+          areaTasks.forEach(t=>{ if(!(t.id in sc)) return; const c=sc[t.id]; knowSum+=c.exp; freqSum+=c.freq; n++; pKnow+=c.exp; pn++; });
+          const pAvg=pn?pKnow/pn:0; // share of this area's tasks the person knows
+          if(pn>0 && pAvg>bestAvg){ bestAvg=pAvg; bestPerson={name:p.name,level:p.level||"Engineer",avg:pAvg*5}; }
         });
-        const depth=n?expSum/n:0;          // mean experience, 0 to 5
+        const depth=n?(knowSum/n)*5:0;     // share known, rescaled 0 to 5
         const activity=n?freqSum/n:0;      // mean frequency, 0 to 5
         const strength=Math.round(((depth*0.7+activity*0.3)/5)*100); // 0 to 100
         areas[a]={area:a,depth,activity,strength,taskCount:areaTasks.length,topPerson:bestPerson};
@@ -3182,7 +3280,7 @@ export default function App(){
 
           {/* Phase tabs */}
           <div style={{display:"flex",gap:2,padding:"10px 16px 0",background:P.sand,borderBottom:`1px solid ${P.charcoal}12`,flexWrap:"wrap"}}>
-            {[{k:"workflow",n:"Setup & Workflow"},{k:"foundation",n:"B1 Foundation"},{k:"people",n:"B2 People & Assessment"},{k:"cards",n:"B3 Capability Cards"},{k:"office",n:"B4 Office Dashboard"},{k:"workforce",n:"B5 Workforce"},{k:"develop",n:"B6 Develop & Track"},{k:"exec",n:"Executive"}].map(t=>(
+            {[{k:"workflow",n:"Setup & Workflow"},{k:"foundation",n:"Foundation (review)"},{k:"people",n:"People & Assessment"},{k:"cards",n:"Capability Cards"},{k:"office",n:"Office Dashboard"},{k:"workforce",n:"Workforce"},{k:"develop",n:"Develop & Track"},{k:"exec",n:"Executive"}].map(t=>(
               <div key={t.k} onClick={()=>{setTab(t.k);setActivePerson(null);setActiveDept(null);}} {...kbd(()=>{setTab(t.k);setActivePerson(null);setActiveDept(null);})}
                    aria-pressed={tab===t.k}
                    style={{padding:"9px 14px",fontSize:T.small,fontWeight:800,cursor:"pointer",borderRadius:"8px 8px 0 0",
@@ -3199,12 +3297,11 @@ export default function App(){
               setDeptEmpCount={setDeptEmpCount} judgeItem={judgeItem} judgeAll={judgeAll} addProposalItem={addProposalItem} removeProposalItem={removeProposalItem}
               lockDept={lockDept} setDeptPhase={setDeptPhase} exportDeptSheet={exportDeptSheet} importFilledSheet={importFilledSheet}
               reopenProposal={reopenProposal} addTaskToLockedDept={addTaskToLockedDept} removeTaskFromDept={removeTaskFromDept} exportTopUpSheet={exportTopUpSheet}
-              gapReport={gapReport} activeDept={activeDept} setActiveDept={setActiveDept} officeName={officeName} setMsg={setMsg} />}
+              gapReport={gapReport} activeDept={activeDept} setActiveDept={setActiveDept} officeName={officeName} setMsg={setMsg}
+              ownerMode={ownerMode} loadDemo={loadDemo}
+              importDepartment={importDepartment} downloadTaskTemplate={downloadTaskTemplate} parseTaskTemplate={parseTaskTemplate} />}
 
-            {tab==="foundation" && <CapGridFoundation state={state} TASK_CATS={TASK_CATS}
-              setGroup={(v)=>patch(s=>{s.group=v;})} addOffice={addOffice} delOffice={delOffice}
-              addDept={addDept} delDept={delDept} addToDept={addToDept} removeFromDept={removeFromDept}
-              addTask={addTask} delTask={delTask} />}
+            {tab==="foundation" && <CapGridFoundation state={state} TASK_CATS={TASK_CATS} />}
 
             {tab==="people" && <CapGridPeople state={state} addPerson={addPerson} updPerson={updPerson}
               delPerson={delPerson} setScore={setScore} activePerson={activePerson} setActivePerson={setActivePerson}
@@ -3227,7 +3324,7 @@ export default function App(){
           </div>
 
           <div style={{padding:"10px 22px",background:P.sand,borderTop:`1px solid ${P.charcoal}12`,fontSize:T.micro,color:P.slate,lineHeight:1.5}}>
-            CapacityGrid. Setup & Workflow builds the assessment; B4 and B5 show each office's forte and the group matrix; B6 runs the develop-and-track loop with support cards, follow-up persons and one-to-one meetings; the Executive view is the owner's living dashboard. Your data is saved privately in this browser only and is never shared.
+            CapacityGrid. Setup & Workflow builds the assessment; the Office Dashboard and Workforce tabs show each office's forte and the group matrix; Develop & Track runs the develop-and-track loop with support cards, follow-up persons and one-to-one meetings; the Executive view is the owner's living dashboard. Your data is saved privately in this browser only and is never shared.
           </div>
         </div>
       </div>
@@ -3240,7 +3337,8 @@ export default function App(){
   const CapGridWorkflow = ({state,setGroup,runSetup,resetWorkflow,pickDepartment,removeDepartment,setDeptEmpCount,
       judgeItem,judgeAll,addProposalItem,removeProposalItem,lockDept,setDeptPhase,exportDeptSheet,importFilledSheet,
       reopenProposal,addTaskToLockedDept,removeTaskFromDept,exportTopUpSheet,
-      gapReport,activeDept,setActiveDept,officeName,setMsg}) => {
+      gapReport,activeDept,setActiveDept,officeName,setMsg,ownerMode,loadDemo,
+      importDepartment,downloadTaskTemplate,parseTaskTemplate}) => {
     const lbl={fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",display:"block",marginBottom:3};
     const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
     const btn={padding:"8px 15px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
@@ -3289,6 +3387,20 @@ export default function App(){
               setMsg("Offices created. Pick a department for each office below.");
             }}>Create offices</button>
           </div>
+          {ownerMode && (
+            <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
+              <div style={{fontSize:T.micro,fontWeight:800,color:"#7A5A00",letterSpacing:0.6,marginBottom:4}}>OWNER ONLY</div>
+              <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5,marginBottom:8}}>
+                Load a worked demo: two offices (Dubai strong in High-rise Towers, Riyadh strong in Bridges and
+                Infrastructure), ten people, and full Knowledge assessments. Use it to walk through the platform end to
+                end. This overwrites any current CapacityGrid data in this browser.
+              </div>
+              <button style={{...btn,background:P.gold,color:"#4A3800"}}
+                onClick={()=>{ if(window.confirm("Load demo data? This replaces the current CapacityGrid data in this browser.")) loadDemo(); }}>
+                Load demo data
+              </button>
+            </div>
+          )}
         </div>
       );
     }
@@ -3457,12 +3569,12 @@ export default function App(){
             <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
               {deptPeople.length} return(s) imported. For each engineer the report below shows coverage against the tasks
               expected at their level, the gaps that become their target list, and the department peer best placed to mentor
-              each gap. Senior strengths feed junior targets. Full capability cards are in the B3 tab.
+              each gap. Senior strengths feed junior targets. Full capability cards are in the Capability Cards tab.
             </div>
           </div>
           {deptPeople.length===0 && <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No returns yet.</div>}
           {deptPeople.map(p=>{
-            const g=gapReport(p,3);
+            const g=gapReport(p);
             return (
               <div key={p.id} style={card}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:6,marginBottom:6}}>
@@ -3543,8 +3655,14 @@ export default function App(){
               <div style={sectionTitle}>Offices and departments</div>
               <div style={{fontSize:T.small,color:P.charcoal}}>{state.offices.length} office(s) &middot; {state.departments.length} department(s) picked</div>
             </div>
-            <span onClick={()=>{ if(window.confirm("Reset the whole CapacityGrid workflow? This clears offices, departments, people and returns.")) resetWorkflow(); }}
-              style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.coral,padding:"5px 10px",borderRadius:6,border:`1px solid ${P.coral}55`}}>Reset workflow</span>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {ownerMode && (
+                <span onClick={()=>{ if(window.confirm("Load demo data? This replaces the current CapacityGrid data in this browser.")) loadDemo(); }}
+                  style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:"#7A5A00",padding:"5px 10px",borderRadius:6,border:`1px solid ${P.gold}`,background:P.gold+"22"}}>Load demo data</span>
+              )}
+              <span onClick={()=>{ if(window.confirm("Reset the whole CapacityGrid workflow? This clears offices, departments, people and returns.")) resetWorkflow(); }}
+                style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.coral,padding:"5px 10px",borderRadius:6,border:`1px solid ${P.coral}55`}}>Reset workflow</span>
+            </div>
           </div>
         </div>
         {state.offices.map(o=>{
@@ -3576,7 +3694,9 @@ export default function App(){
                   </div>
                 );
               })}
-              <DeptPicker office={o} taken={depts.map(d=>d.name)} onPick={pickDepartment} inp={inp} btn={btn} lbl={lbl} />
+              <DeptPicker office={o} taken={depts.map(d=>d.name)} onPick={pickDepartment} onImport={importDepartment}
+                downloadTaskTemplate={downloadTaskTemplate} parseTaskTemplate={parseTaskTemplate} setMsg={setMsg}
+                inp={inp} btn={btn} lbl={lbl} />
             </div>
           );
         })}
@@ -3586,15 +3706,43 @@ export default function App(){
 
   // Department picker: author selects a consultancy department from the list
   // and sets that department's own employee count, then the app fetches tasks.
-  const DeptPicker = ({office,taken,onPick,inp,btn,lbl}) => {
+  // Department picker. The author picks a department, sets its team size, then
+  // chooses one of two routes for the task set:
+  //   Fetch  - pull the proposed task set from the built-in library
+  //   Import - load a task set from a filled CSV template
+  // Either route lands the tasks at approved:null, so both go through the same
+  // Yes/No approval gate before the department is locked.
+  const DeptPicker = ({office,taken,onPick,onImport,downloadTaskTemplate,parseTaskTemplate,setMsg,inp,btn,lbl}) => {
     const remaining=CG_DEPT_NAMES.filter(n=>!taken.includes(n));
     const [dept,setDept]=useState("");
     const [count,setCount]=useState(4);
+    const [mode,setMode]=useState("fetch"); // fetch | import
+    const fileRef=useRef(null);
     if (remaining.length===0) return <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic",marginTop:8}}>All five departments are picked for this office.</div>;
+    const tab=(k,label)=>(
+      <div onClick={()=>setMode(k)} {...kbd(()=>setMode(k))} aria-pressed={mode===k}
+        style={{padding:"5px 12px",fontSize:T.micro,fontWeight:800,cursor:"pointer",borderRadius:6,
+          background:mode===k?P.s2:"transparent",color:mode===k?P.white:P.s2,border:`1px solid ${P.s2}55`}}>{label}</div>
+    );
+    const onFile=(e)=>{
+      const f=e.target.files&&e.target.files[0]; if(!f) return;
+      if(!dept){ setMsg("Select a department before importing a task set."); e.target.value=""; return; }
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const rows=parseTaskTemplate(String(reader.result||""));
+        if(!rows){ setMsg("This file is not a task import template. Download the template first."); return; }
+        if(rows.length===0){ setMsg("The template has no task rows. Add tasks and import again."); return; }
+        onImport(office.id,dept,count,rows);
+        setMsg(`Imported ${rows.length} task${rows.length===1?"":"s"} for ${dept}. Approve each task below before locking.`);
+        setDept(""); setCount(4); setMode("fetch");
+      };
+      reader.readAsText(f);
+      e.target.value="";
+    };
     return (
       <div style={{marginTop:8,padding:"10px 12px",background:P.s2L,border:`1px dashed ${P.s2}40`,borderRadius:8}}>
         <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.4,textTransform:"uppercase",marginBottom:6}}>Pick a department for {office.name}</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-end"}}>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-end",marginBottom:8}}>
           <div style={{flex:"1 1 160px"}}>
             <label style={lbl}>Department (from consultancy list)</label>
             <select style={inp} value={dept} onChange={e=>setDept(e.target.value)}>
@@ -3607,8 +3755,28 @@ export default function App(){
             <input type="number" min="1" max="200" style={inp} value={count}
               onChange={e=>setCount(Math.max(1,Math.min(200,parseInt(e.target.value,10)||1)))} />
           </div>
-          <button style={btn} onClick={()=>{ if(dept){ onPick(office.id,dept,count); setDept(""); setCount(4); } }}>Fetch tasks</button>
         </div>
+        <div style={{display:"flex",gap:6,marginBottom:8}}>{tab("fetch","Fetch from library")}{tab("import","Import from file")}</div>
+        {mode==="fetch" ? (
+          <div>
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6,lineHeight:1.5}}>
+              Pull the proposed task set from the built-in library. You approve each item before the set is locked.
+            </div>
+            <button style={btn} onClick={()=>{ if(dept){ onPick(office.id,dept,count); setDept(""); setCount(4); } else setMsg("Select a department first."); }}>Fetch tasks</button>
+          </div>
+        ) : (
+          <div>
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6,lineHeight:1.5}}>
+              Import a task set from a CSV. Download the blank template, fill one row per task (Stage, Task, Expected
+              Level, Capability Area), then import it. Imported tasks still go through the same approval step.
+            </div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <button style={{...btn,background:P.s1}} onClick={()=>downloadTaskTemplate(dept||"Department")}>Download template (CSV)</button>
+              <button style={btn} onClick={()=>{ if(!dept){ setMsg("Select a department first."); return; } fileRef.current && fileRef.current.click(); }}>Import filled template</button>
+              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{display:"none"}} />
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -3641,96 +3809,84 @@ export default function App(){
   };
 
   // --- B1: Foundation panel ---------------------------------------------------
-  const CapGridFoundation = ({state,TASK_CATS,setGroup,addOffice,delOffice,addDept,delDept,addToDept,removeFromDept,addTask,delTask}) => {
-    const [offName,setOffName]=useState(""); const [offLoc,setOffLoc]=useState("");
-    const [deptInputs,setDeptInputs]=useState({}); // {officeId:value}
-    const [chipInputs,setChipInputs]=useState({}); // {deptId+field:value}
-    const [taskCat,setTaskCat]=useState(TASK_CATS[0]); const [taskDetail,setTaskDetail]=useState("");
-    const lbl={fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",display:"block",marginBottom:3};
-    const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
-    const btn={padding:"7px 13px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
+  // B1 is a read-only confirmation of the structure built in the Setup & Workflow
+  // tab. Offices, departments and the task library are created there (setup wizard
+  // and department picker). B1 does not re-edit them: it consolidates and confirms,
+  // so there is one place to set up and one place to review. This removes the
+  // earlier duplication where offices were entered in two tabs at once.
+  const CapGridFoundation = ({state,TASK_CATS}) => {
     const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
     const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
-    const x=(fn)=>({onClick:fn,style:{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.small,padding:"0 4px"}});
+    const setupDone=state.setup && state.setup.done;
+    const hasOffices=state.offices.length>0;
 
     return (
       <div>
-        {/* Group */}
-        <div style={card}>
-          <div style={sectionTitle}>Organisation</div>
-          <label style={lbl}>Group or parent company name</label>
-          <input style={inp} value={state.group} onChange={e=>setGroup(e.target.value)} placeholder="e.g. your parent group name" />
+        {/* B1 is a confirmation view. Setup happens in the Setup & Workflow tab. */}
+        <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={sectionTitle}>Foundation summary</div>
+          <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+            This panel confirms the structure built in the <strong style={{color:P.s2}}>Setup &amp; Workflow</strong> tab.
+            Offices, departments and each department's task set are created there, once. This tab reads them back so the
+            organisation can be reviewed in one place. To add an office, pick a department or change a task set, use the
+            Setup &amp; Workflow tab.
+          </div>
         </div>
 
-        {/* Offices */}
+        {/* Organisation, read-only */}
         <div style={card}>
-          <div style={sectionTitle}>Offices and locations</div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:10}}>
-            <div style={{flex:"1 1 160px"}}><label style={lbl}>Office name</label>
-              <input style={inp} value={offName} onChange={e=>setOffName(e.target.value)} placeholder="e.g. office name" /></div>
-            <div style={{flex:"1 1 160px"}}><label style={lbl}>Location</label>
-              <input style={inp} value={offLoc} onChange={e=>setOffLoc(e.target.value)} placeholder="e.g. city, country" /></div>
-            <button style={btn} onClick={()=>{ if(offName.trim()){ addOffice(offName.trim(),offLoc.trim()); setOffName(""); setOffLoc(""); } }}>Add office</button>
+          <div style={sectionTitle}>Organisation</div>
+          <div style={{fontSize:T.small,color:P.charcoal}}>
+            <span style={{color:P.slate,fontWeight:700}}>Group: </span>
+            {state.group ? state.group : <span style={{fontStyle:"italic",color:P.slate}}>not named yet</span>}
           </div>
-          {state.offices.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No offices yet. Add your first office above.</div>}
-          {state.offices.map(o=>{
+        </div>
+
+        {/* Offices and departments, read-only */}
+        <div style={card}>
+          <div style={sectionTitle}>Offices, departments and task sets</div>
+          {!hasOffices && (
+            <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>
+              No offices yet. Open the Setup &amp; Workflow tab and run setup to create your offices.
+            </div>
+          )}
+          {hasOffices && state.offices.map(o=>{
             const depts=state.departments.filter(d=>d.officeId===o.id);
             return (
               <div key={o.id} style={{border:`1px solid ${P.charcoal}15`,borderRadius:9,padding:"10px 12px",marginBottom:10,background:P.sand}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{o.name}{o.location?<span style={{color:P.slate,fontWeight:600}}> &middot; {o.location}</span>:null}</div>
-                  <span {...x(()=>delOffice(o.id))}>Remove</span>
-                </div>
-                {/* Departments under office */}
+                <div style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{o.name}{o.location?<span style={{color:P.slate,fontWeight:600}}> &middot; {o.location}</span>:null}</div>
                 <div style={{marginTop:8,paddingLeft:6}}>
-                  <div style={{display:"flex",gap:6,marginBottom:6}}>
-                    <input style={{...inp,flex:1}} value={deptInputs[o.id]||""} onChange={e=>setDeptInputs({...deptInputs,[o.id]:e.target.value})} placeholder="Department name e.g. Civil" />
-                    <button style={{...btn,background:P.s1}} onClick={()=>{ const v=(deptInputs[o.id]||"").trim(); if(v){ addDept(o.id,v); setDeptInputs({...deptInputs,[o.id]:""}); } }}>Add dept</button>
-                  </div>
-                  {depts.map(d=>(
-                    <div key={d.id} style={{background:P.white,border:`1px solid ${P.charcoal}12`,borderRadius:8,padding:"8px 10px",marginBottom:6}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{d.name}</div>
-                        <span {...x(()=>delDept(d.id))}>Remove</span>
-                      </div>
-                      {["sectors","services"].map(field=>(
-                        <div key={field} style={{marginTop:6}}>
-                          <label style={{...lbl,marginBottom:2}}>{field}</label>
-                          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:4}}>
-                            {d[field].map(v=>(
-                              <span key={v} style={{fontSize:T.micro,fontWeight:700,padding:"3px 7px",borderRadius:5,background:field==="sectors"?P.s1L:P.s3L,color:field==="sectors"?P.s1:P.s3,border:`1px solid ${field==="sectors"?P.s1:P.s3}30`}}>
-                                {v} <span style={{cursor:"pointer",color:P.coral,fontWeight:800}} onClick={()=>removeFromDept(d.id,field,v)}>&times;</span>
-                              </span>
-                            ))}
-                            {d[field].length===0 && <span style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>none yet</span>}
-                          </div>
-                          <div style={{display:"flex",gap:5}}>
-                            <input style={{...inp,flex:1,padding:"5px 8px"}} value={chipInputs[d.id+field]||""} onChange={e=>setChipInputs({...chipInputs,[d.id+field]:e.target.value})} placeholder={`Add ${field.slice(0,-1)}`} />
-                            <button style={{...btn,background:field==="sectors"?P.s1:P.s3,padding:"5px 10px"}} onClick={()=>{ const v=(chipInputs[d.id+field]||"").trim(); if(v && !d[field].includes(v)){ addToDept(d.id,field,v); setChipInputs({...chipInputs,[d.id+field]:""}); } }}>Add</button>
-                          </div>
+                  {depts.length===0 && <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>No department picked yet for this office.</div>}
+                  {depts.map(d=>{
+                    const taskCount=(d.proposal&&d.proposal.tasks)?d.proposal.tasks.length:0;
+                    const approved=(d.proposal&&d.proposal.tasks)?d.proposal.tasks.filter(t=>t.approved===true).length:0;
+                    const phaseLabel=d.phase==="phase2"?"Phase 2 ready":d.phase==="phase1"?"Phase 1 in progress":"Proposal stage";
+                    const phaseColor=d.phase==="phase2"?P.s3:d.phase==="phase1"?P.s2:P.gold;
+                    return (
+                      <div key={d.id} style={{background:P.white,border:`1px solid ${P.charcoal}12`,borderRadius:8,padding:"8px 10px",marginBottom:6}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                          <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{d.name}
+                            <span style={{marginLeft:6,fontWeight:600,color:P.slate}}>&middot; {d.empCount||0} staff</span></div>
+                          <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 8px",borderRadius:5,background:phaseColor+"22",color:phaseColor,border:`1px solid ${phaseColor}45`}}>{phaseLabel}</span>
                         </div>
-                      ))}
-                    </div>
-                  ))}
-                  {depts.length===0 && <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>No departments yet.</div>}
+                        <div style={{fontSize:T.micro,color:P.slate,marginTop:4}}>
+                          {taskCount} task{taskCount===1?"":"s"} in the set &middot; {approved} approved
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Task library */}
+        {/* Consolidated task library, read-only, grouped by stage */}
         <div style={card}>
-          <div style={sectionTitle}>Task library</div>
-          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>Each task a role can perform, grouped by category. Every person is later assessed on these tasks.</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-end",marginBottom:10}}>
-            <div style={{flex:"0 0 140px"}}><label style={lbl}>Category</label>
-              <select style={inp} value={taskCat} onChange={e=>setTaskCat(e.target.value)}>
-                {TASK_CATS.map(c=><option key={c} value={c}>{c}</option>)}
-              </select></div>
-            <div style={{flex:"1 1 220px"}}><label style={lbl}>Task detail</label>
-              <input style={inp} value={taskDetail} onChange={e=>setTaskDetail(e.target.value)} placeholder="e.g. describe the task" /></div>
-            <button style={btn} onClick={()=>{ if(taskDetail.trim()){ addTask(taskCat,taskDetail.trim()); setTaskDetail(""); } }}>Add task</button>
+          <div style={sectionTitle}>Task library in use</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>
+            Every distinct task across all departments, grouped by lifecycle stage. Each person is assessed on these in the People & Assessment tab.
+            Task sets are fetched and approved per department in the Setup &amp; Workflow tab.
           </div>
           {TASK_CATS.map(cat=>{
             const items=state.tasks.filter(t=>t.category===cat);
@@ -3739,14 +3895,15 @@ export default function App(){
               <div key={cat} style={{marginBottom:8}}>
                 <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:3}}>{cat} ({items.length})</div>
                 {items.map(t=>(
-                  <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 9px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small,color:P.charcoal}}>
-                    <span>{t.detail}</span><span {...x(()=>delTask(t.id))}>&times;</span>
+                  <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"5px 9px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small,color:P.charcoal}}>
+                    <span>{t.detail}</span>
+                    <span style={{fontSize:T.micro,fontWeight:700,color:P.slate,whiteSpace:"nowrap"}}>{t.level||"Engineer"} &middot; {t.area||"General"}</span>
                   </div>
                 ))}
               </div>
             );
           })}
-          {state.tasks.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No tasks yet. Build the task library above.</div>}
+          {state.tasks.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No tasks yet. Pick a department in the Setup &amp; Workflow tab to fetch its task set.</div>}
         </div>
 
         {/* Scoring scale reference */}
@@ -3757,7 +3914,7 @@ export default function App(){
               <th style={{padding:"3px 6px"}}>Measure</th><th style={{padding:"3px 6px"}}>Range</th><th style={{padding:"3px 6px"}}>Meaning</th>
             </tr></thead>
             <tbody style={{color:P.charcoal}}>
-              <tr><td style={{padding:"3px 6px",fontWeight:800}}>Experience</td><td style={{padding:"3px 6px"}}>0 to 5</td><td style={{padding:"3px 6px"}}>0 null, 1 capable, 5 expert</td></tr>
+              <tr><td style={{padding:"3px 6px",fontWeight:800}}>Knowledge</td><td style={{padding:"3px 6px"}}>0 or 1</td><td style={{padding:"3px 6px"}}>0 do not know this task or tool, 1 yes</td></tr>
               <tr><td style={{padding:"3px 6px",fontWeight:800}}>Frequency</td><td style={{padding:"3px 6px"}}>0 to 5</td><td style={{padding:"3px 6px"}}>0 not offered, 1 rare, 5 very often</td></tr>
               <tr><td style={{padding:"3px 6px",fontWeight:800}}>Challenge</td><td style={{padding:"3px 6px"}}>1 to 5</td><td style={{padding:"3px 6px"}}>1 easy, 5 not straightforward</td></tr>
             </tbody>
@@ -3778,7 +3935,7 @@ export default function App(){
     const deptsFor=(officeId)=> state.departments.filter(d=>d.officeId===officeId);
 
     if (state.offices.length===0) {
-      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>Add at least one office and department in B1 Foundation before adding people.</div>;
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>Create at least one office and pick a department in the Setup &amp; Workflow tab before adding people.</div>;
     }
 
     // Assessment view for one person
@@ -3796,25 +3953,32 @@ export default function App(){
             <div style={{fontSize:T.small,color:P.slate,marginTop:2}}>{p.title} &middot; {deptName(p.deptId)} &middot; {officeName(p.officeId)}</div>
           </div>
           {state.tasks.length===0
-            ? <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No tasks in the library yet. Add tasks in B1 Foundation first.</div>
+            ? <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No tasks in the library yet. Pick a department in the Setup &amp; Workflow tab to fetch its task set.</div>
             : cats.map(cat=>(
               <div key={cat} style={card}>
                 <div style={{...sectionTitle,fontSize:T.small,color:P.s2,textTransform:"uppercase",letterSpacing:0.6}}>{cat}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 56px 56px 56px",gap:6,fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:4}}>
-                  <span>Task</span><span style={{textAlign:"center"}}>Exp</span><span style={{textAlign:"center"}}>Freq</span><span style={{textAlign:"center"}}>Chal</span>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 78px 56px 56px",gap:6,fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:4}}>
+                  <span>Task</span><span style={{textAlign:"center"}}>Know</span><span style={{textAlign:"center"}}>Freq</span><span style={{textAlign:"center"}}>Chal</span>
                 </div>
                 {state.tasks.filter(t=>t.category===cat).map(t=>{
                   const c=scores[t.id]||{exp:0,freq:0,chal:0};
+                  const selStyle={width:"100%",padding:"4px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.micro,fontFamily:"inherit",textAlign:"center"};
                   const cell=(field,min,max)=>(
-                    <select value={c[field]} onChange={e=>setScore(p.id,t.id,field,num(e.target.value,min,max))}
-                            style={{width:"100%",padding:"4px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.micro,fontFamily:"inherit",textAlign:"center"}}>
+                    <select value={c[field]} onChange={e=>setScore(p.id,t.id,field,num(e.target.value,min,max))} style={selStyle}>
                       {Array.from({length:max-min+1},(_,i)=>min+i).map(n=><option key={n} value={n}>{n}</option>)}
                     </select>
                   );
+                  // Knowledge cell: binary, friendly labels
+                  const knowCell=(
+                    <select value={c.exp} onChange={e=>setScore(p.id,t.id,"exp",num(e.target.value,0,1))} style={selStyle}>
+                      <option value={0}>No</option>
+                      <option value={1}>Yes</option>
+                    </select>
+                  );
                   return (
-                    <div key={t.id} style={{display:"grid",gridTemplateColumns:"1fr 56px 56px 56px",gap:6,alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${P.charcoal}0C`}}>
+                    <div key={t.id} style={{display:"grid",gridTemplateColumns:"1fr 78px 56px 56px",gap:6,alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${P.charcoal}0C`}}>
                       <span style={{fontSize:T.small,color:P.charcoal}}>{t.detail}</span>
-                      {cell("exp",0,5)}{cell("freq",0,5)}{cell("chal",1,5)}
+                      {knowCell}{cell("freq",0,5)}{cell("chal",1,5)}
                     </div>
                   );
                 })}
@@ -3898,7 +4062,7 @@ export default function App(){
     const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
 
     if (state.people.length===0) {
-      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>Add people and assess them in B2 before capability cards can be generated.</div>;
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>Add people and assess them in the People & Assessment tab before capability cards can be generated.</div>;
     }
 
     // Single card view
@@ -3931,7 +4095,7 @@ export default function App(){
           </div>
 
           <div style={{...card,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:12}}>
-            {[{n:cd.capable.length,l:"Tasks capable",c:P.s1},{n:cd.strong.length,l:"Strong (4+)",c:P.s3},{n:cd.gaps.length,l:"Gaps",c:P.coral},{n:cd.avgExp.toFixed(1),l:"Avg experience",c:P.s2}].map((s,i)=>(
+            {[{n:cd.capable.length,l:"Tasks known",c:P.s1},{n:cd.strong.length,l:"Strong (known + frequent)",c:P.s3},{n:cd.gaps.length,l:"Gaps",c:P.coral},{n:cd.avgExp+"%",l:"Knowledge coverage",c:P.s2}].map((s,i)=>(
               <div key={i} style={{textAlign:"center"}}>
                 <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:s.c}}>{s.n}</div>
                 <div style={{fontSize:T.micro,color:P.slate,fontWeight:700}}>{s.l}</div>
@@ -3941,12 +4105,12 @@ export default function App(){
 
           <div style={card}>
             <div style={sectionTitle}>Key tasks for this person</div>
-            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>The tasks performed most often, drawn from frequency and experience scores.</div>
-            {cd.keyTasks.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No key tasks yet. Record frequency scores in B2.</div>}
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>Tasks this person knows and performs most often, drawn from the frequency scores.</div>
+            {cd.keyTasks.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No key tasks yet. Record frequency scores in the People & Assessment tab.</div>}
             {cd.keyTasks.map(r=>(
               <div key={r.t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${P.charcoal}0C`,fontSize:T.small}}>
                 <span style={{color:P.charcoal}}><span style={{color:P.s2,fontWeight:700}}>{r.t.category}</span> &middot; {r.t.detail}</span>
-                <span style={{fontSize:T.micro,color:P.slate,whiteSpace:"nowrap",marginLeft:8}}>Exp {r.s.exp} &middot; Freq {r.s.freq} &middot; Chal {r.s.chal}</span>
+                <span style={{fontSize:T.micro,color:P.slate,whiteSpace:"nowrap",marginLeft:8}}>Knows it &middot; Freq {r.s.freq} &middot; Chal {r.s.chal}</span>
               </div>
             ))}
           </div>
@@ -3955,15 +4119,15 @@ export default function App(){
             <div style={card}>
               <div style={sectionTitle}>Full capability detail</div>
               <div style={{marginBottom:8}}>
-                <div style={{fontSize:T.micro,fontWeight:800,color:P.s3,marginBottom:3}}>STRONG SKILLS (Experience 4 or 5)</div>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s3,marginBottom:3}}>STRONG SKILLS (knows it and does it often)</div>
                 <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{list(cd.strong)}</div>
               </div>
               <div style={{marginBottom:8}}>
-                <div style={{fontSize:T.micro,fontWeight:800,color:P.s1,marginBottom:3}}>CAPABLE TASKS (Experience 1 or more)</div>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s1,marginBottom:3}}>KNOWN TASKS (Knowledge is Yes)</div>
                 <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{list(cd.capable)}</div>
               </div>
               <div>
-                <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,marginBottom:3}}>GAPS (expected to do, not yet capable)</div>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,marginBottom:3}}>GAPS (assessed, Knowledge is No)</div>
                 <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{list(cd.gaps)}</div>
               </div>
             </div>
@@ -4033,7 +4197,7 @@ export default function App(){
         <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
           <div style={sectionTitle}>Office capability dashboards</div>
           <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
-            Each office is profiled by capability area. Strength blends how deep the experience is (weighted higher) and how
+            Each office is profiled by capability area. Strength blends how widely the tasks are known (weighted higher) and how
             often the work is done, drawn from every assessed person. The top area is the office forte.
           </div>
         </div>
@@ -4209,7 +4373,7 @@ export default function App(){
     if (activePerson) {
       const p=state.people.find(x=>x.id===activePerson);
       if(!p){ setActivePerson(null); return null; }
-      const g=gapReport(p,3);
+      const g=gapReport(p);
       const sug=suggestedMentor(p);
       const fu=state.followups[p.id];
       const mentor=fu? state.people.find(x=>x.id===fu.mentorId) : null;
@@ -4364,7 +4528,7 @@ export default function App(){
               <div key={o.id} style={{marginBottom:10}}>
                 <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:4}}>{o.name}</div>
                 {list.map(p=>{
-                  const g=gapReport(p,3);
+                  const g=gapReport(p);
                   const fu=state.followups[p.id];
                   const mentor=fu? state.people.find(x=>x.id===fu.mentorId) : null;
                   const meetings=state.meetings[p.id]||[];
@@ -4404,7 +4568,7 @@ export default function App(){
     }
     // company-wide figures
     let covSum=0,gapSum=0;
-    ppl.forEach(p=>{ const g=gapReport(p,3); covSum+=g.coverage; gapSum+=g.gaps.length; });
+    ppl.forEach(p=>{ const g=gapReport(p); covSum+=g.coverage; gapSum+=g.gaps.length; });
     const avgCov=Math.round(covSum/ppl.length);
     const pairings=Object.keys(state.followups).length;
     const pairingPct=Math.round((pairings/ppl.length)*100);
@@ -5518,6 +5682,7 @@ export default function App(){
         {displayed.length===0 && <div style={{padding:"24px 0",fontSize:T.body,color:P.slate,textAlign:"center",fontStyle:"italic"}}>No projects match your search. Try clearing filters or simplifying the query.</div>}
         {!showAll&&filteredP.length>20&&<div onClick={()=>setShowAll(true)} {...kbd(()=>setShowAll(true))} aria-label="Show more projects" style={{marginTop:10,padding:"8px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.body,fontWeight:700,textAlign:"center",cursor:"pointer"}}>Show more projects</div>}
       </div>
+      <div style={{marginTop:18}}><ToolsBoxStrip/></div>
     </div>
   );
 

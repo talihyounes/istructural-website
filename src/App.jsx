@@ -371,6 +371,252 @@ async function isgDeleteMaterial(id){
   });
 }
 
+// ---------------------------------------------------------------------------
+// CapacityGrid storage. The workforce-capability data (offices, departments,
+// services, people, tasks, assessments) is one connected graph, small enough
+// to hold as a single JSON document. It is saved under one key in its own
+// IndexedDB database. Private to this browser and device for now. When a
+// cloud bucket is connected later, only these two functions get re-pointed.
+const CG_DB = "isg_capacitygrid";
+const CG_STORE = "state";
+const CG_KEY = "workforce";
+function cgOpenDB(){
+  return new Promise((resolve, reject)=>{
+    if (typeof indexedDB === "undefined") { reject(new Error("Browser storage is not available.")); return; }
+    const req = indexedDB.open(CG_DB, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if (!db.objectStoreNames.contains(CG_STORE)) db.createObjectStore(CG_STORE, { keyPath:"id" });
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error || new Error("Could not open browser storage."));
+  });
+}
+async function cgLoadState(){
+  const db = await cgOpenDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(CG_STORE, "readonly");
+    const r = tx.objectStore(CG_STORE).get(CG_KEY);
+    r.onsuccess = ()=>resolve(r.result ? r.result.data : null);
+    r.onerror = ()=>reject(r.error || new Error("Could not read browser storage."));
+  });
+}
+async function cgSaveState(data){
+  const db = await cgOpenDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(CG_STORE, "readwrite");
+    tx.objectStore(CG_STORE).put({ id:CG_KEY, data, savedAt:Date.now() });
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error || new Error("Could not save to browser storage."));
+  });
+}
+
+// CapacityGrid department proposal library. The five departments of an
+// engineering consultancy firm, each with proposed positions, services and
+// regular tasks. The author approves or edits every item with Yes/No before
+// it is locked. The Structural department is fully built as the worked example:
+// its tasks span the whole project lifecycle from RFP to construction follow-up,
+// and each task carries the level expected to own it (Graduate, Engineer,
+// Senior). The gap report compares an engineer's scores against that level.
+// The other four carry a representative starter set the author extends.
+//
+// Levels, ordered: 1 Technician, 2 Graduate, 3 Engineer, 4 Senior. A task tagged
+// at a level is expected to be covered by people at that level and above.
+const CG_LEVELS = ["Technician","Graduate","Engineer","Senior"];
+// Capability areas for the Structural department. Each task is tagged to one
+// area. An office's "forte" is computed from its people's experience and
+// frequency on the tasks of each area: the area where the office scores
+// highest is its forte (e.g. one office strong in High-rise Towers, another
+// in Bridges). "General" covers lifecycle tasks not specific to a project type.
+const CG_STRUCT_AREAS = ["General","High-rise Towers","Bridges and Infrastructure","Foundations and Deep Excavation","Industrial and Special Structures","Heritage and Retrofit"];
+const CG_DEPT_LIBRARY = {
+  Structural: {
+    positions:[
+      "Structural Department Manager","Senior Structural Engineer","Structural Engineer",
+      "Structural Designer / Draughtsman","Graduate Structural Engineer","BIM / Revit Modeller",
+    ],
+    services:[
+      "Concrete structures design","Steel structures design","Foundation design",
+      "Bridge and infrastructure design","Seismic and lateral design",
+      "Structural assessment of existing buildings","Peer review and value engineering",
+    ],
+    tasks:[
+      // RFP and Bid
+      {category:"RFP and Bid", level:"Senior",   area:"General", detail:"Review the RFP and define the structural scope"},
+      {category:"RFP and Bid", level:"Senior",   area:"General", detail:"Estimate engineering hours and fee for the structural works"},
+      {category:"RFP and Bid", level:"Engineer", area:"General", detail:"Prepare the technical method statement for the proposal"},
+      // Concept
+      {category:"Concept",     level:"Senior",   area:"High-rise Towers", detail:"Select the tower structural system and stability scheme"},
+      {category:"Concept",     level:"Senior",   area:"Bridges and Infrastructure", detail:"Select the bridge type and span arrangement"},
+      {category:"Concept",     level:"Engineer", area:"General", detail:"Preliminary sizing and gravity load takedown"},
+      {category:"Concept",     level:"Engineer", area:"High-rise Towers", detail:"Preliminary lateral system concept for towers (wind and seismic)"},
+      // Detailed Design
+      {category:"Detailed Design", level:"Engineer", area:"General", detail:"Reinforced concrete element design (beams, columns, slabs)"},
+      {category:"Detailed Design", level:"Engineer", area:"Industrial and Special Structures", detail:"Steel member and connection design"},
+      {category:"Detailed Design", level:"Engineer", area:"Foundations and Deep Excavation", detail:"Foundation design (footings, rafts, piles)"},
+      {category:"Detailed Design", level:"Senior",   area:"Foundations and Deep Excavation", detail:"Deep excavation and shoring design"},
+      {category:"Detailed Design", level:"Senior",   area:"High-rise Towers", detail:"Tower seismic and lateral system detailed design"},
+      {category:"Detailed Design", level:"Senior",   area:"High-rise Towers", detail:"Post-tensioned floor design for towers"},
+      {category:"Detailed Design", level:"Senior",   area:"Bridges and Infrastructure", detail:"Bridge superstructure and substructure design"},
+      {category:"Detailed Design", level:"Senior",   area:"Heritage and Retrofit", detail:"Strengthening and retrofit design of existing structures"},
+      // Analysis and Calculations
+      {category:"Analysis",    level:"Engineer", area:"General", detail:"Build and run ETABS or SAP2000 model"},
+      {category:"Analysis",    level:"Engineer", area:"General", detail:"Set up load combinations to the governing code"},
+      {category:"Analysis",    level:"Senior",   area:"Bridges and Infrastructure", detail:"Bridge finite element and moving-load analysis"},
+      {category:"Analysis",    level:"Senior",   area:"High-rise Towers", detail:"Tower dynamic and wind response analysis"},
+      {category:"Analysis",    level:"Engineer", area:"General", detail:"Prepare the structural design calculation report"},
+      // Modelling and BIM
+      {category:"Modelling",   level:"Technician", area:"General", detail:"Revit structural model authoring"},
+      {category:"Modelling",   level:"Engineer",   area:"General", detail:"Coordinate the structural model with architecture and MEP"},
+      // Coordination and Meetings
+      {category:"Coordination",level:"Engineer", area:"General", detail:"Attend and minute design coordination meetings"},
+      {category:"Coordination",level:"Senior",   area:"General", detail:"Lead client and design team progress meetings"},
+      {category:"Coordination",level:"Engineer", area:"General", detail:"Resolve interface clashes with other disciplines"},
+      // Drawings and Deliverables
+      {category:"Drawings",    level:"Technician", area:"General", detail:"Prepare general arrangement drawings"},
+      {category:"Drawings",    level:"Technician", area:"General", detail:"Prepare reinforcement detailing drawings"},
+      {category:"Drawings",    level:"Engineer",   area:"Industrial and Special Structures", detail:"Prepare steel fabrication and connection drawings"},
+      {category:"Drawings",    level:"Senior",     area:"General", detail:"Compile and check the deliverable drawing package"},
+      // QA/QC
+      {category:"QA/QC",       level:"Senior",   area:"General", detail:"Internal design check of calculations"},
+      {category:"QA/QC",       level:"Engineer", area:"General", detail:"Address received QA/QC review comments"},
+      {category:"QA/QC",       level:"Engineer", area:"General", detail:"Verify drawings against calculations"},
+      // Construction Follow-up
+      {category:"Construction Follow-up", level:"Engineer", area:"General", detail:"Respond to RFIs during construction"},
+      {category:"Construction Follow-up", level:"Engineer", area:"General", detail:"Review contractor shop drawings"},
+      {category:"Construction Follow-up", level:"Senior",   area:"General", detail:"Site inspection and structural observation reports"},
+      {category:"Construction Follow-up", level:"Senior",   area:"Heritage and Retrofit", detail:"Condition assessment of existing and heritage structures"},
+    ],
+  },
+  Architectural: {
+    positions:["Architectural Department Manager","Senior Architect","Architect","Architectural Technician","BIM / Revit Modeller"],
+    services:["Concept and schematic design","Detailed design and documentation","Authority and permit submissions","Interior coordination"],
+    tasks:[
+      {category:"Concept",         level:"Senior",   detail:"Concept and space planning"},
+      {category:"Detailed Design", level:"Engineer", detail:"Detailed design development"},
+      {category:"Modelling",       level:"Graduate", detail:"Revit architectural model authoring"},
+      {category:"Drawings",        level:"Engineer", detail:"Prepare plans, sections and elevations"},
+      {category:"Coordination",    level:"Engineer", detail:"Coordinate with structural and MEP disciplines"},
+      {category:"QA/QC",           level:"Senior",   detail:"Internal design review and comment closure"},
+    ],
+  },
+  Mechanical: {
+    positions:["Mechanical Department Manager","Senior Mechanical Engineer","Mechanical Engineer","Mechanical Designer / Draughtsman"],
+    services:["HVAC design","Plumbing and drainage design","Firefighting systems design","Energy and sustainability analysis"],
+    tasks:[
+      {category:"Detailed Design", level:"Engineer", detail:"HVAC load calculation and equipment selection"},
+      {category:"Detailed Design", level:"Engineer", detail:"Plumbing and drainage system design"},
+      {category:"Detailed Design", level:"Senior",   detail:"Firefighting system design"},
+      {category:"Modelling",       level:"Graduate", detail:"Revit MEP mechanical model authoring"},
+      {category:"Drawings",        level:"Engineer", detail:"Prepare mechanical layout drawings"},
+      {category:"QA/QC",           level:"Senior",   detail:"Internal design review and comment closure"},
+    ],
+  },
+  Electrical: {
+    positions:["Electrical Department Manager","Senior Electrical Engineer","Electrical Engineer","Electrical Designer / Draughtsman"],
+    services:["Power distribution design","Lighting design","Low current and ELV systems","Load and protection studies"],
+    tasks:[
+      {category:"Detailed Design", level:"Engineer", detail:"Power distribution and load schedule design"},
+      {category:"Detailed Design", level:"Engineer", detail:"Lighting design and calculations"},
+      {category:"Detailed Design", level:"Engineer", detail:"Low current and ELV systems design"},
+      {category:"Analysis",        level:"Senior",   detail:"Short circuit and protection coordination study"},
+      {category:"Drawings",        level:"Engineer", detail:"Prepare electrical layout and single line drawings"},
+      {category:"QA/QC",           level:"Senior",   detail:"Internal design review and comment closure"},
+    ],
+  },
+  Civil: {
+    positions:["Civil Department Manager","Senior Civil Engineer","Civil Engineer","Civil Designer / Draughtsman"],
+    services:["Site grading and earthworks","Drainage and stormwater design","Roads and pavement design","Utilities and infrastructure design"],
+    tasks:[
+      {category:"Grading",         level:"Engineer", detail:"Site grading and earthworks design"},
+      {category:"Drainage",        level:"Engineer", detail:"Stormwater and drainage network design"},
+      {category:"Utilities",       level:"Engineer", detail:"Water, sewer and utility routing design"},
+      {category:"Detailed Design", level:"Senior",   detail:"Roads and pavement design"},
+      {category:"Drawings",        level:"Graduate", detail:"Prepare civil layout and profile drawings"},
+      {category:"QA/QC",           level:"Senior",   detail:"Internal design review and comment closure"},
+    ],
+  },
+};
+const CG_DEPT_NAMES = ["Architectural","Structural","Mechanical","Electrical","Civil"];
+const CG_STRUCT_STAGES = ["RFP and Bid","Concept","Detailed Design","Analysis","Modelling","Coordination","Drawings","QA/QC","Construction Follow-up"];
+
+// Build a complete CapacityGrid demo state for testing every tab up to B6.
+// Two offices, each a Structural department in phase2 (analysis live). Office A
+// is staffed to read strong in High-rise Towers, Office B strong in Bridges,
+// so B4 forte and the B5 routing matrix show a clear contrast. All data is
+// fictional. Levels span Technician to Senior so the gap report and follow-up
+// pairings have real spread.
+function buildCapGridDemo(){
+  let n=0; const id=(pfx)=> pfx+"_"+(++n).toString(36);
+  const lib=CG_DEPT_LIBRARY.Structural;
+  // one shared task set; each office's department gets its own task IDs
+  const makeTasks=()=> lib.tasks.map(t=>({id:id("t"),category:t.category,detail:t.detail,level:t.level||"Engineer",area:t.area||"General"}));
+  const lvlBase={Technician:1,Graduate:2,Engineer:3,Senior:4};
+  // score one person across a task list: base by level, lifted on the office's
+  // forte area, with light variation. clamp 0..5 for exp/freq, 1..5 challenge.
+  const scoreFor=(tasks,level,forteArea,seed)=>{
+    const m={}; let k=seed;
+    const rnd=()=>{ k=(k*1103515245+12345)&0x7fffffff; return (k/0x7fffffff); };
+    tasks.forEach(t=>{
+      let exp=lvlBase[level]||3;
+      if(t.area===forteArea) exp+=1;                 // forte lift
+      if((t.level==="Senior")&&level!=="Senior") exp-=1; // stretch tasks harder
+      exp+=Math.round(rnd()*2-1);                    // -1..+1 jitter
+      exp=Math.max(0,Math.min(5,exp));
+      let freq=Math.max(0,Math.min(5,(t.area===forteArea?4:2)+Math.round(rnd()*2-1)));
+      let chal=Math.max(1,Math.min(5, (t.level==="Senior"?4:t.level==="Engineer"?3:2)+Math.round(rnd()*1-0.5)));
+      m[t.id]={exp,freq,chal};
+    });
+    return m;
+  };
+  const offices=[
+    {id:id("o"),name:"Dubai Office",location:"Dubai, UAE"},
+    {id:id("o"),name:"Riyadh Office",location:"Riyadh, KSA"},
+  ];
+  const roster=[
+    {name:"Layla Hassan",title:"Senior Structural Engineer",level:"Senior",empNo:"D-101",isKey:true,isApprover:true},
+    {name:"Omar Khaled",title:"Structural Engineer",level:"Engineer",empNo:"D-102"},
+    {name:"Sara Nasser",title:"Structural Engineer",level:"Engineer",empNo:"D-103"},
+    {name:"Yusuf Amin",title:"Graduate Structural Engineer",level:"Graduate",empNo:"D-104"},
+    {name:"Maya Tarek",title:"BIM / Revit Modeller",level:"Technician",empNo:"D-105"},
+  ];
+  const roster2=[
+    {name:"Karim Saleh",title:"Senior Structural Engineer",level:"Senior",empNo:"R-201",isKey:true,isApprover:true},
+    {name:"Dana Fawzi",title:"Structural Engineer",level:"Engineer",empNo:"R-202"},
+    {name:"Hadi Mansour",title:"Structural Engineer",level:"Engineer",empNo:"R-203"},
+    {name:"Rana Khoury",title:"Graduate Structural Engineer",level:"Graduate",empNo:"R-204"},
+    {name:"Tariq Aziz",title:"Structural Designer / Draughtsman",level:"Technician",empNo:"R-205"},
+  ];
+  const departments=[]; const people=[]; const assess={};
+  [{office:offices[0],roster,forte:"High-rise Towers"},
+   {office:offices[1],roster:roster2,forte:"Bridges and Infrastructure"}].forEach(grp=>{
+    const tasks=makeTasks();
+    const dept={
+      id:id("d"), officeId:grp.office.id, name:"Structural", sectors:[], services:[],
+      empCount:grp.roster.length, active:true, phase:"phase2",
+      proposal:{
+        positions:lib.positions.map(t=>({text:t,approved:true})),
+        services:lib.services.map(t=>({text:t,approved:true})),
+        tasks:tasks.map(t=>({...t,approved:true})),
+      },
+    };
+    departments.push(dept);
+    grp.roster.forEach((r,i)=>{
+      const pid=id("p");
+      people.push({id:pid,officeId:grp.office.id,deptId:dept.id,name:r.name,title:r.title,
+        level:r.level,jobDesc:"",empNo:r.empNo,isKey:!!r.isKey,isApprover:!!r.isApprover});
+      assess[pid]=scoreFor(tasks,r.level,grp.forte,(i+1)*97+grp.office.id.length);
+    });
+  });
+  const liveTasks=[];
+  departments.forEach(d=> d.proposal.tasks.forEach(t=> liveTasks.push({id:t.id,category:t.category,detail:t.detail,level:t.level,area:t.area})));
+  return {
+    group:"iStructural Group (Demo)", setup:{done:true},
+    offices, departments, tasks:liveTasks, people, assess,
+    followups:{}, meetings:{}, cycles:[],
+  };
+}
+
 export default function App(){
   const [page,setPage]=useState("home");
   const [aPhase,setAPhase]=useState("p1");
@@ -1461,6 +1707,20 @@ export default function App(){
             <line x1="14" y1="3" x2="14" y2="25" stroke={a} strokeWidth="0.7" opacity="0.7"/>
           </svg>
         );
+      case "grid": // CapacityGrid  matrix of capability cells, one filled
+        return (
+          <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1" fill={a} opacity="0.55"/>
+            <rect x="12" y="3" width="7" height="7" rx="1" fill={color}/>
+            <rect x="21" y="3" width="4" height="7" rx="1" fill={a} opacity="0.55"/>
+            <rect x="3" y="12" width="7" height="7" rx="1" fill={color}/>
+            <rect x="12" y="12" width="7" height="7" rx="1" fill={a} opacity="0.55"/>
+            <rect x="21" y="12" width="4" height="7" rx="1" fill={color}/>
+            <rect x="3" y="21" width="7" height="4" rx="1" fill={a} opacity="0.55"/>
+            <rect x="12" y="21" width="7" height="4" rx="1" fill={color}/>
+            <rect x="21" y="21" width="4" height="4" rx="1" fill={a} opacity="0.55"/>
+          </svg>
+        );
       default:
         return null;
     }
@@ -1751,6 +2011,75 @@ export default function App(){
         // which writes the selection into intake.want. Asking again would be
         // a duplicate question at the form stage.
       ],
+    },
+    {
+      id:"capgrid",
+      name:"CapacityGrid",
+      tagline:"See what your workforce can really do",
+      category:"Business & Strategy",
+      shortDesc:"A workforce capability intelligence platform. Map every office, department and service. Place each person under a title and job description. Assess their real task-level capability, then generate capability cards that show any decision maker exactly what skills and experience the organisation holds.",
+      iconColor:P.s2,
+      iconLetter:"C",
+      icon:"grid",
+      requiresKey:true,
+      requiresEntitlement:"capgrid",
+      customModal:"capgrid",
+      plan:{tier:"Firm",priceHint:"Firm plan",status:"coming"}, // dormant: commercialization, shown faded
+      scope:{
+        upload:[
+          "Your office and department structure (you enter it directly, no file needed)",
+          "The list of people, each with a title and job description",
+          "The tasks each role performs, grouped by category",
+          "Existing assessment sheets, if you already use them (optional reference)",
+        ],
+        included:[
+          "Org tree: group, company, offices, locations, departments, sectors and services",
+          "Task library by category, with a configurable scoring scale",
+          "Per-person self-assessment on Experience, Frequency and Challenge",
+          "Auto-generated capability cards per employee",
+          "Key-task fetch by employee and by position",
+        ],
+        excluded:[
+          "No HR, payroll or personal-record functions",
+          "No performance scoring of people against each other",
+          "Per-office and integrated dashboards arrive in a later phase",
+          "Data stays in this browser until a cloud store is connected",
+        ],
+        expect:[
+          "A working capability platform inside this site",
+          "Your data saved privately in this browser, never shared",
+          "Phases B4 to B6 (dashboards, priorities, follow-up) added after review",
+        ],
+      },
+      capabilities:[
+        "Multi-office, multi-location, multi-department org modelling",
+        "People placed under titles and job descriptions",
+        "Task library grouped by category (General, Grading, Drainage, Utilities, Production, QA/QC, or your own)",
+        "Assessment on Experience (0 to 5), Frequency (0 to 5), Challenge (1 to 5)",
+        "Capability cards generated from live assessment data",
+        "Key persons and higher-authority approvers flagged per position",
+      ],
+      phases:[
+        {n:1, name:"Foundation", get:"Org tree, task library, scoring scale"},
+        {n:2, name:"People and Assessment", get:"Resources, titles, job descriptions, task scores"},
+        {n:3, name:"Capability Cards", get:"Per-employee cards, key tasks by person and position"},
+        {n:4, name:"Office Dashboard", get:"Coverage, gaps and strengths per office"},
+        {n:5, name:"Integrated Workforce", get:"All-offices roll-up and comparison"},
+        {n:6, name:"Priorities and Follow-up", get:"Ranked priorities, one-to-one meetings, knowledge sharing"},
+      ],
+      preRun:{
+        have:[
+          {id:"orgknown", label:"I know my office and department structure"},
+          {id:"people", label:"I have the list of people and their titles"},
+          {id:"tasks", label:"I know the tasks each role performs"},
+          {id:"sheets", label:"I already use assessment sheets"},
+        ],
+        want:[
+          {id:"foundation", label:"Build the org tree and task library", locked:true},
+          {id:"assess", label:"Capture people and assessments"},
+          {id:"cards", label:"Generate capability cards"},
+        ],
+      },
     },
     {
       id:"learn",
@@ -2310,6 +2639,7 @@ export default function App(){
 
       {/* ═══ APP DETAIL MODAL ═══ */}
       {activeApp && activeApp.customModal==="learn" && <LearnModal app={activeApp} modules={learnModules} courses={learnCourses} onClose={()=>setActiveApp(null)} />}
+      {activeApp && activeApp.customModal==="capgrid" && <CapacityGridModal app={activeApp} ownerMode={ownerMode} onClose={()=>setActiveApp(null)} />}
       {activeApp && !activeApp.customModal && <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />}
     </div>
   );
@@ -2379,6 +2709,1809 @@ export default function App(){
   //  Learner  browses published modules and courses, studies, sees progress + time analytics.
   //  Author (owner)  reaches the Course Builder behind an owner passphrase, creates modules
   //  and courses, uploads source material, embeds design requirements, publishes.
+  // ===========================================================================
+  // CapacityGrid  workforce capability intelligence platform (B1 to B3).
+  // B1 Foundation: org tree (offices, departments, sectors, services) + task
+  //    library by category + scoring scale.
+  // B2 People and Assessment: resources under titles and job descriptions, each
+  //    task scored on Experience, Frequency, Challenge; key-person / approver flags.
+  // B3 Capability Cards: per-employee card generated from live scores, plus
+  //    key-task fetch by person and by position.
+  // All data is one JSON graph saved in this browser via cgLoadState/cgSaveState.
+  // Phases B4 to B6 (dashboards, priorities, follow-up) come after review.
+  const CapacityGridModal = ({app, ownerMode, onClose}) => {
+    const cgId = ()=> Math.random().toString(36).slice(2,9);
+    const blankState = ()=>({
+      group:"",
+      setup:null,          // {done:true} once the setup wizard has run
+      offices:[],          // {id,name,location}
+      departments:[],      // {id,officeId,name,sectors:[],services:[],
+                           //  phase:"proposal"|"phase1"|"phase2",
+                           //  proposal:{positions:[{text,approved}],services:[...],tasks:[{id,category,detail,approved}]}}
+      tasks:[],            // {id,category,detail,level,area}  live task library
+      people:[],           // {id,officeId,deptId,name,title,jobDesc,isKey,isApprover,empNo,level}
+      assess:{},           // {personId:{taskId:{exp,freq,chal}}}
+      followups:{},        // {personId:{mentorId, confirmed:bool}}  B6a
+      meetings:{},         // {personId:[{id,date,targets,notes,nextDate}]}  B6b
+      cycles:[],           // [{id,date,label,snapshot:{personId:coverage}}]  B6c
+    });
+    const [state, setState] = useState(null);   // null while loading
+    const [busy, setBusy] = useState(true);
+    const [msg, setMsg] = useState("");
+    const [tab, setTab] = useState("workflow"); // workflow | foundation | people | cards
+    const [activePerson, setActivePerson] = useState(null); // personId for assessment / card
+    const [activeDept, setActiveDept] = useState(null);      // deptId being worked in the workflow
+    const TASK_CATS = ["General","Grading","Drainage","Utilities","Production","QA/QC"];
+
+    // Load saved state once when the modal opens.
+    useEffect(()=>{
+      let cancelled = false;
+      cgLoadState()
+        // merge over a blank state so fields added in later builds (followups,
+        // meetings, cycles) always exist even on an older saved state
+        .then(data=>{ if(!cancelled){ setState(data?{...blankState(),...data}:blankState()); setBusy(false); } })
+        .catch(err=>{ if(!cancelled){ setState(blankState()); setMsg(err.message||"Could not load saved data."); setBusy(false); } });
+      return ()=>{ cancelled = true; };
+    }, []);
+
+    // Persist on every state change (after the initial load).
+    useEffect(()=>{
+      if (!state) return;
+      cgSaveState(state).catch(err=> setMsg(err.message||"Could not save."));
+    }, [state]);
+
+    // ---- mutation helpers ----
+    const patch = (fn)=> setState(s=>{ const next={...s}; fn(next); return next; });
+    const addOffice = (name,location)=> patch(s=>{ s.offices=[...s.offices,{id:cgId(),name,location}]; });
+    const delOffice = (id)=> patch(s=>{
+      s.offices=s.offices.filter(o=>o.id!==id);
+      const deptIds=s.departments.filter(d=>d.officeId===id).map(d=>d.id);
+      s.departments=s.departments.filter(d=>d.officeId!==id);
+      s.people=s.people.filter(p=>p.officeId!==id);
+      s.assess={...s.assess}; // people removed; assessments orphan-cleaned below
+    });
+    const addDept = (officeId,name)=> patch(s=>{ s.departments=[...s.departments,{id:cgId(),officeId,name,sectors:[],services:[]}]; });
+    const delDept = (id)=> patch(s=>{
+      s.departments=s.departments.filter(d=>d.id!==id);
+      s.people=s.people.filter(p=>p.deptId!==id);
+    });
+    const addToDept = (deptId,field,value)=> patch(s=>{
+      s.departments=s.departments.map(d=> d.id===deptId ? {...d,[field]:[...d[field],value]} : d);
+    });
+    const removeFromDept = (deptId,field,value)=> patch(s=>{
+      s.departments=s.departments.map(d=> d.id===deptId ? {...d,[field]:d[field].filter(x=>x!==value)} : d);
+    });
+    const addTask = (category,detail)=> patch(s=>{ s.tasks=[...s.tasks,{id:cgId(),category,detail}]; });
+    const delTask = (id)=> patch(s=>{
+      s.tasks=s.tasks.filter(t=>t.id!==id);
+      const a={...s.assess}; Object.keys(a).forEach(pid=>{ const m={...a[pid]}; delete m[id]; a[pid]=m; }); s.assess=a;
+    });
+    const addPerson = (rec)=> patch(s=>{ s.people=[...s.people,{id:cgId(),...rec}]; });
+    const updPerson = (id,rec)=> patch(s=>{ s.people=s.people.map(p=>p.id===id?{...p,...rec}:p); });
+    const delPerson = (id)=> patch(s=>{
+      s.people=s.people.filter(p=>p.id!==id);
+      const a={...s.assess}; delete a[id]; s.assess=a;
+    });
+    const setScore = (personId,taskId,field,value)=> patch(s=>{
+      const a={...s.assess}; const m={...(a[personId]||{})}; const c={...(m[taskId]||{exp:0,freq:0,chal:0})};
+      c[field]=value; m[taskId]=c; a[personId]=m; s.assess=a;
+    });
+
+    // ---- workflow helpers ----
+    // Run the setup wizard: create the named offices only. Departments are NOT
+    // created here, and there is no global employee count. The author picks a
+    // department per office afterwards and sets that department's own team size.
+    const runSetup = (officeNames)=> patch(s=>{
+      s.setup={done:true};
+      s.offices=officeNames.map(n=>({id:cgId(),name:n.name,location:n.location}));
+      s.departments=[];
+    });
+    // The author picks one consultancy department for an office and sets its own
+    // employee count. The app then fetches that department's proposed positions,
+    // services and tasks (tasks carry the expected level).
+    const pickDepartment = (officeId,deptName,empCount)=> patch(s=>{
+      if (s.departments.some(d=>d.officeId===officeId && d.name===deptName)) return; // one of each per office
+      const lib=CG_DEPT_LIBRARY[deptName]; if(!lib) return;
+      s.departments=[...s.departments,{
+        id:cgId(), officeId, name:deptName, sectors:[], services:[],
+        empCount:Math.max(1,parseInt(empCount,10)||1),
+        active:true, phase:"proposal",
+        proposal:{
+          positions:lib.positions.map(t=>({text:t,approved:null})),
+          services:lib.services.map(t=>({text:t,approved:null})),
+          tasks:lib.tasks.map(t=>({id:cgId(),category:t.category,detail:t.detail,level:t.level||"Engineer",area:t.area||"General",approved:null})),
+        },
+      }];
+    });
+    const setDeptEmpCount = (deptId,n)=> patch(s=>{
+      s.departments=s.departments.map(d=> d.id===deptId?{...d,empCount:Math.max(1,parseInt(n,10)||1)}:d);
+    });
+    const removeDepartment = (deptId)=> patch(s=>{
+      s.departments=s.departments.filter(d=>d.id!==deptId);
+      s.people=s.people.filter(p=>p.deptId!==deptId);
+    });
+    const resetWorkflow = ()=> patch(s=>{
+      s.setup=null; s.offices=[]; s.departments=[]; s.people=[]; s.assess={};
+    });
+    // approve/reject a proposal item: kind = positions|services|tasks
+    const judgeItem = (deptId,kind,idx,val)=> patch(s=>{
+      s.departments=s.departments.map(d=>{
+        if(d.id!==deptId) return d;
+        const list=d.proposal[kind].map((it,i)=> i===idx?{...it,approved:val}:it);
+        return {...d,proposal:{...d.proposal,[kind]:list}};
+      });
+    });
+    const judgeAll = (deptId,kind,val)=> patch(s=>{
+      s.departments=s.departments.map(d=>{
+        if(d.id!==deptId) return d;
+        const list=d.proposal[kind].map(it=>({...it,approved:val}));
+        return {...d,proposal:{...d.proposal,[kind]:list}};
+      });
+    });
+    const addProposalItem = (deptId,kind,value)=> patch(s=>{
+      s.departments=s.departments.map(d=>{
+        if(d.id!==deptId) return d;
+        const item = kind==="tasks"
+          ? {id:cgId(),category:value.category,detail:value.detail,level:value.level||"Engineer",area:value.area||"General",approved:true}
+          : {text:value,approved:true};
+        return {...d,proposal:{...d.proposal,[kind]:[...d.proposal[kind],item]}};
+      });
+    });
+    const removeProposalItem = (deptId,kind,idx)=> patch(s=>{
+      s.departments=s.departments.map(d=>{
+        if(d.id!==deptId) return d;
+        const list=d.proposal[kind].filter((_,i)=>i!==idx);
+        return {...d,proposal:{...d.proposal,[kind]:list}};
+      });
+    });
+    // Lock the approved set: copy approved tasks into the live task library,
+    // move the department to phase1.
+    const lockDept = (deptId)=> patch(s=>{
+      const d=s.departments.find(x=>x.id===deptId); if(!d) return;
+      const approvedTasks=d.proposal.tasks.filter(t=>t.approved===true);
+      // ensure each approved task exists in the live library
+      const newTasks=[...s.tasks];
+      approvedTasks.forEach(t=>{ if(!newTasks.some(x=>x.id===t.id)) newTasks.push({id:t.id,category:t.category,detail:t.detail,level:t.level||"Engineer",area:t.area||"General"}); });
+      s.tasks=newTasks;
+      s.departments=s.departments.map(x=> x.id===deptId?{...x,phase:"phase1"}:x);
+    });
+    const setDeptPhase = (deptId,phase)=> patch(s=>{
+      s.departments=s.departments.map(d=> d.id===deptId?{...d,phase}:d);
+    });
+
+    // ---- Step A: a locked task set stays editable, back and forth ----
+    // Reopen a locked department's proposal so the Yes/No review can be redone.
+    // The live tasks already in the library are kept; the phase returns to
+    // "proposal" so the author can add, remove and re-approve.
+    const reopenProposal = (deptId)=> patch(s=>{
+      s.departments=s.departments.map(d=> d.id===deptId?{...d,phase:"proposal"}:d);
+    });
+    // Add a task to an already-locked department. It goes into both the live
+    // library and the department proposal, flagged addedAfterLock so the UI can
+    // show it as new. Engineers who already returned simply have no score for
+    // it: that is read as "not yet assessed", never as a zero.
+    const addTaskToLockedDept = (deptId,value)=> patch(s=>{
+      const tid=cgId();
+      s.tasks=[...s.tasks,{id:tid,category:value.category,detail:value.detail,level:value.level||"Engineer",area:value.area||"General"}];
+      s.departments=s.departments.map(d=>{
+        if(d.id!==deptId) return d;
+        const item={id:tid,category:value.category,detail:value.detail,level:value.level||"Engineer",area:value.area||"General",approved:true,addedAfterLock:true};
+        return {...d,proposal:{...d.proposal,tasks:[...d.proposal.tasks,item]}};
+      });
+    });
+    // Remove a task from a department after lock: drop it from the live library,
+    // the department proposal, and every person's assessment map.
+    const removeTaskFromDept = (deptId,taskId)=> patch(s=>{
+      s.tasks=s.tasks.filter(t=>t.id!==taskId);
+      s.departments=s.departments.map(d=> d.id!==deptId?d:{...d,proposal:{...d.proposal,tasks:d.proposal.tasks.filter(t=>t.id!==taskId)}});
+      const a={...s.assess}; Object.keys(a).forEach(pid=>{ if(a[pid] && taskId in a[pid]){ const m={...a[pid]}; delete m[taskId]; a[pid]=m; } }); s.assess=a;
+    });
+
+    // ---- B6a: support cards and follow-up persons ----
+    // Assign (or reassign) the follow-up person for an employee. confirmed=true
+    // means the author has approved the pairing, not just accepted a suggestion.
+    const assignFollowup = (personId,mentorId,confirmed=true)=> patch(s=>{
+      s.followups={...s.followups,[personId]:{mentorId,confirmed}};
+    });
+    const clearFollowup = (personId)=> patch(s=>{
+      const f={...s.followups}; delete f[personId]; s.followups=f;
+    });
+    // ---- B6b: one-to-one meeting log ----
+    const addMeeting = (personId,rec)=> patch(s=>{
+      const list=[...(s.meetings[personId]||[]),{id:cgId(),...rec}];
+      list.sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+      s.meetings={...s.meetings,[personId]:list};
+    });
+    const delMeeting = (personId,mId)=> patch(s=>{
+      s.meetings={...s.meetings,[personId]:(s.meetings[personId]||[]).filter(m=>m.id!==mId)};
+    });
+    // ---- B6c: dated capability cycle snapshot ----
+    // Capture coverage for every assessed person now, stamped with a date and
+    // label, so movement cycle over cycle becomes visible.
+    const captureCycle = (label)=> patch(s=>{
+      const snap={};
+      s.people.forEach(p=>{
+        const scores=s.assess[p.id]||{};
+        const myRank=Math.max(0,CG_LEVELS.indexOf(p.level||"Engineer"));
+        const exp=s.tasks.filter(t=>Math.max(0,CG_LEVELS.indexOf(t.level||"Engineer"))<=myRank && (t.id in scores));
+        const cov=exp.length? Math.round((exp.filter(t=>scores[t.id].exp>=3).length/exp.length)*100):0;
+        snap[p.id]=cov;
+      });
+      const today=new Date().toISOString().slice(0,10);
+      s.cycles=[...s.cycles,{id:cgId(),date:today,label:label||`Cycle ${s.cycles.length+1}`,snapshot:snap}];
+    });
+    const delCycle = (cId)=> patch(s=>{ s.cycles=s.cycles.filter(c=>c.id!==cId); });
+
+    // ---- CSV: export a per-department blank assessment sheet ----
+    const csvEscape = (v)=>{ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+    // Build and download an assessment sheet for a given task list. Used for the
+    // full sheet and for a top-up sheet (only the not-yet-assessed tasks).
+    const downloadSheet = (dept,tasks,suffix)=>{
+      const office=state.offices.find(o=>o.id===dept.officeId);
+      const lines=[];
+      lines.push([suffix?"CapacityGrid Top-up Sheet":"CapacityGrid Assessment Sheet"]);
+      lines.push(["Office",office?office.name:"","Department",dept.name]);
+      lines.push(["Employee Full Name","","Employee Number",""]);
+      lines.push(["Position","","Level (Technician/Graduate/Engineer/Senior)",""]);
+      lines.push([]);
+      lines.push(["TaskID","Stage","Capability Area","Task","Expected Level","Experience (0-5)","Frequency (0-5)","Challenge (1-5)"]);
+      tasks.forEach(t=> lines.push([t.id,t.category,t.area||"General",t.detail,t.level||"Engineer","","",""]));
+      const csv=lines.map(row=>row.map(csvEscape).join(",")).join("\r\n");
+      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=`CapacityGrid_${(office?office.name:"Office").replace(/\W+/g,"_")}_${dept.name}_${suffix||"AssessmentSheet"}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    };
+    const exportDeptSheet = (dept)=>{
+      downloadSheet(dept, dept.proposal.tasks.filter(t=>t.approved===true), "");
+    };
+    // Top-up sheet for one person: only the department tasks they have not yet
+    // assessed (no key in their assessment map). Hands a short sheet to an
+    // engineer when tasks were added after their first return.
+    const exportTopUpSheet = (dept,person)=>{
+      const sc=state.assess[person.id]||{};
+      const approved=dept.proposal.tasks.filter(t=>t.approved===true);
+      const missing=approved.filter(t=>!(t.id in sc));
+      if(missing.length===0){ setMsg(`${person.name} has already assessed every task.`); return; }
+      downloadSheet(dept, missing, `TopUp_${person.name.replace(/\W+/g,"_")}`);
+    };
+    // ---- CSV: parse a filled sheet back ----
+    const parseCsv = (text)=>{
+      const rows=[]; let row=[],cur="",q=false;
+      for(let i=0;i<text.length;i++){
+        const c=text[i];
+        if(q){
+          if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; }
+          else cur+=c;
+        } else {
+          if(c==='"') q=true;
+          else if(c===','){ row.push(cur); cur=""; }
+          else if(c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=""; }
+          else if(c==='\r'){ /* skip */ }
+          else cur+=c;
+        }
+      }
+      if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+      return rows;
+    };
+    // Import a filled CSV into a department: creates the person and their scores.
+    const importFilledSheet = (dept, text)=>{
+      const rows=parseCsv(text);
+      const find=(label)=>{ const r=rows.find(x=>x[0] && x[0].trim().toLowerCase()===label.toLowerCase()); return r?(r[1]||"").trim():""; };
+      const fullName=find("Employee Full Name");
+      const empNo=find("Employee Number") || (rows.find(x=>x[2] && x[2].trim().toLowerCase()==="employee number")||[])[3] || "";
+      const position=find("Position");
+      // Level sits in column 3 of the Position row (header label in column 2).
+      const lvlRow=rows.find(x=>x[0] && x[0].trim().toLowerCase()==="position");
+      let level=lvlRow?(lvlRow[3]||"").trim():"";
+      if(!CG_LEVELS.some(L=>L.toLowerCase()===level.toLowerCase())) level="Engineer";
+      else level=CG_LEVELS.find(L=>L.toLowerCase()===level.toLowerCase());
+      if(!fullName){ setMsg("This sheet has no Employee Full Name. Check the file."); return false; }
+      const hdrIdx=rows.findIndex(x=>x[0]==="TaskID");
+      if(hdrIdx<0){ setMsg("This sheet has no task table. Check the file."); return false; }
+      const scoreRows=rows.slice(hdrIdx+1).filter(x=>x[0] && x[0].trim());
+      const clamp=(v,min,max)=>{ const n=parseInt(v,10); return isNaN(n)?min:Math.max(min,Math.min(max,n)); };
+      const nm=fullName.trim(), en=String(empNo).trim();
+      // Match an existing person in this department by name, and employee
+      // number when both have one. A match means this is a top-up return: merge
+      // the new scores in. No match means a new person.
+      const existing=state.people.find(p=> p.deptId===dept.id
+        && p.name.trim().toLowerCase()===nm.toLowerCase()
+        && ((!en || !p.empNo) || String(p.empNo).trim()===en));
+      patch(s=>{
+        const incoming={};
+        scoreRows.forEach(r=>{
+          const tid=(r[0]||"").trim();
+          if(!tid) return;
+          // columns: TaskID, Stage, Capability Area, Task, Expected Level, Experience, Frequency, Challenge
+          incoming[tid]={exp:clamp(r[5],0,5),freq:clamp(r[6],0,5),chal:clamp(r[7],1,5)};
+        });
+        if(existing){
+          s.assess={...s.assess,[existing.id]:{...(s.assess[existing.id]||{}),...incoming}};
+          s.people=s.people.map(p=> p.id===existing.id ? {...p,empNo:p.empNo||en,level:p.level||level,title:p.title||position.trim()} : p);
+        } else {
+          const pid=cgId();
+          s.people=[...s.people,{id:pid,officeId:dept.officeId,deptId:dept.id,name:nm,
+            title:position.trim()||"Not stated",level,jobDesc:"",empNo:en,isKey:false,isApprover:false}];
+          s.assess={...s.assess,[pid]:incoming};
+        }
+      });
+      setMsg(existing ? `Top-up merged for ${nm} in ${dept.name}.` : `Imported ${nm} into ${dept.name}.`);
+      return true;
+    };
+
+    // ---- derived helpers ----
+    const officeName=(id)=>{ const o=(state?state.offices:[]).find(x=>x.id===id); return o?o.name:"—"; };
+    const deptName=(id)=>{ const d=(state?state.departments:[]).find(x=>x.id===id); return d?d.name:"—"; };
+    const personCard = (p)=>{
+      const scores = (state.assess[p.id])||{};
+      // assessed flag: a task with no key in the person's map was added after
+      // their return. It is "not yet assessed", never a zero.
+      const rows = state.tasks.map(t=>({ t, assessed:(t.id in scores), s:scores[t.id]||{exp:0,freq:0,chal:0} }));
+      const done = rows.filter(r=>r.assessed);
+      const pending = rows.filter(r=>!r.assessed);
+      const capable = done.filter(r=>r.s.exp>=1);
+      const strong  = done.filter(r=>r.s.exp>=4);
+      const gaps    = done.filter(r=>r.s.exp===0 && r.s.freq>=1); // expected to do, not yet capable
+      const keyTasks = [...done].filter(r=>r.s.freq>=3).sort((a,b)=>(b.s.freq-a.s.freq)||(b.s.exp-a.s.exp)).slice(0,8);
+      const avgExp = done.length? (done.reduce((x,r)=>x+r.s.exp,0)/done.length):0;
+      return { rows, done, pending, capable, strong, gaps, keyTasks, avgExp };
+    };
+    // Gap and target-list report for one engineer. A task is "expected" when its
+    // tagged level is at or below the engineer's own level. A gap is an expected
+    // task where the engineer's experience is below the target threshold (3).
+    // Each gap is paired with the strongest peer in the same department who can
+    // mentor it. This is the junior-learns-from-senior output.
+    const lvlRank = (L)=> Math.max(0, CG_LEVELS.indexOf(L));
+    const gapReport = (p, target=3)=>{
+      const scores=(state.assess[p.id])||{};
+      const myRank=lvlRank(p.level||"Engineer");
+      const peers=state.people.filter(x=>x.deptId===p.deptId && x.id!==p.id);
+      const rows=state.tasks.map(t=>{
+        const lvl=t.level||"Engineer";
+        const expected = lvlRank(lvl)<=myRank;
+        const assessed = (t.id in scores);
+        const mine=(scores[t.id]||{exp:0,freq:0,chal:0}).exp;
+        return { t, lvl, expected, assessed, mine };
+      });
+      // expected AND assessed tasks count toward coverage and gaps. Expected but
+      // not-yet-assessed tasks are pending (added after this person's return).
+      const expectedRows=rows.filter(r=>r.expected && r.assessed);
+      const pending=rows.filter(r=>r.expected && !r.assessed);
+      const gaps=expectedRows.filter(r=>r.mine<target).map(r=>{
+        // best mentor: highest experience peer on this task
+        let mentor=null,best=r.mine;
+        peers.forEach(pe=>{
+          const sc=state.assess[pe.id]||{};
+          if(!(r.t.id in sc)) return;
+          const e=(sc[r.t.id]||{exp:0}).exp;
+          if(e>best){ best=e; mentor={name:pe.name,level:pe.level||"Engineer",exp:e}; }
+        });
+        return { ...r, mentor };
+      });
+      const coverage = expectedRows.length? Math.round((expectedRows.filter(r=>r.mine>=target).length/expectedRows.length)*100):0;
+      return { rows, expectedRows, gaps, pending, coverage, target };
+    };
+    // Suggested follow-up person for an employee: the department peer who is the
+    // strongest mentor across the most of that employee's gap tasks. This is the
+    // automatic pairing the support card proposes; the author can reassign it.
+    const suggestedMentor = (p)=>{
+      const g=gapReport(p,3);
+      if(g.gaps.length===0) return null;
+      const tally={};
+      g.gaps.forEach(r=>{
+        if(r.mentor){
+          const peer=state.people.find(x=>x.deptId===p.deptId && x.name===r.mentor.name);
+          if(peer){ tally[peer.id]=(tally[peer.id]||0)+1; }
+        }
+      });
+      let bestId=null,bestN=0;
+      Object.keys(tally).forEach(id=>{ if(tally[id]>bestN){ bestN=tally[id]; bestId=id; } });
+      if(!bestId) return null;
+      const peer=state.people.find(x=>x.id===bestId);
+      return peer? {id:peer.id,name:peer.name,level:peer.level||"Engineer",covers:bestN,ofGaps:g.gaps.length} : null;
+    };
+
+    // Office forte engine. For one office, for each capability area, score the
+    // office on the tasks tagged to that area: depth is the mean experience of
+    // every person on every area task, activity is the mean frequency. The area
+    // strength is the blend (depth weighted higher: it is real capability that
+    // matters, not just how often a task recurs). The forte is the top-ranked
+    // non-General area. This is what makes one office read as Towers and
+    // another as Bridges, from the engineers' own scores, not from a label.
+    const officeForte = (officeId)=>{
+      const ppl=state.people.filter(p=>p.officeId===officeId);
+      const areas={};
+      CG_STRUCT_AREAS.forEach(a=>{ areas[a]={area:a,depth:0,activity:0,strength:0,taskCount:0,topPerson:null}; });
+      CG_STRUCT_AREAS.forEach(a=>{
+        const areaTasks=state.tasks.filter(t=>(t.area||"General")===a);
+        if(areaTasks.length===0 || ppl.length===0) return;
+        let expSum=0,freqSum=0,n=0;
+        let bestPerson=null,bestAvg=-1;
+        ppl.forEach(p=>{
+          const sc=state.assess[p.id]||{};
+          let pExp=0,pn=0;
+          // only assessed area tasks count; a not-yet-assessed task is skipped
+          areaTasks.forEach(t=>{ if(!(t.id in sc)) return; const c=sc[t.id]; expSum+=c.exp; freqSum+=c.freq; n++; pExp+=c.exp; pn++; });
+          const pAvg=pn?pExp/pn:0;
+          if(pn>0 && pAvg>bestAvg){ bestAvg=pAvg; bestPerson={name:p.name,level:p.level||"Engineer",avg:pAvg}; }
+        });
+        const depth=n?expSum/n:0;          // mean experience, 0 to 5
+        const activity=n?freqSum/n:0;      // mean frequency, 0 to 5
+        const strength=Math.round(((depth*0.7+activity*0.3)/5)*100); // 0 to 100
+        areas[a]={area:a,depth,activity,strength,taskCount:areaTasks.length,topPerson:bestPerson};
+      });
+      // ranking excludes General (it is the lifecycle baseline, not a specialism)
+      const ranked=CG_STRUCT_AREAS.filter(a=>a!=="General")
+        .map(a=>areas[a]).filter(x=>x.taskCount>0)
+        .sort((x,y)=>y.strength-x.strength);
+      const forte=ranked[0]||null;
+      const weakest=ranked.length?ranked[ranked.length-1]:null;
+      return { areas, ranked, forte, weakest, headcount:ppl.length };
+    };
+
+    if (busy || !state) {
+      return (
+        <div role="dialog" aria-modal="true" aria-label="CapacityGrid"
+             style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{color:P.tealL,fontSize:T.body}}>Loading CapacityGrid&hellip;</div>
+        </div>
+      );
+    }
+
+    return (
+      <div role="dialog" aria-modal="true" aria-label="CapacityGrid"
+           onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
+           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"24px 12px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:980,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
+
+          {/* Header */}
+          <div style={{padding:"16px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:46,height:46,borderRadius:11,background:`linear-gradient(135deg, ${P.s2} 0%, ${P.s2}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <AppIcon id="grid" size={26} color={P.white} accent={P.tealL}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>CapacityGrid</div>
+              <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>{app.tagline}</div>
+            </div>
+            {ownerMode && <span style={{marginRight:6,fontSize:T.micro,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>}
+            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>&times;</button>
+          </div>
+
+          {/* Phase tabs */}
+          <div style={{display:"flex",gap:2,padding:"10px 16px 0",background:P.sand,borderBottom:`1px solid ${P.charcoal}12`,flexWrap:"wrap"}}>
+            {[{k:"workflow",n:"Setup & Workflow"},{k:"foundation",n:"B1 Foundation"},{k:"people",n:"B2 People & Assessment"},{k:"cards",n:"B3 Capability Cards"},{k:"office",n:"B4 Office Dashboard"},{k:"workforce",n:"B5 Workforce"},{k:"develop",n:"B6 Develop & Track"},{k:"exec",n:"Executive"}].map(t=>(
+              <div key={t.k} onClick={()=>{setTab(t.k);setActivePerson(null);setActiveDept(null);}} {...kbd(()=>{setTab(t.k);setActivePerson(null);setActiveDept(null);})}
+                   aria-pressed={tab===t.k}
+                   style={{padding:"9px 14px",fontSize:T.small,fontWeight:800,cursor:"pointer",borderRadius:"8px 8px 0 0",
+                           background:tab===t.k?P.white:"transparent",color:tab===t.k?P.s2:P.slate,
+                           border:tab===t.k?`1px solid ${P.charcoal}12`:"1px solid transparent",borderBottom:"none"}}>{t.n}</div>
+            ))}
+          </div>
+
+          <div style={{padding:"18px 22px 26px"}}>
+            {msg && <div style={{marginBottom:12,padding:"7px 11px",borderRadius:7,background:P.s1L,border:`1px solid ${P.s1}30`,fontSize:T.small,color:P.s1}}>{msg}</div>}
+
+            {tab==="workflow" && <CapGridWorkflow state={state} setGroup={(v)=>patch(s=>{s.group=v;})}
+              runSetup={runSetup} resetWorkflow={resetWorkflow} pickDepartment={pickDepartment} removeDepartment={removeDepartment}
+              setDeptEmpCount={setDeptEmpCount} judgeItem={judgeItem} judgeAll={judgeAll} addProposalItem={addProposalItem} removeProposalItem={removeProposalItem}
+              lockDept={lockDept} setDeptPhase={setDeptPhase} exportDeptSheet={exportDeptSheet} importFilledSheet={importFilledSheet}
+              reopenProposal={reopenProposal} addTaskToLockedDept={addTaskToLockedDept} removeTaskFromDept={removeTaskFromDept} exportTopUpSheet={exportTopUpSheet}
+              gapReport={gapReport} activeDept={activeDept} setActiveDept={setActiveDept} officeName={officeName} setMsg={setMsg} />}
+
+            {tab==="foundation" && <CapGridFoundation state={state} TASK_CATS={TASK_CATS}
+              setGroup={(v)=>patch(s=>{s.group=v;})} addOffice={addOffice} delOffice={delOffice}
+              addDept={addDept} delDept={delDept} addToDept={addToDept} removeFromDept={removeFromDept}
+              addTask={addTask} delTask={delTask} />}
+
+            {tab==="people" && <CapGridPeople state={state} addPerson={addPerson} updPerson={updPerson}
+              delPerson={delPerson} setScore={setScore} activePerson={activePerson} setActivePerson={setActivePerson}
+              officeName={officeName} deptName={deptName} />}
+
+            {tab==="cards" && <CapGridCards state={state} personCard={personCard}
+              officeName={officeName} deptName={deptName}
+              activePerson={activePerson} setActivePerson={setActivePerson} ownerMode={ownerMode} />}
+
+            {tab==="office" && <CapGridOfficeDash state={state} officeForte={officeForte} ownerMode={ownerMode} />}
+
+            {tab==="workforce" && <CapGridWorkforce state={state} officeForte={officeForte} ownerMode={ownerMode} />}
+
+            {tab==="develop" && <CapGridDevelop state={state} gapReport={gapReport} suggestedMentor={suggestedMentor}
+              assignFollowup={assignFollowup} clearFollowup={clearFollowup} addMeeting={addMeeting} delMeeting={delMeeting}
+              captureCycle={captureCycle} delCycle={delCycle} officeName={officeName} deptName={deptName}
+              activePerson={activePerson} setActivePerson={setActivePerson} setMsg={setMsg} />}
+
+            {tab==="exec" && <CapGridExec state={state} gapReport={gapReport} officeForte={officeForte} />}
+          </div>
+
+          <div style={{padding:"10px 22px",background:P.sand,borderTop:`1px solid ${P.charcoal}12`,fontSize:T.micro,color:P.slate,lineHeight:1.5}}>
+            CapacityGrid. Setup & Workflow builds the assessment; B4 and B5 show each office's forte and the group matrix; B6 runs the develop-and-track loop with support cards, follow-up persons and one-to-one meetings; the Executive view is the owner's living dashboard. Your data is saved privately in this browser only and is never shared.
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Setup & Workflow panel: the interactive approval-gated flow ------------
+  // Setup wizard -> department proposal (Yes/No approval) -> lock & issue sheets
+  // -> Phase 1 awaiting filled returns -> Phase 2 analysis.
+  const CapGridWorkflow = ({state,setGroup,runSetup,resetWorkflow,pickDepartment,removeDepartment,setDeptEmpCount,
+      judgeItem,judgeAll,addProposalItem,removeProposalItem,lockDept,setDeptPhase,exportDeptSheet,importFilledSheet,
+      reopenProposal,addTaskToLockedDept,removeTaskFromDept,exportTopUpSheet,
+      gapReport,activeDept,setActiveDept,officeName,setMsg}) => {
+    const lbl={fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",display:"block",marginBottom:3};
+    const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+    const btn={padding:"8px 15px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+
+    // ---------- SETUP WIZARD (no setup yet) ----------
+    const [offCount,setOffCount]=useState(1);
+    const [offForm,setOffForm]=useState([{name:"",location:""}]);
+    const syncOffForm=(n)=>{
+      const arr=[];
+      for(let i=0;i<n;i++) arr.push(offForm[i]||{name:"",location:""});
+      setOffForm(arr);
+    };
+    if (!state.setup) {
+      return (
+        <div>
+          <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+            <div style={sectionTitle}>Start CapacityGrid setup</div>
+            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+              Set how many offices you are mapping and name each. After setup you pick the departments office by office
+              from the consultancy list (Architectural, Structural, Mechanical, Electrical, Civil) and set each
+              department's own team size. CapacityGrid then fetches that department's tasks for you to approve.
+            </div>
+          </div>
+          <div style={card}>
+            <label style={lbl}>Group or parent company name</label>
+            <input style={{...inp,marginBottom:10}} value={state.group} onChange={e=>setGroup(e.target.value)} placeholder="e.g. your parent group name" />
+            <div style={{flex:"1 1 140px",marginBottom:10,maxWidth:200}}>
+              <label style={lbl}>Number of offices</label>
+              <input type="number" min="1" max="20" style={inp} value={offCount}
+                onChange={e=>{ const n=Math.max(1,Math.min(20,parseInt(e.target.value,10)||1)); setOffCount(n); syncOffForm(n); }} />
+            </div>
+            <label style={lbl}>Name each office</label>
+            {Array.from({length:offCount}).map((_,i)=>(
+              <div key={i} style={{display:"flex",gap:6,marginBottom:6}}>
+                <input style={{...inp,flex:1}} value={(offForm[i]||{}).name||""} placeholder={`Office ${i+1} name`}
+                  onChange={e=>{ const a=[...offForm]; a[i]={...(a[i]||{location:""}),name:e.target.value}; setOffForm(a); }} />
+                <input style={{...inp,flex:1}} value={(offForm[i]||{}).location||""} placeholder="Location (city, country)"
+                  onChange={e=>{ const a=[...offForm]; a[i]={...(a[i]||{name:""}),location:e.target.value}; setOffForm(a); }} />
+              </div>
+            ))}
+            <button style={{...btn,marginTop:6}} onClick={()=>{
+              const names=offForm.slice(0,offCount).map((o,i)=>({name:(o.name||"").trim()||`Office ${i+1}`,location:(o.location||"").trim()}));
+              runSetup(names);
+              setMsg("Offices created. Pick a department for each office below.");
+            }}>Create offices</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ---------- PER-DEPARTMENT DRILL-DOWN ----------
+    if (activeDept) {
+      const d=state.departments.find(x=>x.id===activeDept);
+      if(!d){ setActiveDept(null); return null; }
+      const back=<div onClick={()=>setActiveDept(null)} {...kbd(()=>setActiveDept(null))}
+        style={{fontSize:T.small,fontWeight:800,color:P.s2,cursor:"pointer",marginBottom:10}}>&larr; Back to offices</div>;
+      const deptPeople=state.people.filter(p=>p.deptId===d.id);
+
+      // --- proposal phase: Yes/No approval ---
+      if (d.phase==="proposal") {
+        const tA=d.proposal.tasks.filter(t=>t.approved===true).length;
+        const decided=d.proposal.tasks.every(t=>t.approved!==null)
+          && d.proposal.positions.every(t=>t.approved!==null)
+          && d.proposal.services.every(t=>t.approved!==null);
+        const yn=(approved,onYes,onNo)=>(
+          <div style={{display:"flex",gap:4}}>
+            <span onClick={onYes} {...kbd(onYes)} aria-label="Yes" style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:6,
+              background:approved===true?P.s3:"transparent",color:approved===true?P.white:P.s3,border:`1px solid ${P.s3}`}}>Yes</span>
+            <span onClick={onNo} {...kbd(onNo)} aria-label="No" style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:6,
+              background:approved===false?P.coral:"transparent",color:approved===false?P.white:P.coral,border:`1px solid ${P.coral}`}}>No</span>
+          </div>
+        );
+        return (
+          <div>
+            {back}
+            <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+              <div style={sectionTitle}>{d.name} department &middot; {officeName(d.officeId)}</div>
+              <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                Review every proposed item. Approve with Yes or reject with No. Add or remove items as needed.
+                When the task set is right, lock it to issue the assessment sheets.
+              </div>
+            </div>
+            {["positions","services","tasks"].map(kind=>{
+              const items=d.proposal[kind];
+              return (
+                <div key={kind} style={card}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+                    <div style={{...sectionTitle,marginBottom:0,textTransform:"capitalize"}}>{kind}</div>
+                    <div style={{display:"flex",gap:5}}>
+                      <span onClick={()=>judgeAll(d.id,kind,true)} {...kbd(()=>judgeAll(d.id,kind,true))}
+                        style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.s3,padding:"3px 8px",borderRadius:6,border:`1px solid ${P.s3}55`}}>Approve all</span>
+                      <span onClick={()=>judgeAll(d.id,kind,false)} {...kbd(()=>judgeAll(d.id,kind,false))}
+                        style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.coral,padding:"3px 8px",borderRadius:6,border:`1px solid ${P.coral}55`}}>Reject all</span>
+                    </div>
+                  </div>
+                  {items.map((it,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"6px 9px",
+                      background:it.approved===false?P.coral+"0C":P.sand,borderRadius:7,marginBottom:4,
+                      opacity:it.approved===false?0.6:1}}>
+                      <span style={{flex:1,fontSize:T.small,color:P.charcoal,textDecoration:it.approved===false?"line-through":"none"}}>
+                        {kind==="tasks"
+                          ? <><span style={{color:P.s2,fontWeight:700}}>{it.category}</span> &middot; {it.detail}
+                              <span style={{marginLeft:6,fontSize:T.micro,fontWeight:800,padding:"1px 5px",borderRadius:4,background:P.charcoal+"10",color:P.slate,border:`1px solid ${P.charcoal}20`}}>{it.level||"Engineer"}</span></>
+                          : it.text}
+                      </span>
+                      {yn(it.approved,()=>judgeItem(d.id,kind,i,true),()=>judgeItem(d.id,kind,i,false))}
+                      <span onClick={()=>removeProposalItem(d.id,kind,i)} style={{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.body}}>&times;</span>
+                    </div>
+                  ))}
+                  <AddProposalRow kind={kind} onAdd={(v)=>addProposalItem(d.id,kind,v)} inp={inp} btn={btn} />
+                </div>
+              );
+            })}
+            <div style={{...card,background:decided?P.s3L:P.sand,border:`1px solid ${decided?P.s3:P.charcoal+"15"}40`}}>
+              <div style={{fontSize:T.small,color:P.charcoal,marginBottom:8}}>
+                {tA} task(s) approved. {decided ? "Every item has a Yes or No decision." : "Some items still have no Yes / No decision."}
+              </div>
+              <button style={{...btn,background:tA>0?P.s3:P.slate,cursor:tA>0?"pointer":"not-allowed",width:"100%"}}
+                onClick={()=>{ if(tA>0){ lockDept(d.id); setMsg(`${d.name} task set locked. Export the assessment sheet and issue it to the team.`); } }}>
+                Lock task set and move to Phase 1
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // --- phase 1: awaiting filled returns ---
+      if (d.phase==="phase1") {
+        const target=d.empCount||1;
+        const lockedTasks=d.proposal.tasks.filter(t=>t.approved===true);
+        const fileRef = (file)=>{
+          const reader=new FileReader();
+          reader.onload=()=> importFilledSheet(d,String(reader.result||""));
+          reader.onerror=()=> setMsg("Could not read that file.");
+          reader.readAsText(file);
+        };
+        return (
+          <div>
+            {back}
+            <div style={{...card,background:P.gold+"14",border:`1px solid ${P.gold}45`}}>
+              <div style={sectionTitle}>{d.name} &middot; Phase 1: awaiting returns</div>
+              <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+                The task set is locked. Export the assessment sheet, hand one copy to each of the {target} employees in this
+                department, then import each filled sheet back below. Imported {deptPeople.length} of {target}.
+              </div>
+            </div>
+            <div style={card}>
+              <div style={sectionTitle}>1. Issue the assessment sheet</div>
+              <button style={btn} onClick={()=>exportDeptSheet(d)}>Export blank assessment sheet (CSV)</button>
+              <div style={{fontSize:T.micro,color:P.slate,marginTop:6,lineHeight:1.5}}>
+                The CSV opens in Excel. Each employee fills their full name, employee number, position, and a score per task.
+              </div>
+            </div>
+            <div style={card}>
+              <div style={sectionTitle}>2. Import a filled sheet</div>
+              <input type="file" accept=".csv,text/csv" onChange={e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=""; if(f) fileRef(f); }}
+                style={{fontSize:T.small,fontFamily:"inherit"}} />
+              {deptPeople.length>0 && (
+                <div style={{marginTop:10}}>
+                  <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:4}}>Returns received</div>
+                  {deptPeople.map(p=>{
+                    const sc=state.assess[p.id]||{};
+                    const missing=lockedTasks.filter(t=>!(t.id in sc)).length;
+                    return (
+                      <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"5px 9px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small}}>
+                        <span style={{flex:1,color:P.charcoal,fontWeight:700}}>{p.name}
+                          <span style={{color:P.slate,fontWeight:600}}> · {p.title}{p.empNo?` · #${p.empNo}`:""}</span></span>
+                        {missing>0 && <span style={{fontSize:T.micro,fontWeight:800,color:"#7A5A00",background:P.gold+"25",border:`1px solid ${P.gold}55`,padding:"1px 6px",borderRadius:4}}>{missing} new task(s)</span>}
+                        {missing>0 && <button style={{...btn,padding:"3px 9px",background:P.gold,color:"#4A3800"}} onClick={()=>exportTopUpSheet(d,p)}>Top-up sheet</button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {/* Step A: the locked task set stays editable */}
+            <div style={{...card,background:P.s1L,border:`1px solid ${P.s1}30`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6,marginBottom:6}}>
+                <div style={{...sectionTitle,marginBottom:0}}>Task set (editable)</div>
+                <span onClick={()=>{ reopenProposal(d.id); setMsg(`${d.name} reopened for full Yes / No review.`); }}
+                  {...kbd(()=>reopenProposal(d.id))}
+                  style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.s2,padding:"3px 9px",borderRadius:6,border:`1px solid ${P.s2}55`}}>Reopen full review</span>
+              </div>
+              <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>
+                Add or remove tasks at any time. A task added now shows as a new task on each engineer's row above; hand them a top-up sheet to score it. Nothing is treated as a zero.
+              </div>
+              {lockedTasks.map(t=>(
+                <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"4px 9px",background:P.white,borderRadius:6,marginBottom:3,fontSize:T.small}}>
+                  <span style={{flex:1,color:P.charcoal}}><span style={{color:P.s2,fontWeight:700}}>{t.category}</span> &middot; {t.detail}</span>
+                  <span onClick={()=>removeTaskFromDept(d.id,t.id)} style={{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.body}}>&times;</span>
+                </div>
+              ))}
+              <AddProposalRow kind="tasks" onAdd={(v)=>{ addTaskToLockedDept(d.id,v); setMsg("Task added. Issue a top-up sheet to anyone who already returned."); }} inp={inp} btn={btn} />
+            </div>
+            <div style={{...card,background:deptPeople.length>0?P.s3L:P.sand,border:`1px solid ${deptPeople.length>0?P.s3:P.charcoal+"15"}40`}}>
+              <button style={{...btn,background:deptPeople.length>0?P.s3:P.slate,cursor:deptPeople.length>0?"pointer":"not-allowed",width:"100%"}}
+                onClick={()=>{ if(deptPeople.length>0){ setDeptPhase(d.id,"phase2"); setMsg(`${d.name} moved to Phase 2 analysis.`); } }}>
+                Move to Phase 2 analysis
+              </button>
+              <div style={{fontSize:T.micro,color:P.slate,marginTop:6}}>You can move on once at least one return is imported. More can be added later.</div>
+            </div>
+          </div>
+        );
+      }
+
+      // --- phase 2: analysis ready, with gap and target lists ---
+      return (
+        <div>
+          {back}
+          <div style={{...card,background:P.s3L,border:`1px solid ${P.s3}30`}}>
+            <div style={sectionTitle}>{d.name} &middot; Phase 2: analysis and target lists</div>
+            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+              {deptPeople.length} return(s) imported. For each engineer the report below shows coverage against the tasks
+              expected at their level, the gaps that become their target list, and the department peer best placed to mentor
+              each gap. Senior strengths feed junior targets. Full capability cards are in the B3 tab.
+            </div>
+          </div>
+          {deptPeople.length===0 && <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No returns yet.</div>}
+          {deptPeople.map(p=>{
+            const g=gapReport(p,3);
+            return (
+              <div key={p.id} style={card}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:6,marginBottom:6}}>
+                  <div>
+                    <span style={{fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{p.name}</span>
+                    <span style={{marginLeft:8,fontSize:T.micro,fontWeight:800,padding:"1px 6px",borderRadius:4,background:P.s2+"18",color:P.s2,border:`1px solid ${P.s2}40`}}>{p.level||"Engineer"}</span>
+                  </div>
+                  <span style={{fontSize:T.micro,color:P.slate}}>{p.title}{p.empNo?` · #${p.empNo}`:""}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{flex:1,height:8,background:P.charcoal+"12",borderRadius:5,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${g.coverage}%`,background:g.coverage>=70?P.s3:g.coverage>=40?P.gold:P.coral,borderRadius:5}}/>
+                  </div>
+                  <span style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{g.coverage}% covered</span>
+                </div>
+                {g.pending.length>0 && (
+                  <div style={{fontSize:T.micro,fontWeight:700,color:"#7A5A00",background:P.gold+"18",border:`1px solid ${P.gold}45`,borderRadius:6,padding:"4px 8px",marginBottom:6}}>
+                    {g.pending.length} task(s) added after this return are not yet assessed. Issue a top-up sheet in Phase 1.
+                  </div>
+                )}
+                {g.gaps.length===0
+                  ? <div style={{fontSize:T.small,color:P.s3,fontWeight:700}}>No gaps. This engineer covers every assessed task expected at their level.</div>
+                  : (
+                    <div>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,letterSpacing:0.5,textTransform:"uppercase",marginBottom:4}}>Target list ({g.gaps.length}) and suggested mentor</div>
+                      {g.gaps.map(r=>(
+                        <div key={r.t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"5px 9px",background:P.sand,borderRadius:6,marginBottom:3}}>
+                          <span style={{flex:1,fontSize:T.small,color:P.charcoal}}>
+                            <span style={{color:P.s2,fontWeight:700}}>{r.t.category}</span> &middot; {r.t.detail}
+                          </span>
+                          <span style={{fontSize:T.micro,color:P.slate,whiteSpace:"nowrap"}}>
+                            {r.mentor
+                              ? <>Learn from <strong style={{color:P.s3}}>{r.mentor.name}</strong></>
+                              : <span style={{color:P.coral}}>No mentor in dept</span>}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            );
+          })}
+          {/* Step A: tasks remain editable in Phase 2 too */}
+          <div style={{...card,background:P.s1L,border:`1px solid ${P.s1}30`}}>
+            <div style={{...sectionTitle,marginBottom:4}}>Task set (editable)</div>
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>
+              Add or remove tasks without leaving Phase 2. A new task is marked not yet assessed for everyone who already returned, never a zero. Go back to Phase 1 to issue top-up sheets.
+            </div>
+            {d.proposal.tasks.filter(t=>t.approved===true).map(t=>(
+              <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"4px 9px",background:P.white,borderRadius:6,marginBottom:3,fontSize:T.small}}>
+                <span style={{flex:1,color:P.charcoal}}><span style={{color:P.s2,fontWeight:700}}>{t.category}</span> &middot; {t.detail}</span>
+                <span onClick={()=>removeTaskFromDept(d.id,t.id)} style={{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.body}}>&times;</span>
+              </div>
+            ))}
+            <AddProposalRow kind="tasks" onAdd={(v)=>{ addTaskToLockedDept(d.id,v); setMsg("Task added. Go to Phase 1 to issue top-up sheets."); }} inp={inp} btn={btn} />
+          </div>
+          <div style={card}>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <button style={{...btn,background:P.s1}} onClick={()=>setDeptPhase(d.id,"phase1")}>Back to Phase 1 to import more returns</button>
+              <button style={{...btn,background:P.s2}} onClick={()=>{ reopenProposal(d.id); setMsg(`${d.name} reopened for full Yes / No review.`); }}>Reopen full Yes / No review</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ---------- OFFICE / DEPARTMENT OVERVIEW ----------
+    const phaseTag=(ph)=>{
+      const map={proposal:{t:"PROPOSAL",c:P.s2},phase1:{t:"PHASE 1",c:P.gold,fg:"#7A5A00"},phase2:{t:"PHASE 2",c:P.s3}};
+      const m=map[ph]||map.proposal;
+      return <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,background:m.c+"22",color:m.fg||m.c,border:`1px solid ${m.c}55`}}>{m.t}</span>;
+    };
+    return (
+      <div>
+        <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div>
+              <div style={sectionTitle}>Offices and departments</div>
+              <div style={{fontSize:T.small,color:P.charcoal}}>{state.offices.length} office(s) &middot; {state.departments.length} department(s) picked</div>
+            </div>
+            <span onClick={()=>{ if(window.confirm("Reset the whole CapacityGrid workflow? This clears offices, departments, people and returns.")) resetWorkflow(); }}
+              style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.coral,padding:"5px 10px",borderRadius:6,border:`1px solid ${P.coral}55`}}>Reset workflow</span>
+          </div>
+        </div>
+        {state.offices.map(o=>{
+          const depts=state.departments.filter(d=>d.officeId===o.id);
+          return (
+            <div key={o.id} style={card}>
+              <div style={{fontSize:T.body,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:4}}>
+                {o.name}{o.location?<span style={{color:P.slate,fontWeight:600,fontSize:T.small}}> &middot; {o.location}</span>:null}
+              </div>
+              {depts.map(d=>{
+                const tA=d.proposal.tasks.filter(t=>t.approved===true).length;
+                return (
+                  <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
+                    background:P.sand,border:`1px solid ${P.charcoal}12`,borderRadius:8,marginTop:6}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{d.name} <span style={{color:P.slate,fontWeight:600}}>&middot; {d.empCount} employee(s)</span></div>
+                      <div style={{fontSize:T.micro,color:P.slate}}>
+                        {d.phase==="proposal"?`${d.proposal.tasks.length} task(s) proposed, ${tA} approved`
+                          :d.phase==="phase1"?`${tA} task(s) locked, ${state.people.filter(p=>p.deptId===d.id).length} of ${d.empCount} returns in`
+                          :`${state.people.filter(p=>p.deptId===d.id).length} return(s) imported, analysis live`}
+                      </div>
+                    </div>
+                    {phaseTag(d.phase)}
+                    <button style={{...btn,padding:"5px 11px"}} onClick={()=>setActiveDept(d.id)}>
+                      {d.phase==="proposal"?"Review":d.phase==="phase1"?"Issue / Import":"View"}
+                    </button>
+                    <span onClick={()=>{ if(window.confirm(`Remove the ${d.name} department from ${o.name}? Its people and returns are cleared.`)) removeDepartment(d.id); }}
+                      style={{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.body,padding:"0 3px"}}>&times;</span>
+                  </div>
+                );
+              })}
+              <DeptPicker office={o} taken={depts.map(d=>d.name)} onPick={pickDepartment} inp={inp} btn={btn} lbl={lbl} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Department picker: author selects a consultancy department from the list
+  // and sets that department's own employee count, then the app fetches tasks.
+  const DeptPicker = ({office,taken,onPick,inp,btn,lbl}) => {
+    const remaining=CG_DEPT_NAMES.filter(n=>!taken.includes(n));
+    const [dept,setDept]=useState("");
+    const [count,setCount]=useState(4);
+    if (remaining.length===0) return <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic",marginTop:8}}>All five departments are picked for this office.</div>;
+    return (
+      <div style={{marginTop:8,padding:"10px 12px",background:P.s2L,border:`1px dashed ${P.s2}40`,borderRadius:8}}>
+        <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.4,textTransform:"uppercase",marginBottom:6}}>Pick a department for {office.name}</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-end"}}>
+          <div style={{flex:"1 1 160px"}}>
+            <label style={lbl}>Department (from consultancy list)</label>
+            <select style={inp} value={dept} onChange={e=>setDept(e.target.value)}>
+              <option value="">Select a department</option>
+              {remaining.map(n=><option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div style={{flex:"0 0 130px"}}>
+            <label style={lbl}>Employees</label>
+            <input type="number" min="1" max="200" style={inp} value={count}
+              onChange={e=>setCount(Math.max(1,Math.min(200,parseInt(e.target.value,10)||1)))} />
+          </div>
+          <button style={btn} onClick={()=>{ if(dept){ onPick(office.id,dept,count); setDept(""); setCount(4); } }}>Fetch tasks</button>
+        </div>
+      </div>
+    );
+  };
+
+  // small inline add-row used inside the proposal panel
+  const AddProposalRow = ({kind,onAdd,inp,btn}) => {
+    const [v,setV]=useState("");
+    const [cat,setCat]=useState(CG_STRUCT_STAGES[0]);
+    const [lvl,setLvl]=useState("Engineer");
+    if (kind==="tasks") {
+      return (
+        <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
+          <select style={{...inp,flex:"0 0 130px",padding:"5px 7px"}} value={cat} onChange={e=>setCat(e.target.value)}>
+            {CG_STRUCT_STAGES.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+          <select style={{...inp,flex:"0 0 100px",padding:"5px 7px"}} value={lvl} onChange={e=>setLvl(e.target.value)}>
+            {CG_LEVELS.map(L=><option key={L} value={L}>{L}</option>)}
+          </select>
+          <input style={{...inp,flex:"1 1 140px",padding:"5px 8px"}} value={v} onChange={e=>setV(e.target.value)} placeholder="Add a task" />
+          <button style={{...btn,padding:"5px 11px"}} onClick={()=>{ if(v.trim()){ onAdd({category:cat,detail:v.trim(),level:lvl}); setV(""); } }}>Add</button>
+        </div>
+      );
+    }
+    return (
+      <div style={{display:"flex",gap:5,marginTop:6}}>
+        <input style={{...inp,flex:1,padding:"5px 8px"}} value={v} onChange={e=>setV(e.target.value)} placeholder={`Add a ${kind.slice(0,-1)}`} />
+        <button style={{...btn,padding:"5px 11px"}} onClick={()=>{ if(v.trim()){ onAdd(v.trim()); setV(""); } }}>Add</button>
+      </div>
+    );
+  };
+
+  // --- B1: Foundation panel ---------------------------------------------------
+  const CapGridFoundation = ({state,TASK_CATS,setGroup,addOffice,delOffice,addDept,delDept,addToDept,removeFromDept,addTask,delTask}) => {
+    const [offName,setOffName]=useState(""); const [offLoc,setOffLoc]=useState("");
+    const [deptInputs,setDeptInputs]=useState({}); // {officeId:value}
+    const [chipInputs,setChipInputs]=useState({}); // {deptId+field:value}
+    const [taskCat,setTaskCat]=useState(TASK_CATS[0]); const [taskDetail,setTaskDetail]=useState("");
+    const lbl={fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",display:"block",marginBottom:3};
+    const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+    const btn={padding:"7px 13px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const x=(fn)=>({onClick:fn,style:{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.small,padding:"0 4px"}});
+
+    return (
+      <div>
+        {/* Group */}
+        <div style={card}>
+          <div style={sectionTitle}>Organisation</div>
+          <label style={lbl}>Group or parent company name</label>
+          <input style={inp} value={state.group} onChange={e=>setGroup(e.target.value)} placeholder="e.g. your parent group name" />
+        </div>
+
+        {/* Offices */}
+        <div style={card}>
+          <div style={sectionTitle}>Offices and locations</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:10}}>
+            <div style={{flex:"1 1 160px"}}><label style={lbl}>Office name</label>
+              <input style={inp} value={offName} onChange={e=>setOffName(e.target.value)} placeholder="e.g. office name" /></div>
+            <div style={{flex:"1 1 160px"}}><label style={lbl}>Location</label>
+              <input style={inp} value={offLoc} onChange={e=>setOffLoc(e.target.value)} placeholder="e.g. city, country" /></div>
+            <button style={btn} onClick={()=>{ if(offName.trim()){ addOffice(offName.trim(),offLoc.trim()); setOffName(""); setOffLoc(""); } }}>Add office</button>
+          </div>
+          {state.offices.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No offices yet. Add your first office above.</div>}
+          {state.offices.map(o=>{
+            const depts=state.departments.filter(d=>d.officeId===o.id);
+            return (
+              <div key={o.id} style={{border:`1px solid ${P.charcoal}15`,borderRadius:9,padding:"10px 12px",marginBottom:10,background:P.sand}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{o.name}{o.location?<span style={{color:P.slate,fontWeight:600}}> &middot; {o.location}</span>:null}</div>
+                  <span {...x(()=>delOffice(o.id))}>Remove</span>
+                </div>
+                {/* Departments under office */}
+                <div style={{marginTop:8,paddingLeft:6}}>
+                  <div style={{display:"flex",gap:6,marginBottom:6}}>
+                    <input style={{...inp,flex:1}} value={deptInputs[o.id]||""} onChange={e=>setDeptInputs({...deptInputs,[o.id]:e.target.value})} placeholder="Department name e.g. Civil" />
+                    <button style={{...btn,background:P.s1}} onClick={()=>{ const v=(deptInputs[o.id]||"").trim(); if(v){ addDept(o.id,v); setDeptInputs({...deptInputs,[o.id]:""}); } }}>Add dept</button>
+                  </div>
+                  {depts.map(d=>(
+                    <div key={d.id} style={{background:P.white,border:`1px solid ${P.charcoal}12`,borderRadius:8,padding:"8px 10px",marginBottom:6}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{d.name}</div>
+                        <span {...x(()=>delDept(d.id))}>Remove</span>
+                      </div>
+                      {["sectors","services"].map(field=>(
+                        <div key={field} style={{marginTop:6}}>
+                          <label style={{...lbl,marginBottom:2}}>{field}</label>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:4}}>
+                            {d[field].map(v=>(
+                              <span key={v} style={{fontSize:T.micro,fontWeight:700,padding:"3px 7px",borderRadius:5,background:field==="sectors"?P.s1L:P.s3L,color:field==="sectors"?P.s1:P.s3,border:`1px solid ${field==="sectors"?P.s1:P.s3}30`}}>
+                                {v} <span style={{cursor:"pointer",color:P.coral,fontWeight:800}} onClick={()=>removeFromDept(d.id,field,v)}>&times;</span>
+                              </span>
+                            ))}
+                            {d[field].length===0 && <span style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>none yet</span>}
+                          </div>
+                          <div style={{display:"flex",gap:5}}>
+                            <input style={{...inp,flex:1,padding:"5px 8px"}} value={chipInputs[d.id+field]||""} onChange={e=>setChipInputs({...chipInputs,[d.id+field]:e.target.value})} placeholder={`Add ${field.slice(0,-1)}`} />
+                            <button style={{...btn,background:field==="sectors"?P.s1:P.s3,padding:"5px 10px"}} onClick={()=>{ const v=(chipInputs[d.id+field]||"").trim(); if(v && !d[field].includes(v)){ addToDept(d.id,field,v); setChipInputs({...chipInputs,[d.id+field]:""}); } }}>Add</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {depts.length===0 && <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>No departments yet.</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Task library */}
+        <div style={card}>
+          <div style={sectionTitle}>Task library</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>Each task a role can perform, grouped by category. Every person is later assessed on these tasks.</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"flex-end",marginBottom:10}}>
+            <div style={{flex:"0 0 140px"}}><label style={lbl}>Category</label>
+              <select style={inp} value={taskCat} onChange={e=>setTaskCat(e.target.value)}>
+                {TASK_CATS.map(c=><option key={c} value={c}>{c}</option>)}
+              </select></div>
+            <div style={{flex:"1 1 220px"}}><label style={lbl}>Task detail</label>
+              <input style={inp} value={taskDetail} onChange={e=>setTaskDetail(e.target.value)} placeholder="e.g. describe the task" /></div>
+            <button style={btn} onClick={()=>{ if(taskDetail.trim()){ addTask(taskCat,taskDetail.trim()); setTaskDetail(""); } }}>Add task</button>
+          </div>
+          {TASK_CATS.map(cat=>{
+            const items=state.tasks.filter(t=>t.category===cat);
+            if(items.length===0) return null;
+            return (
+              <div key={cat} style={{marginBottom:8}}>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:3}}>{cat} ({items.length})</div>
+                {items.map(t=>(
+                  <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 9px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small,color:P.charcoal}}>
+                    <span>{t.detail}</span><span {...x(()=>delTask(t.id))}>&times;</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {state.tasks.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No tasks yet. Build the task library above.</div>}
+        </div>
+
+        {/* Scoring scale reference */}
+        <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={sectionTitle}>Scoring scale</div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:T.micro}}>
+            <thead><tr style={{textAlign:"left",color:P.s2}}>
+              <th style={{padding:"3px 6px"}}>Measure</th><th style={{padding:"3px 6px"}}>Range</th><th style={{padding:"3px 6px"}}>Meaning</th>
+            </tr></thead>
+            <tbody style={{color:P.charcoal}}>
+              <tr><td style={{padding:"3px 6px",fontWeight:800}}>Experience</td><td style={{padding:"3px 6px"}}>0 to 5</td><td style={{padding:"3px 6px"}}>0 null, 1 capable, 5 expert</td></tr>
+              <tr><td style={{padding:"3px 6px",fontWeight:800}}>Frequency</td><td style={{padding:"3px 6px"}}>0 to 5</td><td style={{padding:"3px 6px"}}>0 not offered, 1 rare, 5 very often</td></tr>
+              <tr><td style={{padding:"3px 6px",fontWeight:800}}>Challenge</td><td style={{padding:"3px 6px"}}>1 to 5</td><td style={{padding:"3px 6px"}}>1 easy, 5 not straightforward</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // --- B2: People and Assessment panel ---------------------------------------
+  const CapGridPeople = ({state,addPerson,updPerson,delPerson,setScore,activePerson,setActivePerson,officeName,deptName}) => {
+    const [form,setForm]=useState({name:"",officeId:"",deptId:"",title:"",jobDesc:"",isKey:false,isApprover:false});
+    const lbl={fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",display:"block",marginBottom:3};
+    const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+    const btn={padding:"7px 13px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const deptsFor=(officeId)=> state.departments.filter(d=>d.officeId===officeId);
+
+    if (state.offices.length===0) {
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>Add at least one office and department in B1 Foundation before adding people.</div>;
+    }
+
+    // Assessment view for one person
+    if (activePerson) {
+      const p=state.people.find(x=>x.id===activePerson);
+      if(!p) { setActivePerson(null); return null; }
+      const scores=(state.assess[p.id])||{};
+      const cats=[...new Set(state.tasks.map(t=>t.category))];
+      const num=(v,min,max)=>{ const n=parseInt(v,10); return isNaN(n)?min:Math.max(min,Math.min(max,n)); };
+      return (
+        <div>
+          <div onClick={()=>setActivePerson(null)} {...kbd(()=>setActivePerson(null))} style={{fontSize:T.small,fontWeight:800,color:P.s2,cursor:"pointer",marginBottom:10}}>&larr; Back to people</div>
+          <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+            <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal}}>{p.name}</div>
+            <div style={{fontSize:T.small,color:P.slate,marginTop:2}}>{p.title} &middot; {deptName(p.deptId)} &middot; {officeName(p.officeId)}</div>
+          </div>
+          {state.tasks.length===0
+            ? <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No tasks in the library yet. Add tasks in B1 Foundation first.</div>
+            : cats.map(cat=>(
+              <div key={cat} style={card}>
+                <div style={{...sectionTitle,fontSize:T.small,color:P.s2,textTransform:"uppercase",letterSpacing:0.6}}>{cat}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 56px 56px 56px",gap:6,fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:4}}>
+                  <span>Task</span><span style={{textAlign:"center"}}>Exp</span><span style={{textAlign:"center"}}>Freq</span><span style={{textAlign:"center"}}>Chal</span>
+                </div>
+                {state.tasks.filter(t=>t.category===cat).map(t=>{
+                  const c=scores[t.id]||{exp:0,freq:0,chal:0};
+                  const cell=(field,min,max)=>(
+                    <select value={c[field]} onChange={e=>setScore(p.id,t.id,field,num(e.target.value,min,max))}
+                            style={{width:"100%",padding:"4px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.micro,fontFamily:"inherit",textAlign:"center"}}>
+                      {Array.from({length:max-min+1},(_,i)=>min+i).map(n=><option key={n} value={n}>{n}</option>)}
+                    </select>
+                  );
+                  return (
+                    <div key={t.id} style={{display:"grid",gridTemplateColumns:"1fr 56px 56px 56px",gap:6,alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${P.charcoal}0C`}}>
+                      <span style={{fontSize:T.small,color:P.charcoal}}>{t.detail}</span>
+                      {cell("exp",0,5)}{cell("freq",0,5)}{cell("chal",1,5)}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+        </div>
+      );
+    }
+
+    // People list + add form
+    return (
+      <div>
+        <div style={card}>
+          <div style={sectionTitle}>Add a person</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8,marginBottom:8}}>
+            <div><label style={lbl}>Full name</label>
+              <input style={inp} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. full name" /></div>
+            <div><label style={lbl}>Office</label>
+              <select style={inp} value={form.officeId} onChange={e=>setForm({...form,officeId:e.target.value,deptId:""})}>
+                <option value="">Select office</option>
+                {state.offices.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}
+              </select></div>
+            <div><label style={lbl}>Department</label>
+              <select style={inp} value={form.deptId} onChange={e=>setForm({...form,deptId:e.target.value})} disabled={!form.officeId}>
+                <option value="">Select department</option>
+                {deptsFor(form.officeId).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+              </select></div>
+            <div><label style={lbl}>Title</label>
+              <input style={inp} value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="e.g. Senior Engineer" /></div>
+          </div>
+          <label style={lbl}>Job description</label>
+          <textarea style={{...inp,minHeight:54,resize:"vertical"}} value={form.jobDesc} onChange={e=>setForm({...form,jobDesc:e.target.value})} placeholder="Short description of the role and its scope" />
+          <div style={{display:"flex",gap:16,margin:"8px 0",flexWrap:"wrap"}}>
+            <label style={{fontSize:T.small,color:P.charcoal,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <input type="checkbox" checked={form.isKey} onChange={e=>setForm({...form,isKey:e.target.checked})} /> Key person for this position</label>
+            <label style={{fontSize:T.small,color:P.charcoal,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <input type="checkbox" checked={form.isApprover} onChange={e=>setForm({...form,isApprover:e.target.checked})} /> Higher-authority approver</label>
+          </div>
+          <button style={btn} onClick={()=>{
+            if(form.name.trim() && form.officeId && form.deptId && form.title.trim()){
+              addPerson({name:form.name.trim(),officeId:form.officeId,deptId:form.deptId,title:form.title.trim(),jobDesc:form.jobDesc.trim(),isKey:form.isKey,isApprover:form.isApprover});
+              setForm({name:"",officeId:"",deptId:"",title:"",jobDesc:"",isKey:false,isApprover:false});
+            }
+          }}>Add person</button>
+        </div>
+
+        <div style={card}>
+          <div style={sectionTitle}>People ({state.people.length})</div>
+          {state.people.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No people yet.</div>}
+          {state.offices.map(o=>{
+            const list=state.people.filter(p=>p.officeId===o.id);
+            if(list.length===0) return null;
+            return (
+              <div key={o.id} style={{marginBottom:10}}>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:4}}>{o.name}</div>
+                {list.map(p=>(
+                  <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"8px 10px",background:P.sand,borderRadius:8,marginBottom:5}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>
+                        {p.name}
+                        {p.isKey && <span style={{marginLeft:6,fontSize:T.micro,fontWeight:800,padding:"1px 5px",borderRadius:4,background:P.gold+"25",color:"#7A5A00",border:`1px solid ${P.gold}55`}}>KEY</span>}
+                        {p.isApprover && <span style={{marginLeft:5,fontSize:T.micro,fontWeight:800,padding:"1px 5px",borderRadius:4,background:P.s3+"20",color:P.s3,border:`1px solid ${P.s3}45`}}>APPROVER</span>}
+                      </div>
+                      <div style={{fontSize:T.micro,color:P.slate}}>{p.title} &middot; {deptName(p.deptId)}</div>
+                    </div>
+                    <button style={{...btn,padding:"5px 10px"}} onClick={()=>setActivePerson(p.id)}>Assess</button>
+                    <span onClick={()=>delPerson(p.id)} style={{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.body,padding:"0 4px"}}>&times;</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // --- B3: Capability Cards panel ---------------------------------------------
+  const CapGridCards = ({state,personCard,officeName,deptName,activePerson,setActivePerson,ownerMode}) => {
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+
+    if (state.people.length===0) {
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>Add people and assess them in B2 before capability cards can be generated.</div>;
+    }
+
+    // Single card view
+    if (activePerson) {
+      const p=state.people.find(x=>x.id===activePerson);
+      if(!p){ setActivePerson(null); return null; }
+      const cd=personCard(p);
+      const bar=(pct,col)=>(
+        <div style={{height:7,background:P.charcoal+"12",borderRadius:4,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${pct}%`,background:col,borderRadius:4}}/>
+        </div>
+      );
+      const pct=(n,d)=> d>0?Math.round((n/d)*100):0;
+      const list=(arr)=> arr.length? arr.map(r=>r.t.detail).join(", ") : "none recorded";
+      return (
+        <div>
+          <div onClick={()=>setActivePerson(null)} {...kbd(()=>setActivePerson(null))} style={{fontSize:T.small,fontWeight:800,color:P.s2,cursor:"pointer",marginBottom:10}}>&larr; Back to cards</div>
+          <div style={{...card,background:`linear-gradient(135deg, ${P.s2L} 0%, ${P.white} 100%)`,border:`1px solid ${P.s2}30`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal}}>{p.name}</div>
+                <div style={{fontSize:T.small,color:P.slate,marginTop:2}}>{p.title} &middot; {deptName(p.deptId)} &middot; {officeName(p.officeId)}</div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                {p.isKey && <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,background:P.gold+"25",color:"#7A5A00",border:`1px solid ${P.gold}55`}}>KEY PERSON</span>}
+                {p.isApprover && <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,background:P.s3+"20",color:P.s3,border:`1px solid ${P.s3}45`}}>APPROVER</span>}
+              </div>
+            </div>
+            {p.jobDesc && <div style={{fontSize:T.small,color:P.charcoal,marginTop:8,lineHeight:1.5}}>{p.jobDesc}</div>}
+          </div>
+
+          <div style={{...card,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:12}}>
+            {[{n:cd.capable.length,l:"Tasks capable",c:P.s1},{n:cd.strong.length,l:"Strong (4+)",c:P.s3},{n:cd.gaps.length,l:"Gaps",c:P.coral},{n:cd.avgExp.toFixed(1),l:"Avg experience",c:P.s2}].map((s,i)=>(
+              <div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:s.c}}>{s.n}</div>
+                <div style={{fontSize:T.micro,color:P.slate,fontWeight:700}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={card}>
+            <div style={sectionTitle}>Key tasks for this person</div>
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>The tasks performed most often, drawn from frequency and experience scores.</div>
+            {cd.keyTasks.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No key tasks yet. Record frequency scores in B2.</div>}
+            {cd.keyTasks.map(r=>(
+              <div key={r.t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${P.charcoal}0C`,fontSize:T.small}}>
+                <span style={{color:P.charcoal}}><span style={{color:P.s2,fontWeight:700}}>{r.t.category}</span> &middot; {r.t.detail}</span>
+                <span style={{fontSize:T.micro,color:P.slate,whiteSpace:"nowrap",marginLeft:8}}>Exp {r.s.exp} &middot; Freq {r.s.freq} &middot; Chal {r.s.chal}</span>
+              </div>
+            ))}
+          </div>
+
+          {ownerMode ? (
+            <div style={card}>
+              <div style={sectionTitle}>Full capability detail</div>
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s3,marginBottom:3}}>STRONG SKILLS (Experience 4 or 5)</div>
+                <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{list(cd.strong)}</div>
+              </div>
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s1,marginBottom:3}}>CAPABLE TASKS (Experience 1 or more)</div>
+                <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{list(cd.capable)}</div>
+              </div>
+              <div>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,marginBottom:3}}>GAPS (expected to do, not yet capable)</div>
+                <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>{list(cd.gaps)}</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{...card,background:P.sand}}>
+              <div style={sectionTitle}>Capability summary</div>
+              <div style={{fontSize:T.small,color:P.charcoal,marginBottom:8}}>Capable on {pct(cd.capable.length,cd.rows.length)}% of tasks, strong on {pct(cd.strong.length,cd.rows.length)}%.</div>
+              {bar(pct(cd.capable.length,cd.rows.length),P.s1)}
+              <div style={{marginTop:8,fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>The full task-by-task breakdown is available in the owner view.</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Cards index
+    return (
+      <div>
+        <div style={card}>
+          <div style={sectionTitle}>Capability cards</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>Each card is generated live from the assessment scores. Open a person to see their key tasks and capability detail.</div>
+          {state.offices.map(o=>{
+            const list=state.people.filter(p=>p.officeId===o.id);
+            if(list.length===0) return null;
+            return (
+              <div key={o.id} style={{marginBottom:10}}>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:4}}>{o.name}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:8}}>
+                  {list.map(p=>{
+                    const cd=personCard(p);
+                    return (
+                      <div key={p.id} onClick={()=>setActivePerson(p.id)} {...kbd(()=>setActivePerson(p.id))}
+                           style={{background:P.sand,border:`1px solid ${P.charcoal}15`,borderRadius:9,padding:"10px 12px",cursor:"pointer"}}>
+                        <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{p.name}</div>
+                        <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>{p.title}</div>
+                        <div style={{display:"flex",gap:10,fontSize:T.micro}}>
+                          <span style={{color:P.s1,fontWeight:700}}>{cd.capable.length} capable</span>
+                          <span style={{color:P.s3,fontWeight:700}}>{cd.strong.length} strong</span>
+                          <span style={{color:P.coral,fontWeight:700}}>{cd.gaps.length} gaps</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // --- B4: Office Dashboard panel ---------------------------------------------
+  // For each office, the capability-area forte ranking: where this office is
+  // strong, where it is thin, and who drives each area. The forte emerges from
+  // the engineers' own assessment scores.
+  const CapGridOfficeDash = ({state,officeForte,ownerMode}) => {
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const assessed=state.people.length;
+    if (assessed===0) {
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No assessment returns yet. Import filled sheets in Setup & Workflow, then the office forte appears here.</div>;
+    }
+    const areaColor=(s)=> s>=60?P.s3 : s>=35?P.gold : P.coral;
+    return (
+      <div>
+        <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={sectionTitle}>Office capability dashboards</div>
+          <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+            Each office is profiled by capability area. Strength blends how deep the experience is (weighted higher) and how
+            often the work is done, drawn from every assessed person. The top area is the office forte.
+          </div>
+        </div>
+        {state.offices.map(o=>{
+          const f=officeForte(o.id);
+          if (f.headcount===0) {
+            return <div key={o.id} style={card}><div style={{fontSize:T.body,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif"}}>{o.name}</div>
+              <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic",marginTop:4}}>No people assessed in this office yet.</div></div>;
+          }
+          return (
+            <div key={o.id} style={card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:6,marginBottom:8}}>
+                <div style={{fontSize:T.body,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif"}}>
+                  {o.name}{o.location?<span style={{color:P.slate,fontWeight:600,fontSize:T.small}}> &middot; {o.location}</span>:null}
+                </div>
+                <span style={{fontSize:T.micro,color:P.slate}}>{f.headcount} person(s) assessed</span>
+              </div>
+              {f.forte && (
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+                  <div style={{flex:"1 1 200px",padding:"10px 12px",borderRadius:9,background:P.s3L,border:`1px solid ${P.s3}35`}}>
+                    <div style={{fontSize:T.micro,fontWeight:800,color:P.s3,letterSpacing:0.6,textTransform:"uppercase"}}>Office forte</div>
+                    <div style={{fontSize:T.lead,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{f.forte.area}</div>
+                    <div style={{fontSize:T.micro,color:P.slate}}>Strength {f.forte.strength}/100{f.forte.topPerson?` · led by ${f.forte.topPerson.name}`:""}</div>
+                  </div>
+                  {f.weakest && f.weakest.area!==f.forte.area && (
+                    <div style={{flex:"1 1 200px",padding:"10px 12px",borderRadius:9,background:P.coral+"0E",border:`1px solid ${P.coral}35`}}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,letterSpacing:0.6,textTransform:"uppercase"}}>Thinnest area</div>
+                      <div style={{fontSize:T.lead,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{f.weakest.area}</div>
+                      <div style={{fontSize:T.micro,color:P.slate}}>Strength {f.weakest.strength}/100 · build or hire here</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:5}}>Capability areas ranked</div>
+              {f.ranked.map(a=>(
+                <div key={a.area} style={{marginBottom:7}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:T.small,marginBottom:2}}>
+                    <span style={{color:P.charcoal,fontWeight:700}}>{a.area}</span>
+                    <span style={{color:P.slate,fontSize:T.micro}}>
+                      {a.strength}/100{ownerMode?` · depth ${a.depth.toFixed(1)} · activity ${a.activity.toFixed(1)}`:""}{a.topPerson?` · top ${a.topPerson.name}`:""}
+                    </span>
+                  </div>
+                  <div style={{height:8,background:P.charcoal+"12",borderRadius:5,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${a.strength}%`,background:areaColor(a.strength),borderRadius:5}}/>
+                  </div>
+                </div>
+              ))}
+              {f.ranked.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No area-tagged tasks assessed yet.</div>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // --- B5: Integrated Workforce Dashboard -------------------------------------
+  // All offices in one capability-area matrix: who leads each area across the
+  // group, where the gaps are, and a plain-language read on where to route work.
+  const CapGridWorkforce = ({state,officeForte,ownerMode}) => {
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const offices=state.offices.filter(o=>state.people.some(p=>p.officeId===o.id));
+    if (offices.length===0) {
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No assessed offices yet. Once returns are imported, the integrated workforce view appears here.</div>;
+    }
+    const forteByOffice={}; offices.forEach(o=>{ forteByOffice[o.id]=officeForte(o.id); });
+    const areas=CG_STRUCT_AREAS.filter(a=>a!=="General");
+    // for each area, find the leading office
+    const leaders={};
+    areas.forEach(a=>{
+      let best=null,bestS=-1;
+      offices.forEach(o=>{
+        const ar=forteByOffice[o.id].areas[a];
+        if(ar && ar.taskCount>0 && ar.strength>bestS){ bestS=ar.strength; best={office:o,strength:ar.strength}; }
+      });
+      leaders[a]=best;
+    });
+    const cellColor=(s)=> s>=60?P.s3 : s>=35?P.gold : s>0?P.coral : P.charcoal+"30";
+    return (
+      <div>
+        <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={sectionTitle}>Integrated workforce dashboard</div>
+          <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+            Every office across {state.group||"the group"} on one capability-area matrix. The leading office for each area
+            is the natural home for that type of work.
+          </div>
+        </div>
+
+        {/* Matrix */}
+        <div style={{...card,overflowX:"auto"}}>
+          <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Capability strength by office (0 to 100)</div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:T.micro}}>
+            <thead><tr>
+              <th style={{textAlign:"left",padding:"4px 6px",color:P.slate}}>Capability area</th>
+              {offices.map(o=><th key={o.id} style={{padding:"4px 6px",color:P.s2,whiteSpace:"nowrap"}}>{o.name}</th>)}
+              <th style={{padding:"4px 6px",color:P.s3}}>Leads</th>
+            </tr></thead>
+            <tbody>
+              {areas.map(a=>(
+                <tr key={a} style={{borderTop:`1px solid ${P.charcoal}10`}}>
+                  <td style={{padding:"5px 6px",fontWeight:700,color:P.charcoal}}>{a}</td>
+                  {offices.map(o=>{
+                    const ar=forteByOffice[o.id].areas[a];
+                    const s=ar?ar.strength:0;
+                    const isLead=leaders[a] && leaders[a].office.id===o.id && s>0;
+                    return (
+                      <td key={o.id} style={{padding:"5px 6px",textAlign:"center"}}>
+                        <span style={{display:"inline-block",minWidth:34,padding:"2px 6px",borderRadius:5,fontWeight:800,
+                          background:cellColor(s)+(isLead?"":"22"),color:isLead?P.white:cellColor(s),
+                          border:`1px solid ${cellColor(s)}${isLead?"":"55"}`}}>{s}</span>
+                      </td>
+                    );
+                  })}
+                  <td style={{padding:"5px 6px",textAlign:"center",fontWeight:800,color:P.s3}}>
+                    {leaders[a]?leaders[a].office.name:"—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Plain-language routing read */}
+        <div style={{...card,background:P.s3L,border:`1px solid ${P.s3}30`}}>
+          <div style={sectionTitle}>Where to route work</div>
+          {areas.filter(a=>leaders[a]).map(a=>(
+            <div key={a} style={{fontSize:T.small,color:P.charcoal,padding:"5px 0",borderBottom:`1px solid ${P.charcoal}0C`,lineHeight:1.5}}>
+              <strong style={{color:P.s2}}>{a}</strong> &rarr; route to <strong style={{color:P.s3}}>{leaders[a].office.name}</strong>
+              <span style={{color:P.slate}}> (strength {leaders[a].strength}/100)</span>
+            </div>
+          ))}
+          {areas.every(a=>!leaders[a]) && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>Not enough assessed data yet to call a leader per area.</div>}
+        </div>
+
+        {/* Per-office forte summary */}
+        <div style={card}>
+          <div style={sectionTitle}>Office forte summary</div>
+          {offices.map(o=>{
+            const f=forteByOffice[o.id];
+            return (
+              <div key={o.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"7px 10px",background:P.sand,borderRadius:7,marginBottom:4}}>
+                <span style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{o.name}</span>
+                <span style={{fontSize:T.small,color:P.slate}}>
+                  {f.forte ? <>Forte: <strong style={{color:P.s3}}>{f.forte.area}</strong> ({f.forte.strength}/100)</> : "No forte yet"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // --- B6: Develop & Track panel ----------------------------------------------
+  // The retention and leveling-up loop: each employee gets a support card naming
+  // their follow-up person, a one-to-one meeting log, and dated capability
+  // cycles so growth over time is visible.
+  const CapGridDevelop = ({state,gapReport,suggestedMentor,assignFollowup,clearFollowup,addMeeting,delMeeting,
+      captureCycle,delCycle,officeName,deptName,activePerson,setActivePerson,setMsg}) => {
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const lbl={fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",display:"block",marginBottom:3};
+    const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+    const btn={padding:"7px 13px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
+    const [mForm,setMForm]=useState({date:"",targets:"",notes:"",nextDate:""});
+    const [cycleLabel,setCycleLabel]=useState("");
+
+    if (state.people.length===0) {
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No people yet. Import assessment returns in Setup & Workflow first.</div>;
+    }
+
+    // ---- per-person support card drill-down ----
+    if (activePerson) {
+      const p=state.people.find(x=>x.id===activePerson);
+      if(!p){ setActivePerson(null); return null; }
+      const g=gapReport(p,3);
+      const sug=suggestedMentor(p);
+      const fu=state.followups[p.id];
+      const mentor=fu? state.people.find(x=>x.id===fu.mentorId) : null;
+      const peers=state.people.filter(x=>x.deptId===p.deptId && x.id!==p.id);
+      const meetings=state.meetings[p.id]||[];
+      return (
+        <div>
+          <div onClick={()=>setActivePerson(null)} {...kbd(()=>setActivePerson(null))} style={{fontSize:T.small,fontWeight:800,color:P.s2,cursor:"pointer",marginBottom:10}}>&larr; Back to support cards</div>
+
+          {/* Support card header */}
+          <div style={{...card,background:`linear-gradient(135deg, ${P.s2L} 0%, ${P.white} 100%)`,border:`1px solid ${P.s2}30`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:6}}>
+              <div>
+                <span style={{fontSize:T.h3,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif"}}>{p.name}</span>
+                <span style={{marginLeft:8,fontSize:T.micro,fontWeight:800,padding:"1px 6px",borderRadius:4,background:P.s2+"18",color:P.s2,border:`1px solid ${P.s2}40`}}>{p.level||"Engineer"}</span>
+              </div>
+              <span style={{fontSize:T.micro,color:P.slate}}>{p.title} &middot; {deptName(p.deptId)} &middot; {officeName(p.officeId)}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+              <div style={{flex:1,height:8,background:P.charcoal+"12",borderRadius:5,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${g.coverage}%`,background:g.coverage>=70?P.s3:g.coverage>=40?P.gold:P.coral,borderRadius:5}}/>
+              </div>
+              <span style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{g.coverage}% covered</span>
+            </div>
+          </div>
+
+          {/* Follow-up person */}
+          <div style={card}>
+            <div style={sectionTitle}>Follow-up person</div>
+            {mentor ? (
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"9px 11px",background:P.s3L,borderRadius:8,border:`1px solid ${P.s3}30`}}>
+                <div>
+                  <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{mentor.name}
+                    <span style={{marginLeft:6,fontSize:T.micro,fontWeight:800,color:P.s3}}>{mentor.level||"Engineer"}</span></div>
+                  <div style={{fontSize:T.micro,color:P.slate}}>Confirmed follow-up person for {p.name}</div>
+                </div>
+                <span onClick={()=>clearFollowup(p.id)} style={{cursor:"pointer",fontSize:T.micro,fontWeight:800,color:P.coral,padding:"3px 9px",borderRadius:6,border:`1px solid ${P.coral}55`}}>Clear</span>
+              </div>
+            ) : (
+              <div>
+                {sug
+                  ? <div style={{fontSize:T.small,color:P.charcoal,marginBottom:8}}>Suggested: <strong style={{color:P.s3}}>{sug.name}</strong> ({sug.level}), strongest across {sug.covers} of {sug.ofGaps} gap tasks.</div>
+                  : <div style={{fontSize:T.small,color:P.slate,marginBottom:8,fontStyle:"italic"}}>No automatic suggestion: this person has no open gaps, or no peer is stronger. Assign manually below.</div>}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                  {sug && <button style={{...btn,background:P.s3}} onClick={()=>{ assignFollowup(p.id,sug.id,true); setMsg(`${sug.name} assigned as follow-up person for ${p.name}.`); }}>Confirm {sug.name}</button>}
+                  <select style={{...inp,maxWidth:220}} defaultValue="" onChange={e=>{ if(e.target.value){ assignFollowup(p.id,e.target.value,true); setMsg("Follow-up person assigned."); } }}>
+                    <option value="">Or pick another peer</option>
+                    {peers.map(pe=><option key={pe.id} value={pe.id}>{pe.name} ({pe.level||"Engineer"})</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Target list (the meeting agenda) */}
+          <div style={card}>
+            <div style={sectionTitle}>Target list for this person</div>
+            {g.gaps.length===0
+              ? <div style={{fontSize:T.small,color:P.s3,fontWeight:700}}>No open gaps. This person covers every assessed task expected at their level.</div>
+              : g.gaps.map(r=>(
+                <div key={r.t.id} style={{display:"flex",justifyContent:"space-between",gap:8,padding:"5px 9px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small}}>
+                  <span style={{flex:1,color:P.charcoal}}><span style={{color:P.s2,fontWeight:700}}>{r.t.category}</span> &middot; {r.t.detail}</span>
+                  {r.mentor && <span style={{fontSize:T.micro,color:P.s3,whiteSpace:"nowrap"}}>via {r.mentor.name}</span>}
+                </div>
+              ))}
+          </div>
+
+          {/* One-to-one meeting log */}
+          <div style={card}>
+            <div style={sectionTitle}>One-to-one meeting log</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:6,marginBottom:6}}>
+              <div><label style={lbl}>Meeting date</label>
+                <input type="date" style={inp} value={mForm.date} onChange={e=>setMForm({...mForm,date:e.target.value})} /></div>
+              <div><label style={lbl}>Next meeting date</label>
+                <input type="date" style={inp} value={mForm.nextDate} onChange={e=>setMForm({...mForm,nextDate:e.target.value})} /></div>
+            </div>
+            <label style={lbl}>Targets agreed</label>
+            <textarea style={{...inp,minHeight:46,resize:"vertical",marginBottom:6}} value={mForm.targets} onChange={e=>setMForm({...mForm,targets:e.target.value})} placeholder="What this person will work on before the next meeting" />
+            <label style={lbl}>Notes</label>
+            <textarea style={{...inp,minHeight:40,resize:"vertical",marginBottom:8}} value={mForm.notes} onChange={e=>setMForm({...mForm,notes:e.target.value})} placeholder="Discussion notes (optional)" />
+            <button style={btn} onClick={()=>{
+              if(mForm.date){ addMeeting(p.id,{date:mForm.date,targets:mForm.targets.trim(),notes:mForm.notes.trim(),nextDate:mForm.nextDate});
+                setMForm({date:"",targets:"",notes:"",nextDate:""}); setMsg("Meeting logged."); }
+            }}>Log meeting</button>
+
+            {meetings.length>0 && (
+              <div style={{marginTop:10}}>
+                {meetings.map(m=>(
+                  <div key={m.id} style={{padding:"8px 10px",background:P.sand,borderRadius:8,marginBottom:5}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{m.date}{m.nextDate?<span style={{color:P.slate,fontWeight:600}}> · next {m.nextDate}</span>:null}</span>
+                      <span onClick={()=>delMeeting(p.id,m.id)} style={{cursor:"pointer",color:P.coral,fontWeight:800,fontSize:T.body}}>&times;</span>
+                    </div>
+                    {m.targets && <div style={{fontSize:T.small,color:P.charcoal,marginTop:3}}><strong>Targets:</strong> {m.targets}</div>}
+                    {m.notes && <div style={{fontSize:T.micro,color:P.slate,marginTop:2}}>{m.notes}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ---- support cards index + cycles ----
+    return (
+      <div>
+        <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
+          <div style={sectionTitle}>Develop and track</div>
+          <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+            Each person has a support card: a named follow-up person, a target list, and a one-to-one meeting log. Capture a
+            dated cycle to see capability rise over time. This is the loop that levels people up and keeps the promises made to them.
+          </div>
+        </div>
+
+        {/* Capability cycles */}
+        <div style={card}>
+          <div style={sectionTitle}>Capability cycles</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>Capture a snapshot of everyone's coverage today. Compare snapshots to prove capability is rising.</div>
+          <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+            <input style={{...inp,flex:1,minWidth:160}} value={cycleLabel} onChange={e=>setCycleLabel(e.target.value)} placeholder="Cycle label e.g. Q1 review" />
+            <button style={btn} onClick={()=>{ captureCycle(cycleLabel.trim()); setCycleLabel(""); setMsg("Cycle snapshot captured."); }}>Capture cycle</button>
+          </div>
+          {state.cycles.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No cycles captured yet.</div>}
+          {state.cycles.map((c,i)=>{
+            const vals=Object.values(c.snapshot||{});
+            const avg=vals.length? Math.round(vals.reduce((x,v)=>x+v,0)/vals.length):0;
+            const prev=i>0?state.cycles[i-1]:null;
+            const prevVals=prev?Object.values(prev.snapshot||{}):[];
+            const prevAvg=prevVals.length? Math.round(prevVals.reduce((x,v)=>x+v,0)/prevVals.length):null;
+            const delta=prevAvg==null?null:avg-prevAvg;
+            return (
+              <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:P.sand,borderRadius:7,marginBottom:3,fontSize:T.small}}>
+                <span style={{color:P.charcoal,fontWeight:700}}>{c.label} <span style={{color:P.slate,fontWeight:600}}>· {c.date}</span></span>
+                <span style={{color:P.slate}}>
+                  Avg coverage {avg}%
+                  {delta!=null && <span style={{marginLeft:6,fontWeight:800,color:delta>0?P.s3:delta<0?P.coral:P.slate}}>{delta>0?`+${delta}`:delta} vs prev</span>}
+                  <span onClick={()=>delCycle(c.id)} style={{cursor:"pointer",color:P.coral,fontWeight:800,marginLeft:8}}>&times;</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Support card index */}
+        <div style={card}>
+          <div style={sectionTitle}>Support cards</div>
+          {state.offices.map(o=>{
+            const list=state.people.filter(p=>p.officeId===o.id);
+            if(list.length===0) return null;
+            return (
+              <div key={o.id} style={{marginBottom:10}}>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.6,textTransform:"uppercase",marginBottom:4}}>{o.name}</div>
+                {list.map(p=>{
+                  const g=gapReport(p,3);
+                  const fu=state.followups[p.id];
+                  const mentor=fu? state.people.find(x=>x.id===fu.mentorId) : null;
+                  const meetings=state.meetings[p.id]||[];
+                  return (
+                    <div key={p.id} onClick={()=>setActivePerson(p.id)} {...kbd(()=>setActivePerson(p.id))}
+                         style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"8px 10px",background:P.sand,borderRadius:8,marginBottom:5,cursor:"pointer"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{p.name}
+                          <span style={{marginLeft:6,fontSize:T.micro,color:P.slate,fontWeight:600}}>{p.title}</span></div>
+                        <div style={{fontSize:T.micro,color:P.slate}}>
+                          {g.coverage}% covered · {g.gaps.length} target(s) · {meetings.length} meeting(s)
+                        </div>
+                      </div>
+                      {mentor
+                        ? <span style={{fontSize:T.micro,fontWeight:800,color:P.s3,whiteSpace:"nowrap"}}>Follow-up: {mentor.name}</span>
+                        : <span style={{fontSize:T.micro,fontWeight:800,color:P.gold,whiteSpace:"nowrap"}}>No follow-up yet</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // --- Executive dashboard ----------------------------------------------------
+  // The owner's skim: the company as one connected body, capability health,
+  // active follow-up pairings, meeting promises kept, and a retention signal.
+  const CapGridExec = ({state,gapReport,officeForte}) => {
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const ppl=state.people;
+    if (ppl.length===0) {
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No assessed people yet. The executive view becomes live once returns are imported.</div>;
+    }
+    // company-wide figures
+    let covSum=0,gapSum=0;
+    ppl.forEach(p=>{ const g=gapReport(p,3); covSum+=g.coverage; gapSum+=g.gaps.length; });
+    const avgCov=Math.round(covSum/ppl.length);
+    const pairings=Object.keys(state.followups).length;
+    const pairingPct=Math.round((pairings/ppl.length)*100);
+    let metCount=0; Object.values(state.meetings).forEach(arr=>{ metCount+=(arr||[]).length; });
+    const peopleWithMeetings=Object.keys(state.meetings).filter(k=>(state.meetings[k]||[]).length>0).length;
+    const meetingPct=Math.round((peopleWithMeetings/ppl.length)*100);
+    // capability health: blend of coverage, pairing rate and meeting rate
+    const health=Math.round(avgCov*0.5 + pairingPct*0.25 + meetingPct*0.25);
+    // cycle movement
+    const cy=state.cycles;
+    let cycleDelta=null;
+    if(cy.length>=2){
+      const a=Object.values(cy[cy.length-1].snapshot||{}); const b=Object.values(cy[cy.length-2].snapshot||{});
+      const aAvg=a.length?a.reduce((x,v)=>x+v,0)/a.length:0;
+      const bAvg=b.length?b.reduce((x,v)=>x+v,0)/b.length:0;
+      cycleDelta=Math.round(aAvg-bAvg);
+    }
+    const stat=(n,l,c)=>(
+      <div style={{flex:"1 1 120px",textAlign:"center",padding:"10px 8px",background:P.sand,borderRadius:9}}>
+        <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:c}}>{n}</div>
+        <div style={{fontSize:T.micro,color:P.slate,fontWeight:700}}>{l}</div>
+      </div>
+    );
+    const healthColor= health>=70?P.s3 : health>=45?P.gold : P.coral;
+    return (
+      <div>
+        <div style={{...card,background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white}}>
+          <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{state.group||"The group"} at a glance</div>
+          <div style={{fontSize:T.small,color:P.tealL,marginTop:2}}>One living view of the whole company: capability, the people growing it, and the promises kept.</div>
+        </div>
+
+        {/* Capability health score */}
+        <div style={card}>
+          <div style={sectionTitle}>Capability health</div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:84,height:84,borderRadius:"50%",flexShrink:0,
+              background:`conic-gradient(${healthColor} ${health*3.6}deg, ${P.charcoal}12 0deg)`,
+              display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{width:62,height:62,borderRadius:"50%",background:P.white,display:"flex",alignItems:"center",justifyContent:"center",
+                fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:healthColor}}>{health}</div>
+            </div>
+            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+              A blend of capability coverage, how many people have a named follow-up person, and how many have had a
+              one-to-one meeting. {cycleDelta!=null && <>Last cycle moved <strong style={{color:cycleDelta>0?P.s3:P.coral}}>{cycleDelta>0?`+${cycleDelta}`:cycleDelta} points</strong>.</>}
+            </div>
+          </div>
+        </div>
+
+        {/* Key figures */}
+        <div style={{...card,display:"flex",gap:8,flexWrap:"wrap"}}>
+          {stat(ppl.length,"People assessed",P.s1)}
+          {stat(`${avgCov}%`,"Avg capability coverage",P.s2)}
+          {stat(`${pairingPct}%`,"Have a follow-up person",P.s3)}
+          {stat(`${meetingPct}%`,"Have had a one-to-one",P.gold)}
+        </div>
+
+        {/* Company as one body: offices and their forte */}
+        <div style={card}>
+          <div style={sectionTitle}>The company as one body</div>
+          {state.offices.map(o=>{
+            const f=officeForte(o.id);
+            const list=ppl.filter(p=>p.officeId===o.id);
+            if(list.length===0) return null;
+            return (
+              <div key={o.id} style={{padding:"9px 11px",background:P.sand,borderRadius:8,marginBottom:5}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}}>
+                  <span style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{o.name}</span>
+                  <span style={{fontSize:T.micro,color:P.slate}}>{list.length} person(s)</span>
+                </div>
+                <div style={{fontSize:T.micro,color:P.charcoal,marginTop:2}}>
+                  {f.forte ? <>Forte <strong style={{color:P.s3}}>{f.forte.area}</strong> ({f.forte.strength}/100)</> : "Forte not yet established"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Promises kept: meetings due */}
+        <div style={card}>
+          <div style={sectionTitle}>Follow-up promises</div>
+          <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55,marginBottom:6}}>
+            {metCount} one-to-one meeting(s) logged across the group. {peopleWithMeetings} of {ppl.length} people have had at least one.
+          </div>
+          {(()=>{
+            const due=[];
+            ppl.forEach(p=>{
+              const ms=state.meetings[p.id]||[];
+              if(ms.length>0 && ms[0].nextDate) due.push({name:p.name,next:ms[0].nextDate});
+            });
+            due.sort((a,b)=>a.next.localeCompare(b.next));
+            return due.length>0 ? (
+              <div>
+                <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:4}}>Next meetings scheduled</div>
+                {due.slice(0,8).map((d,i)=>(
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 9px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small}}>
+                    <span style={{color:P.charcoal,fontWeight:700}}>{d.name}</span>
+                    <span style={{color:P.slate}}>{d.next}</span>
+                  </div>
+                ))}
+              </div>
+            ) : <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No next meeting dates set yet.</div>;
+          })()}
+        </div>
+      </div>
+    );
+  };
+
   // Phase 1 transition stage: progress + time stored client-side in component state.
   const LearnModal = ({app, modules, courses, onClose}) => {
     const [view, setView] = useState("catalog");        // catalog | course | author

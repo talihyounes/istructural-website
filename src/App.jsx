@@ -572,22 +572,23 @@ function buildCapGridDemo(){
     return m;
   };
   const offices=[
-    {id:id("o"),name:"Dubai Office",location:"Dubai, UAE"},
-    {id:id("o"),name:"Riyadh Office",location:"Riyadh, KSA"},
+    {id:id("o"),name:"Toronto Office",location:"Toronto, ON, Canada"},
+    {id:id("o"),name:"New York Office",location:"New York, NY, USA"},
   ];
+  // Arbitrary North American names. Toronto reads as Towers-led, New York as Bridges-led.
   const roster=[
-    {name:"Layla Hassan",title:"Senior Structural Engineer",level:"Senior",empNo:"D-101",isKey:true,isApprover:true},
-    {name:"Omar Khaled",title:"Structural Engineer",level:"Engineer",empNo:"D-102"},
-    {name:"Sara Nasser",title:"Structural Engineer",level:"Engineer",empNo:"D-103"},
-    {name:"Yusuf Amin",title:"Graduate Structural Engineer",level:"Graduate",empNo:"D-104"},
-    {name:"Maya Tarek",title:"BIM / Revit Modeller",level:"Technician",empNo:"D-105"},
+    {name:"Emily Carter",title:"Senior Structural Engineer",level:"Senior",empNo:"TO-101",isKey:true,isApprover:true},
+    {name:"Daniel Wong",title:"Structural Engineer",level:"Engineer",empNo:"TO-102"},
+    {name:"Priya Shah",title:"Structural Engineer",level:"Engineer",empNo:"TO-103"},
+    {name:"Liam Tremblay",title:"Graduate Structural Engineer",level:"Graduate",empNo:"TO-104"},
+    {name:"Sofia Mendez",title:"BIM / Revit Modeller",level:"Technician",empNo:"TO-105"},
   ];
   const roster2=[
-    {name:"Karim Saleh",title:"Senior Structural Engineer",level:"Senior",empNo:"R-201",isKey:true,isApprover:true},
-    {name:"Dana Fawzi",title:"Structural Engineer",level:"Engineer",empNo:"R-202"},
-    {name:"Hadi Mansour",title:"Structural Engineer",level:"Engineer",empNo:"R-203"},
-    {name:"Rana Khoury",title:"Graduate Structural Engineer",level:"Graduate",empNo:"R-204"},
-    {name:"Tariq Aziz",title:"Structural Designer / Draughtsman",level:"Technician",empNo:"R-205"},
+    {name:"James Whitman",title:"Senior Structural Engineer",level:"Senior",empNo:"NY-201",isKey:true,isApprover:true},
+    {name:"Olivia Patel",title:"Structural Engineer",level:"Engineer",empNo:"NY-202"},
+    {name:"Marcus Bell",title:"Structural Engineer",level:"Engineer",empNo:"NY-203"},
+    {name:"Hannah Reed",title:"Graduate Structural Engineer",level:"Graduate",empNo:"NY-204"},
+    {name:"Diego Romero",title:"Structural Designer / Draughtsman",level:"Technician",empNo:"NY-205"},
   ];
   const departments=[]; const people=[]; const assess={};
   [{office:offices[0],roster,forte:"High-rise Towers"},
@@ -3280,7 +3281,7 @@ export default function App(){
 
           {/* Phase tabs */}
           <div style={{display:"flex",gap:2,padding:"10px 16px 0",background:P.sand,borderBottom:`1px solid ${P.charcoal}12`,flexWrap:"wrap"}}>
-            {[{k:"workflow",n:"Setup & Workflow"},{k:"foundation",n:"Foundation (review)"},{k:"people",n:"People & Assessment"},{k:"cards",n:"Capability Cards"},{k:"office",n:"Office Dashboard"},{k:"workforce",n:"Workforce"},{k:"develop",n:"Develop & Track"},{k:"exec",n:"Executive"}].map(t=>(
+            {[{k:"workflow",n:"Setup & Workflow"},{k:"foundation",n:"Foundation (review)"},{k:"people",n:"People & Assessment"},{k:"cards",n:"Capability Cards"},{k:"workforce",n:"Workforce"},{k:"office",n:"Office Dashboard"},{k:"develop",n:"Develop & Track"},{k:"exec",n:"Company Dashboard"}].map(t=>(
               <div key={t.k} onClick={()=>{setTab(t.k);setActivePerson(null);setActiveDept(null);}} {...kbd(()=>{setTab(t.k);setActivePerson(null);setActiveDept(null);})}
                    aria-pressed={tab===t.k}
                    style={{padding:"9px 14px",fontSize:T.small,fontWeight:800,cursor:"pointer",borderRadius:"8px 8px 0 0",
@@ -3391,7 +3392,7 @@ export default function App(){
             <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
               <div style={{fontSize:T.micro,fontWeight:800,color:"#7A5A00",letterSpacing:0.6,marginBottom:4}}>OWNER ONLY</div>
               <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5,marginBottom:8}}>
-                Load a worked demo: two offices (Dubai strong in High-rise Towers, Riyadh strong in Bridges and
+                Load a worked demo: two offices (Toronto strong in High-rise Towers, New York strong in Bridges and
                 Infrastructure), ten people, and full Knowledge assessments. Use it to walk through the platform end to
                 end. This overwrites any current CapacityGrid data in this browser.
               </div>
@@ -4559,12 +4560,16 @@ export default function App(){
   // --- Executive dashboard ----------------------------------------------------
   // The owner's skim: the company as one connected body, capability health,
   // active follow-up pairings, meeting promises kept, and a retention signal.
+  // Company Dashboard. The whole-company view: capability health, group coverage
+  // and gaps, every office side by side, where the company is strong vs. weak
+  // overall (areas consolidated across all offices), and a routing summary that
+  // turns office fortes into who should take what project.
   const CapGridExec = ({state,gapReport,officeForte}) => {
     const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
     const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
     const ppl=state.people;
     if (ppl.length===0) {
-      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No assessed people yet. The executive view becomes live once returns are imported.</div>;
+      return <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small}}>No assessed people yet. The Company Dashboard becomes live once returns are imported.</div>;
     }
     // company-wide figures
     let covSum=0,gapSum=0;
@@ -4586,6 +4591,22 @@ export default function App(){
       const bAvg=b.length?b.reduce((x,v)=>x+v,0)/b.length:0;
       cycleDelta=Math.round(aAvg-bAvg);
     }
+    // Group-level area strength: average each area's strength across all offices.
+    // This is the consolidated "where is the company strong" view, independent
+    // of any single office's forte.
+    const offForte=state.offices.map(o=>({office:o,forte:officeForte(o.id)})).filter(x=>x.forte.headcount>0);
+    const groupAreas=CG_STRUCT_AREAS.map(a=>{
+      const vals=offForte.map(x=> (x.forte.areas[a]||{}).strength||0).filter(v=>v>0);
+      const mean=vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length):0;
+      const lead=offForte.reduce((best,x)=>{
+        const s=(x.forte.areas[a]||{}).strength||0;
+        return (s>best.s)?{name:x.office.name,s}:best;
+      },{name:"",s:0});
+      return {area:a,strength:mean,lead:lead.name};
+    });
+    const groupRanked=groupAreas.filter(a=>a.area!=="General").slice().sort((x,y)=>y.strength-x.strength);
+    const groupForte=groupRanked[0]||null;
+    const groupWeakest=groupRanked.length?groupRanked[groupRanked.length-1]:null;
     const stat=(n,l,c)=>(
       <div style={{flex:"1 1 120px",textAlign:"center",padding:"10px 8px",background:P.sand,borderRadius:9}}>
         <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:c}}>{n}</div>
@@ -4593,11 +4614,12 @@ export default function App(){
       </div>
     );
     const healthColor= health>=70?P.s3 : health>=45?P.gold : P.coral;
+    const barColor=(v)=> v>=70?P.s3 : v>=50?P.teal : v>=35?P.gold : P.coral;
     return (
       <div>
         <div style={{...card,background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white}}>
-          <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{state.group||"The group"} at a glance</div>
-          <div style={{fontSize:T.small,color:P.tealL,marginTop:2}}>One living view of the whole company: capability, the people growing it, and the promises kept.</div>
+          <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{state.group||"The group"} &middot; Company Dashboard</div>
+          <div style={{fontSize:T.small,color:P.tealL,marginTop:2}}>One living view of the whole company: where capability sits, where the gaps are, and which office should carry which project.</div>
         </div>
 
         {/* Capability health score */}
@@ -4620,27 +4642,77 @@ export default function App(){
         {/* Key figures */}
         <div style={{...card,display:"flex",gap:8,flexWrap:"wrap"}}>
           {stat(ppl.length,"People assessed",P.s1)}
-          {stat(`${avgCov}%`,"Avg capability coverage",P.s2)}
-          {stat(`${pairingPct}%`,"Have a follow-up person",P.s3)}
+          {stat(`${avgCov}%`,"Group coverage",P.s2)}
+          {stat(gapSum,"Open gaps",P.coral)}
+          {stat(state.offices.length,"Offices",P.teal)}
+          {stat(`${pairingPct}%`,"Have a follow-up",P.s3)}
           {stat(`${meetingPct}%`,"Have had a one-to-one",P.gold)}
         </div>
 
-        {/* Company as one body: offices and their forte */}
+        {/* Where the company is strong, consolidated across offices */}
         <div style={card}>
-          <div style={sectionTitle}>The company as one body</div>
-          {state.offices.map(o=>{
-            const f=officeForte(o.id);
-            const list=ppl.filter(p=>p.officeId===o.id);
-            if(list.length===0) return null;
+          <div style={sectionTitle}>Where the company is strong, overall</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>
+            Each capability area scored across every office, then averaged. This is the consolidated company view,
+            independent of any single office.
+            {groupForte && <> Group forte: <strong style={{color:P.s3}}>{groupForte.area}</strong> at {groupForte.strength}/100, led by {groupForte.lead}.</>}
+            {groupWeakest && groupForte && groupWeakest.area!==groupForte.area && <> Weakest: <strong style={{color:P.coral}}>{groupWeakest.area}</strong> at {groupWeakest.strength}/100.</>}
+          </div>
+          {groupAreas.filter(a=>a.area!=="General").map(a=>(
+            <div key={a.area} style={{marginBottom:6}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:T.micro,marginBottom:2}}>
+                <span style={{fontWeight:700,color:P.charcoal}}>{a.area}</span>
+                <span style={{color:P.slate}}>{a.strength} / 100 &middot; lead: <strong style={{color:P.s2}}>{a.lead||"—"}</strong></span>
+              </div>
+              <div style={{height:8,background:P.charcoal+"0C",borderRadius:5,overflow:"hidden"}}>
+                <div style={{height:"100%",width:a.strength+"%",background:barColor(a.strength),borderRadius:5}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Every office side by side */}
+        <div style={card}>
+          <div style={sectionTitle}>Every office, side by side</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:8}}>
+            {state.offices.map(o=>{
+              const f=officeForte(o.id);
+              const list=ppl.filter(p=>p.officeId===o.id);
+              if(list.length===0) return null;
+              const cov=list.length?Math.round(list.reduce((s,p)=>s+gapReport(p).coverage,0)/list.length):0;
+              return (
+                <div key={o.id} style={{padding:"11px 13px",background:P.sand,borderRadius:9,border:`1px solid ${P.charcoal}10`}}>
+                  <div style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{o.name}{o.location?<span style={{color:P.slate,fontWeight:600}}> &middot; {o.location}</span>:null}</div>
+                  <div style={{fontSize:T.micro,color:P.slate,marginTop:3}}>{list.length} person(s) &middot; {cov}% coverage</div>
+                  <div style={{fontSize:T.micro,color:P.charcoal,marginTop:6}}>
+                    Forte: {f.forte ? <strong style={{color:P.s3}}>{f.forte.area}</strong> : <span style={{color:P.slate,fontStyle:"italic"}}>not yet established</span>}
+                    {f.forte && <span style={{color:P.slate}}> &middot; {f.forte.strength}/100</span>}
+                  </div>
+                  {f.weakest && f.weakest.area!==(f.forte&&f.forte.area) && (
+                    <div style={{fontSize:T.micro,color:P.coral,marginTop:2}}>Weakest: {f.weakest.area} &middot; {f.weakest.strength}/100</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Project routing summary */}
+        <div style={card}>
+          <div style={sectionTitle}>Project routing summary</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>
+            For an incoming project, the office with the highest strength in that capability area is the recommended home.
+            This is the executive answer to "who should we put on it".
+          </div>
+          {CG_STRUCT_AREAS.filter(a=>a!=="General").map(area=>{
+            const best=offForte.reduce((b,x)=>{
+              const s=(x.forte.areas[area]||{}).strength||0;
+              return (s>b.s)?{name:x.office.name,s}:b;
+            },{name:"",s:0});
             return (
-              <div key={o.id} style={{padding:"9px 11px",background:P.sand,borderRadius:8,marginBottom:5}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}}>
-                  <span style={{fontSize:T.small,fontWeight:800,color:P.s2}}>{o.name}</span>
-                  <span style={{fontSize:T.micro,color:P.slate}}>{list.length} person(s)</span>
-                </div>
-                <div style={{fontSize:T.micro,color:P.charcoal,marginTop:2}}>
-                  {f.forte ? <>Forte <strong style={{color:P.s3}}>{f.forte.area}</strong> ({f.forte.strength}/100)</> : "Forte not yet established"}
-                </div>
+              <div key={area} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small}}>
+                <span style={{color:P.charcoal,fontWeight:700}}>{area}</span>
+                <span style={{color:P.slate}}>Route to <strong style={{color:P.s2}}>{best.name||"—"}</strong> {best.s>0 && <span>({best.s}/100)</span>}</span>
               </div>
             );
           })}
@@ -5706,6 +5778,7 @@ export default function App(){
         </div>
         <div onClick={()=>{setPage("start");setSTab("s4");}} {...kbd(()=>{setPage("start");setSTab("s4");})} aria-label="Request Training" style={{marginTop:14,background:P.s2,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Request Training &#8594;</div>
       </div>
+      <div style={{marginTop:18}}><ToolsBoxStrip/></div>
     </div>
   );
 

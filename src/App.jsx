@@ -2418,6 +2418,130 @@ export default function App(){
     setToolsSession(s => ({...s, accessKey:k, keyValidUntil:new Date(Date.now() + durationMinutes*60000).toISOString()}));
   };
 
+  // --- Preview-mode helpers --------------------------------------------------
+  // For the public transition period: every app shows a teaser (deliverables +
+  // a blurred snapshot collage of charts/snippets) and the modal contents are
+  // blurred. Owner mode (already in scope) lifts the blur everywhere.
+  //
+  // PreviewSnapshot: small SVG collage that suggests "there is a real app
+  // behind this", without revealing the actual data. Uses the app's brand
+  // color so it reads as that app's preview.
+  const PreviewSnapshot = ({color,kind})=>{
+    // kind picks a small composition: "chart" (bars), "gauge" (doughnut),
+    // "radar" (small radar), "card" (mini card). All very stylised.
+    const W=160,H=96;
+    if(kind==="gauge"){
+      const v=72, r=28, c=2*Math.PI*r, off=c*(1-v/100);
+      return (
+        <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{display:"block"}}>
+          <rect x="0" y="0" width={W} height={H} rx="8" fill={color+"08"}/>
+          <circle cx="46" cy="48" r={r} fill="none" stroke={color+"22"} strokeWidth="7"/>
+          <circle cx="46" cy="48" r={r} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off} transform="rotate(-90 46 48)"/>
+          <text x="46" y="53" textAnchor="middle" fontFamily="'Fraunces',serif" fontWeight="800" fontSize="18" fill={P.charcoal}>72</text>
+          <rect x="84" y="22" width="64" height="6" rx="3" fill={color+"30"}/>
+          <rect x="84" y="36" width="50" height="6" rx="3" fill={color+"55"}/>
+          <rect x="84" y="50" width="58" height="6" rx="3" fill={color+"40"}/>
+          <rect x="84" y="64" width="42" height="6" rx="3" fill={color+"22"}/>
+        </svg>
+      );
+    }
+    if(kind==="radar"){
+      const cx=W/2,cy=H/2,R=32;
+      const pts=[[0,1],[0.85,0.5],[0.85,-0.5],[0,-1],[-0.85,-0.5],[-0.85,0.5]].map(([a,b])=>[cx+a*R,cy+b*R]);
+      const inner=[[0,0.6],[0.52,0.3],[0.7,-0.4],[0,-0.85],[-0.6,-0.3],[-0.45,0.45]].map(([a,b])=>[cx+a*R,cy+b*R]);
+      return (
+        <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{display:"block"}}>
+          <rect x="0" y="0" width={W} height={H} rx="8" fill={color+"08"}/>
+          <polygon points={pts.map(p=>p.join(",")).join(" ")} fill="none" stroke={color+"22"}/>
+          <polygon points={pts.map(p=>{const dx=(p[0]-cx)*0.66+cx;const dy=(p[1]-cy)*0.66+cy;return dx+","+dy;}).join(" ")} fill="none" stroke={color+"15"}/>
+          <polygon points={inner.map(p=>p.join(",")).join(" ")} fill={color+"30"} stroke={color} strokeWidth="1.5"/>
+        </svg>
+      );
+    }
+    if(kind==="card"){
+      return (
+        <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{display:"block"}}>
+          <rect x="0" y="0" width={W} height={H} rx="8" fill={color+"08"}/>
+          <rect x="10" y="12" width="36" height="36" rx="6" fill={color}/>
+          <rect x="52" y="14" width="80" height="9" rx="3" fill={color+"60"}/>
+          <rect x="52" y="28" width="60" height="6" rx="3" fill={color+"30"}/>
+          <rect x="52" y="38" width="70" height="6" rx="3" fill={color+"30"}/>
+          <rect x="10" y="56" width="140" height="6" rx="3" fill={color+"22"}/>
+          <rect x="10" y="68" width="110" height="6" rx="3" fill={color+"22"}/>
+          <rect x="10" y="80" width="80" height="6" rx="3" fill={color+"22"}/>
+        </svg>
+      );
+    }
+    // default: horizontal bar chart
+    const bars=[78,62,55,40,28];
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{display:"block"}}>
+        <rect x="0" y="0" width={W} height={H} rx="8" fill={color+"08"}/>
+        {bars.map((b,i)=>(
+          <g key={i}>
+            <rect x="14" y={12+i*16} width="120" height="10" rx="3" fill={color+"15"}/>
+            <rect x="14" y={12+i*16} width={120*b/100} height="10" rx="3" fill={color}/>
+          </g>
+        ))}
+      </svg>
+    );
+  };
+  //
+  // TeaserStrip: scrollable horizontal collage of snapshots, blurred. Used on
+  // each app card on the Tools Box page. Owner mode removes the blur.
+  const TeaserStrip = ({color,deliverables})=>{
+    const kinds=["chart","gauge","radar","card","chart"];
+    return (
+      <div style={{position:"relative",borderRadius:9,border:`1px dashed ${color}40`,background:color+"05",padding:"8px",marginTop:4}}>
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,filter:ownerMode?"none":"blur(2.5px)",opacity:ownerMode?1:0.85,scrollbarWidth:"thin"}}>
+          {kinds.map((k,i)=>(
+            <div key={i} style={{flex:"0 0 auto",borderRadius:8,overflow:"hidden",boxShadow:`0 1px 3px ${P.charcoal}15`}}>
+              <PreviewSnapshot color={color} kind={k}/>
+            </div>
+          ))}
+        </div>
+        {!ownerMode && (
+          <div style={{position:"absolute",top:6,right:8,fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.charcoal,color:P.white,letterSpacing:0.6,textTransform:"uppercase",pointerEvents:"none"}}>Preview</div>
+        )}
+        {deliverables && deliverables.length>0 && (
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:7}}>
+            {deliverables.slice(0,4).map((d,i)=>(
+              <span key={i} style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:4,background:color+"15",color:color,border:`1px solid ${color}30`,lineHeight:1.4}}>{d}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+  //
+  // PreviewGate: wraps modal content. For non-owners, blurs the body and
+  // overlays a clear "Preview only" notice with a CTA to request a briefing.
+  // Owner mode renders the content as is.
+  const PreviewGate = ({app,children})=>{
+    if (ownerMode) return children;
+    return (
+      <div style={{position:"relative"}}>
+        <div aria-hidden="true" style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none",opacity:0.7}}>{children}</div>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"24px 18px",background:`linear-gradient(180deg, ${P.white}E6 0%, ${P.white}AA 100%)`,overflowY:"auto"}}>
+          <div style={{maxWidth:540,background:P.white,borderRadius:12,border:`1px solid ${P.charcoal}25`,padding:"20px 22px",boxShadow:"0 10px 30px rgba(0,0,0,0.18)"}}>
+            <div style={{fontSize:T.micro,fontWeight:800,letterSpacing:1.2,color:P.gold,textTransform:"uppercase"}}>Preview only</div>
+            <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal,marginTop:4}}>{app?app.name:"This app"} is not yet open to the public</div>
+            <div style={{fontSize:T.small,color:P.slate,marginTop:8,lineHeight:1.6}}>
+              The full app preview is hidden during this transition stage. You can scroll the teaser below the modal to see what {app?app.name:"the app"} produces. To get a private briefing or early access, scroll to the bottom of the Tools Box page and submit a request, or email <a href="mailto:info@istructgroup.com" style={{color:P.s2,fontWeight:700}}>info@istructgroup.com</a>.
+            </div>
+            <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap"}}>
+              <a href="mailto:info@istructgroup.com?subject=iStructural Tools Box - early access request"
+                 style={{display:"inline-block",fontSize:T.small,fontWeight:800,padding:"8px 14px",borderRadius:8,background:P.s2,color:P.white,textDecoration:"none"}}>Request early access</a>
+              <button onClick={(e)=>{ e.stopPropagation(); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }}
+                style={{fontSize:T.small,fontWeight:800,padding:"8px 14px",borderRadius:8,background:"transparent",color:P.s2,border:`1px solid ${P.s2}55`,cursor:"pointer",fontFamily:"inherit"}}>Go to briefing form</button>
+            </div>
+            <div style={{fontSize:T.micro,color:P.slate,marginTop:10,fontStyle:"italic"}}>Owner sign-in removes this preview gate automatically.</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const ToolsPage = () => (
     <div>
       {/* HERO: Tools Box */}
@@ -3332,6 +3456,116 @@ export default function App(){
     );
   };
 
+  // --- Reusable SVG chart primitives used across every dashboard. -------------
+  // Three primitives, pure SVG, no library. They take design tokens from the
+  // surrounding scope (P, T) and accept simple data arrays. Decision makers see
+  // a chart on every summary; the same shapes recur, so the visuals are
+  // immediately legible.
+  //
+  // CgChartColor: helper to pick a color band by score 0..100
+  const CgChartColor = (v)=> v>=70?P.s3 : v>=50?P.teal : v>=35?P.gold : P.coral;
+  //
+  // CgBarChart: horizontal bars on a 0..100 scale.
+  // rows: [{label, value, lead?}]  height auto-scales to row count.
+  const CgBarChart = ({rows,height,showLead})=>{
+    const n=rows.length, rowH=22, gap=6, padX=8, padT=6, padB=18, labelW=140;
+    const totalH=height||(padT+padB+n*(rowH+gap)-gap);
+    const chartW=420; // notional viewBox width; SVG scales responsively
+    const barX=labelW+8, barW=chartW-labelW-padX-32;
+    return (
+      <svg viewBox={`0 0 ${chartW} ${totalH}`} width="100%" style={{display:"block",maxWidth:"100%"}} aria-label="Capability bar chart">
+        {/* grid */}
+        {[0,25,50,75,100].map(g=>{
+          const x=barX+(g/100)*barW;
+          return (
+            <g key={g}>
+              <line x1={x} x2={x} y1={padT-2} y2={totalH-padB+4} stroke={P.charcoal+"10"} strokeWidth="1"/>
+              <text x={x} y={totalH-padB+14} fontSize="9" fill={P.slate} textAnchor="middle">{g}</text>
+            </g>
+          );
+        })}
+        {rows.map((r,i)=>{
+          const y=padT+i*(rowH+gap);
+          const w=Math.max(0,Math.min(100,r.value))/100*barW;
+          const c=CgChartColor(r.value);
+          return (
+            <g key={i}>
+              <text x={labelW} y={y+rowH/2+4} fontSize="10" fontWeight="700" fill={P.charcoal} textAnchor="end">{r.label}</text>
+              <rect x={barX} y={y} width={barW} height={rowH} rx="4" fill={P.charcoal+"08"}/>
+              <rect x={barX} y={y} width={w} height={rowH} rx="4" fill={c}/>
+              <text x={barX+w+6} y={y+rowH/2+4} fontSize="10" fontWeight="800" fill={P.charcoal}>{r.value}{showLead&&r.lead?<tspan fill={P.slate} fontWeight="600"> &middot; {r.lead}</tspan>:null}</text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  };
+  //
+  // CgGauge: doughnut with a number in the center. value 0..100.
+  const CgGauge = ({value,label,size,color})=>{
+    const v=Math.max(0,Math.min(100,value||0));
+    const s=size||120, r=s/2-10, cx=s/2, cy=s/2;
+    const c=color||CgChartColor(v);
+    const circ=2*Math.PI*r;
+    const off=circ*(1-v/100);
+    return (
+      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-label="Capability gauge">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={P.charcoal+"10"} strokeWidth="12"/>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={c} strokeWidth="12" strokeLinecap="round"
+                strokeDasharray={circ} strokeDashoffset={off} transform={`rotate(-90 ${cx} ${cy})`}/>
+        <text x={cx} y={cy+2} fontSize={s*0.28} fontWeight="800" fontFamily="'Fraunces',serif" fill={P.charcoal} textAnchor="middle" dominantBaseline="middle">{v}</text>
+        {label && <text x={cx} y={cy+s*0.22} fontSize={s*0.075} fontWeight="700" fill={P.slate} textAnchor="middle">{label}</text>}
+      </svg>
+    );
+  };
+  //
+  // CgRadarChart: small radar/spider for office vs office vs group.
+  // axes: ["area1","area2",...]
+  // series: [{name, color, values:[n,...]}]  values 0..100, same length as axes
+  const CgRadarChart = ({axes,series,size})=>{
+    const s=size||320, cx=s/2, cy=s/2, R=s/2-50;
+    const n=axes.length;
+    // compute axis end points
+    const pt=(idx,radius)=>{ const a=-Math.PI/2+idx*(2*Math.PI/n); return [cx+Math.cos(a)*radius, cy+Math.sin(a)*radius]; };
+    const polyStr=(values)=> values.map((v,i)=>{ const r=Math.max(0,Math.min(100,v))/100*R; const [x,y]=pt(i,r); return (i===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1); }).join(" ")+" Z";
+    return (
+      <svg viewBox={`0 0 ${s} ${s}`} width="100%" style={{display:"block",maxWidth:"100%",maxHeight:s+"px"}} aria-label="Capability radar">
+        {/* grid rings */}
+        {[0.2,0.4,0.6,0.8,1].map(f=>(
+          <polygon key={f} points={axes.map((_,i)=>{ const [x,y]=pt(i,R*f); return x.toFixed(1)+","+y.toFixed(1); }).join(" ")}
+            fill="none" stroke={P.charcoal+"10"} strokeWidth="1"/>
+        ))}
+        {/* axis spokes */}
+        {axes.map((_,i)=>{ const [x,y]=pt(i,R); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={P.charcoal+"10"} strokeWidth="1"/>; })}
+        {/* series */}
+        {series.map((sr,si)=>(
+          <g key={si}>
+            <path d={polyStr(sr.values)} fill={sr.color+"22"} stroke={sr.color} strokeWidth="2"/>
+            {sr.values.map((v,i)=>{ const r=Math.max(0,Math.min(100,v))/100*R; const [x,y]=pt(i,r); return <circle key={i} cx={x} cy={y} r="3" fill={sr.color}/>; })}
+          </g>
+        ))}
+        {/* axis labels */}
+        {axes.map((a,i)=>{
+          const [x,y]=pt(i,R+18);
+          const anchor = Math.abs(x-cx)<6?"middle" : (x>cx?"start":"end");
+          return <text key={i} x={x} y={y} fontSize="9" fontWeight="700" fill={P.charcoal} textAnchor={anchor}>{a}</text>;
+        })}
+      </svg>
+    );
+  };
+  //
+  // CgLegend: small inline legend for the radar / multi-series charts
+  const CgLegend = ({items})=>(
+    <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center",marginTop:6,fontSize:T.micro,color:P.slate}}>
+      {items.map((it,i)=>(
+        <span key={i} style={{display:"inline-flex",alignItems:"center",gap:4}}>
+          <span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:it.color}}/>
+          <strong style={{color:P.charcoal}}>{it.name}</strong>
+        </span>
+      ))}
+    </div>
+  );
+
   // --- Setup & Workflow panel: the interactive approval-gated flow ------------
   // Setup wizard -> department proposal (Yes/No approval) -> lock & issue sheets
   // -> Phase 1 awaiting filled returns -> Phase 2 analysis.
@@ -4104,6 +4338,27 @@ export default function App(){
             ))}
           </div>
 
+          {/* Person-level capability chart: gauge for coverage and bar chart by area */}
+          <div style={card}>
+            <div style={sectionTitle}>Capability at a glance</div>
+            <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap",marginBottom:10}}>
+              <CgGauge value={cd.avgExp} label="KNOWN" size={120}/>
+              <div style={{flex:"1 1 240px",fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+                The gauge is the share of assessed tasks this person marked as known. Below, the same person profiled across the capability areas: where they are strong, where their gaps sit. This is the executive read of one engineer.
+              </div>
+            </div>
+            {(()=>{
+              // Per-area share of known among assessed for this person
+              const rows = CG_STRUCT_AREAS.filter(a=>a!=="General").map(a=>{
+                const inArea=cd.done.filter(r=>(r.t.area||"General")===a);
+                if(inArea.length===0) return null;
+                const known=inArea.filter(r=>r.s.exp===1).length;
+                return {label:a,value:Math.round(known/inArea.length*100)};
+              }).filter(Boolean).sort((x,y)=>y.value-x.value);
+              return rows.length>0 ? <CgBarChart rows={rows}/> : <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No area-tagged tasks assessed yet.</div>;
+            })()}
+          </div>
+
           <div style={card}>
             <div style={sectionTitle}>Key tasks for this person</div>
             <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>Tasks this person knows and performs most often, drawn from the frequency scores.</div>
@@ -4233,20 +4488,16 @@ export default function App(){
                 </div>
               )}
               <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:5}}>Capability areas ranked</div>
-              {f.ranked.map(a=>(
-                <div key={a.area} style={{marginBottom:7}}>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:T.small,marginBottom:2}}>
-                    <span style={{color:P.charcoal,fontWeight:700}}>{a.area}</span>
-                    <span style={{color:P.slate,fontSize:T.micro}}>
-                      {a.strength}/100{ownerMode?` · depth ${a.depth.toFixed(1)} · activity ${a.activity.toFixed(1)}`:""}{a.topPerson?` · top ${a.topPerson.name}`:""}
-                    </span>
-                  </div>
-                  <div style={{height:8,background:P.charcoal+"12",borderRadius:5,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${a.strength}%`,background:areaColor(a.strength),borderRadius:5}}/>
-                  </div>
+              {f.ranked.length>0 ? (
+                <CgBarChart rows={f.ranked.map(a=>({label:a.area,value:a.strength}))} />
+              ) : (
+                <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No area-tagged tasks assessed yet.</div>
+              )}
+              {ownerMode && f.ranked.length>0 && (
+                <div style={{fontSize:T.micro,color:P.slate,marginTop:6,lineHeight:1.5}}>
+                  Owner detail: {f.ranked.map(a=>`${a.area} (depth ${a.depth.toFixed(1)}, activity ${a.activity.toFixed(1)}${a.topPerson?", top "+a.topPerson.name:""})`).join(" · ")}
                 </div>
-              ))}
-              {f.ranked.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No area-tagged tasks assessed yet.</div>}
+              )}
             </div>
           );
         })}
@@ -4319,6 +4570,47 @@ export default function App(){
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Radar: every office across the capability areas */}
+        {offices.length>=2 && (
+          <div style={card}>
+            <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Office capability radar</div>
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6,lineHeight:1.5}}>
+              Every office plotted across the capability areas. The further the line reaches in an area, the stronger the team is there.
+            </div>
+            {(()=>{
+              const palette=[P.s2,P.s3,P.gold,P.coral,P.teal,P.s1];
+              const series=offices.map((o,i)=>({
+                name:o.name,
+                color:palette[i%palette.length],
+                values:areas.map(a=>{ const ar=forteByOffice[o.id].areas[a]; return ar?ar.strength:0; }),
+              }));
+              return (
+                <div>
+                  <div style={{maxWidth:420,margin:"0 auto"}}><CgRadarChart axes={areas} series={series} size={340}/></div>
+                  <CgLegend items={series.map(s=>({name:s.name,color:s.color}))}/>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Group-level area strength chart */}
+        <div style={card}>
+          <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Group strength by area</div>
+          <div style={{fontSize:T.micro,color:P.slate,marginBottom:6,lineHeight:1.5}}>
+            Mean strength across all offices, with the leading office tagged next to each bar.
+          </div>
+          <CgBarChart
+            rows={areas.map(a=>{
+              const vals=offices.map(o=>(forteByOffice[o.id].areas[a]||{strength:0}).strength).filter(v=>v>0);
+              const mean=vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length):0;
+              const lead=leaders[a]?leaders[a].office.name:"—";
+              return {label:a,value:mean,lead};
+            }).sort((x,y)=>y.value-x.value)}
+            showLead={true}
+          />
         </div>
 
         {/* Plain-language routing read */}
@@ -4622,17 +4914,12 @@ export default function App(){
           <div style={{fontSize:T.small,color:P.tealL,marginTop:2}}>One living view of the whole company: where capability sits, where the gaps are, and which office should carry which project.</div>
         </div>
 
-        {/* Capability health score */}
+        {/* Capability health gauge (SVG doughnut) */}
         <div style={card}>
           <div style={sectionTitle}>Capability health</div>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:84,height:84,borderRadius:"50%",flexShrink:0,
-              background:`conic-gradient(${healthColor} ${health*3.6}deg, ${P.charcoal}12 0deg)`,
-              display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{width:62,height:62,borderRadius:"50%",background:P.white,display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:healthColor}}>{health}</div>
-            </div>
-            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+          <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+            <CgGauge value={health} label="OUT OF 100" size={120} color={healthColor}/>
+            <div style={{flex:"1 1 260px",fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
               A blend of capability coverage, how many people have a named follow-up person, and how many have had a
               one-to-one meeting. {cycleDelta!=null && <>Last cycle moved <strong style={{color:cycleDelta>0?P.s3:P.coral}}>{cycleDelta>0?`+${cycleDelta}`:cycleDelta} points</strong>.</>}
             </div>
@@ -4658,18 +4945,36 @@ export default function App(){
             {groupForte && <> Group forte: <strong style={{color:P.s3}}>{groupForte.area}</strong> at {groupForte.strength}/100, led by {groupForte.lead}.</>}
             {groupWeakest && groupForte && groupWeakest.area!==groupForte.area && <> Weakest: <strong style={{color:P.coral}}>{groupWeakest.area}</strong> at {groupWeakest.strength}/100.</>}
           </div>
-          {groupAreas.filter(a=>a.area!=="General").map(a=>(
-            <div key={a.area} style={{marginBottom:6}}>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:T.micro,marginBottom:2}}>
-                <span style={{fontWeight:700,color:P.charcoal}}>{a.area}</span>
-                <span style={{color:P.slate}}>{a.strength} / 100 &middot; lead: <strong style={{color:P.s2}}>{a.lead||"—"}</strong></span>
-              </div>
-              <div style={{height:8,background:P.charcoal+"0C",borderRadius:5,overflow:"hidden"}}>
-                <div style={{height:"100%",width:a.strength+"%",background:barColor(a.strength),borderRadius:5}}/>
-              </div>
-            </div>
-          ))}
+          <CgBarChart
+            rows={groupAreas.filter(a=>a.area!=="General").slice().sort((x,y)=>y.strength-x.strength).map(a=>({label:a.area,value:a.strength,lead:a.lead||"-"}))}
+            showLead={true}
+          />
         </div>
+
+        {/* Radar: every office across the capability areas */}
+        {offForte.length>=2 && (
+          <div style={card}>
+            <div style={sectionTitle}>Office capability radar</div>
+            <div style={{fontSize:T.micro,color:P.slate,marginBottom:6,lineHeight:1.5}}>
+              Toronto vs New York (or every office) plotted on every capability area. The further the line reaches, the stronger the team.
+            </div>
+            {(()=>{
+              const radarAxes=CG_STRUCT_AREAS;
+              const palette=[P.s2,P.s3,P.gold,P.coral,P.teal,P.s1];
+              const officeSeries=offForte.map((x,i)=>({
+                name:x.office.name,
+                color:palette[i%palette.length],
+                values:radarAxes.map(a=>(x.forte.areas[a]||{strength:0}).strength),
+              }));
+              return (
+                <div>
+                  <div style={{maxWidth:420,margin:"0 auto"}}><CgRadarChart axes={radarAxes} series={officeSeries} size={340}/></div>
+                  <CgLegend items={officeSeries.map(s=>({name:s.name,color:s.color}))}/>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Every office side by side */}
         <div style={card}>

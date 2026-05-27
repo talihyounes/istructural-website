@@ -1771,6 +1771,12 @@ export default function App(){
       requiresKey:true,
       requiresEntitlement:"ecios",
       plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
+      keyDeliverables:["ATS-optimised resume","One-page cover letter","Hiring risk dashboard","Interview war room (Q&A)"],
+      // Commercial gate: paste a Stripe payment link here when ready. While empty,
+      // the Buy access button is hidden and the existing Request 60-min key flow stays.
+      // After purchase, your Stripe success URL should return to the site with
+      // ?paid_key=<KEY> in the URL; the app will pick that up and grant a session.
+      commercial:{ stripeUrl:"", priceLabel:"CAD 19 / single run", currency:"CAD" },
       // scope: the Yes-No inclusion / exclusion card shown at the start of the
       // app so the user knows up front what to upload, what is included, what
       // is excluded, and what to expect back. Rendered before the pre-run panel.
@@ -1934,6 +1940,7 @@ export default function App(){
       requiresKey:true,
       requiresEntitlement:"bid",
       plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
+      keyDeliverables:["GO / NO-GO decision","Win probability score","Risk math across 8 categories","Commercial model ranking"],
       scope:{
         upload:[
           "The RFP, tender or scope document (PDF or Word)",
@@ -2057,6 +2064,7 @@ export default function App(){
       requiresEntitlement:"capgrid",
       customModal:"capgrid",
       plan:{tier:"Firm",priceHint:"Firm plan",status:"coming"}, // dormant: commercialization, shown faded
+      keyDeliverables:["Per-engineer capability cards","Office forte dashboards","Company capability health","Project routing advisor"],
       scope:{
         upload:[
           "Your office and department structure (you enter it directly, no file needed)",
@@ -2125,6 +2133,7 @@ export default function App(){
       requiresKey:true,
       requiresEntitlement:"learn",
       plan:{tier:"Free preview",priceHint:"Free during transition stage",status:"coming"}, // dormant: commercialization, shown faded
+      keyDeliverables:["Step-by-step solutions","Authored course library","Progress and time tracking","Source-scored answers"],
       scope:{
         upload:[
           "Nothing required to start, courses are pre-authored",
@@ -2170,6 +2179,7 @@ export default function App(){
       requiresKey:true,
       requiresEntitlement:"meet",
       plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
+      keyDeliverables:["Counterparty profile per attendee","Agenda strategy notes","Likely-question and prep map","Stakeholder positioning chart"],
       scope:{
         upload:[
           "Names and roles of the people you will meet",
@@ -2318,6 +2328,14 @@ export default function App(){
       concepts:["Specified strengths and modification factors","Bending members and lateral stability","Shear and bearing","Compression and combined loading","Connections: nails, bolts, timber rivets","Engineered wood products"],
       uploadHint:"Upload your O86 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
     },
+    {
+      id:"c-econ", module:"peo", track:"Engineering Economics and Practice",
+      code:"Eng. Econ.", title:"Engineering Economics  PEO Foundational",
+      status:"live",
+      summary:"Economic decision making for engineers. Time value of money, cash flow analysis, replacement, depreciation, taxes, inflation, sensitivity and risk. Upload your course material and study it with LEARN.",
+      concepts:["Time value of money: PV, FV, PMT, NPV, IRR","Cash flow diagrams and equivalence","Comparing alternatives: present worth, annual worth, rate of return, B/C ratio","Replacement analysis and economic service life","Depreciation methods and after-tax cash flow","Inflation, real vs nominal rates","Sensitivity analysis, break-even, risk and uncertainty","Capital budgeting and decision rules"],
+      uploadHint:"Upload your engineering economics course notes, textbook excerpts (Newnan, Park, or Fraser), solved examples, problem sets, formula sheets, lecture or tutorial material.",
+    },
   ];
 
   // ── COMMERCIAL TIER MODEL (dormant) ──────────────────────────────────────
@@ -2418,6 +2436,50 @@ export default function App(){
     setToolsSession(s => ({...s, accessKey:k, keyValidUntil:new Date(Date.now() + durationMinutes*60000).toISOString()}));
   };
 
+  // Post-purchase return path. Stripe (or any payment processor) redirects back
+  // to the site with ?paid_key=<KEY>; this consumes the param, grants a session,
+  // logs the event, and removes the param so it cannot be replayed via reload.
+  useEffect(()=>{
+    if (typeof window==="undefined") return;
+    try {
+      const url=new URL(window.location.href);
+      const pk=url.searchParams.get("paid_key");
+      if (pk && validateAccessKey(pk)) {
+        grantSession(pk.trim(), 60);
+        // best-effort analytics
+        try {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({event:"paid_session_granted",ts:new Date().toISOString()});
+        } catch(_) {}
+        url.searchParams.delete("paid_key");
+        window.history.replaceState({},"",url.pathname+(url.search?"?"+url.searchParams.toString():"")+url.hash);
+      }
+    } catch(_) {}
+  }, []);
+
+  // --- Lightweight analytics --------------------------------------------------
+  // No backend, no third-party SDK required. Each event is appended to a local
+  // ring buffer in localStorage (cap 200) and pushed onto window.dataLayer if a
+  // GTM container is present, so a later analytics setup picks events up
+  // automatically. This is the first lead-gen signal: which app a preview
+  // viewer is interested in, and what CTA they clicked.
+  const trackEvent = (name, props)=>{
+    try{
+      const evt={ event:name, ts:new Date().toISOString(), ...(props||{}) };
+      if (typeof window!=="undefined") {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push(evt);
+        try{
+          const key="isg_events";
+          const arr = JSON.parse(localStorage.getItem(key)||"[]");
+          arr.push(evt);
+          while (arr.length>200) arr.shift();
+          localStorage.setItem(key, JSON.stringify(arr));
+        } catch(_) { /* localStorage may be blocked */ }
+      }
+    } catch(_) { /* never throw from analytics */ }
+  };
+
   // --- Preview-mode helpers --------------------------------------------------
   // For the public transition period: every app shows a teaser (deliverables +
   // a blurred snapshot collage of charts/snippets) and the modal contents are
@@ -2488,9 +2550,17 @@ export default function App(){
   };
   //
   // TeaserStrip: scrollable horizontal collage of snapshots, blurred. Used on
-  // each app card on the Tools Box page. Owner mode removes the blur.
-  const TeaserStrip = ({color,deliverables})=>{
-    const kinds=["chart","gauge","radar","card","chart"];
+  // each app card on the Tools Box page. Owner mode removes the blur. Each app
+  // gets its own distinctive collage so the cards are recognisable even blurred.
+  const COLLAGE_BY_APP = {
+    capgrid: ["radar","gauge","chart","card","chart"],         // workforce intelligence visuals
+    bid:     ["gauge","gauge","chart","card","gauge"],          // ARGO: decision gauges
+    learn:   ["card","card","chart","card","gauge"],            // LEARN: course cards + progress
+    ecios:   ["chart","gauge","chart","card","chart"],          // APEX: scoring bars + hiring gauge
+    meet:    ["card","radar","card","chart","card"],            // MEET: attendee cards + room radar
+  };
+  const TeaserStrip = ({color,deliverables,appId})=>{
+    const kinds = (appId && COLLAGE_BY_APP[appId]) || ["chart","gauge","radar","card","chart"];
     return (
       <div style={{position:"relative",borderRadius:9,border:`1px dashed ${color}40`,background:color+"05",padding:"8px",marginTop:4}}>
         <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,filter:ownerMode?"none":"blur(2.5px)",opacity:ownerMode?1:0.85,scrollbarWidth:"thin"}}>
@@ -2519,26 +2589,37 @@ export default function App(){
   // Owner mode renders the content as is.
   const PreviewGate = ({app,children})=>{
     if (ownerMode) return children;
+    const closeFromGate = ()=> setActiveApp(null);
     return (
-      <div style={{position:"relative"}}>
-        <div aria-hidden="true" style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none",opacity:0.7}}>{children}</div>
-        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"24px 18px",background:`linear-gradient(180deg, ${P.white}E6 0%, ${P.white}AA 100%)`,overflowY:"auto"}}>
-          <div style={{maxWidth:540,background:P.white,borderRadius:12,border:`1px solid ${P.charcoal}25`,padding:"20px 22px",boxShadow:"0 10px 30px rgba(0,0,0,0.18)"}}>
-            <div style={{fontSize:T.micro,fontWeight:800,letterSpacing:1.2,color:P.gold,textTransform:"uppercase"}}>Preview only</div>
+      <>
+        {/* The actual modal renders fixed-positioned in the DOM; we blur it. */}
+        <div aria-hidden="true" style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none",opacity:0.7}}>
+          {children}
+        </div>
+        {/* Overlay (fixed) on top of the modal */}
+        <div role="dialog" aria-modal="true" aria-label="Preview only"
+             onClick={(e)=>{ if(e.target===e.currentTarget) closeFromGate(); }}
+             style={{position:"fixed",inset:0,zIndex:1300,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"32px 18px",background:`rgba(14,36,56,0.55)`,overflowY:"auto"}}>
+          <div style={{maxWidth:560,width:"100%",background:P.white,borderRadius:12,border:`1px solid ${P.charcoal}25`,padding:"22px 24px",boxShadow:"0 18px 50px rgba(0,0,0,0.30)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+              <div style={{fontSize:T.micro,fontWeight:800,letterSpacing:1.2,color:P.gold,textTransform:"uppercase"}}>Preview only</div>
+              <button onClick={closeFromGate} aria-label="Close preview" style={{width:28,height:28,borderRadius:6,background:"transparent",border:`1px solid ${P.charcoal}25`,color:P.charcoal,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>&times;</button>
+            </div>
             <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal,marginTop:4}}>{app?app.name:"This app"} is not yet open to the public</div>
             <div style={{fontSize:T.small,color:P.slate,marginTop:8,lineHeight:1.6}}>
-              The full app preview is hidden during this transition stage. You can scroll the teaser below the modal to see what {app?app.name:"the app"} produces. To get a private briefing or early access, scroll to the bottom of the Tools Box page and submit a request, or email <a href="mailto:info@istructgroup.com" style={{color:P.s2,fontWeight:700}}>info@istructgroup.com</a>.
+              The full app preview is hidden during this transition stage. You can still see the teaser on the Tools Box card to get a sense of what {app?app.name:"the app"} produces. For a private briefing or early access, scroll to the bottom of the Tools Box page and submit a request, or email <a href="mailto:info@istructgroup.com" style={{color:P.s2,fontWeight:700}}>info@istructgroup.com</a>.
             </div>
-            <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap"}}>
-              <a href="mailto:info@istructgroup.com?subject=iStructural Tools Box - early access request"
-                 style={{display:"inline-block",fontSize:T.small,fontWeight:800,padding:"8px 14px",borderRadius:8,background:P.s2,color:P.white,textDecoration:"none"}}>Request early access</a>
-              <button onClick={(e)=>{ e.stopPropagation(); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }}
-                style={{fontSize:T.small,fontWeight:800,padding:"8px 14px",borderRadius:8,background:"transparent",color:P.s2,border:`1px solid ${P.s2}55`,cursor:"pointer",fontFamily:"inherit"}}>Go to briefing form</button>
+            <div style={{marginTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
+              <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural Tools Box - early access request - "+(app?app.name:""))}`}
+                 onClick={()=>trackEvent("preview_request_access",{app:app?app.id:null,name:app?app.name:null})}
+                 style={{display:"inline-block",fontSize:T.small,fontWeight:800,padding:"9px 16px",borderRadius:8,background:P.s2,color:P.white,textDecoration:"none"}}>Request early access</a>
+              <button onClick={(e)=>{ e.stopPropagation(); trackEvent("preview_goto_briefing",{app:app?app.id:null,name:app?app.name:null}); closeFromGate(); setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}),60); }}
+                style={{fontSize:T.small,fontWeight:800,padding:"9px 16px",borderRadius:8,background:"transparent",color:P.s2,border:`1px solid ${P.s2}55`,cursor:"pointer",fontFamily:"inherit"}}>Go to briefing form</button>
             </div>
-            <div style={{fontSize:T.micro,color:P.slate,marginTop:10,fontStyle:"italic"}}>Owner sign-in removes this preview gate automatically.</div>
+            <div style={{fontSize:T.micro,color:P.slate,marginTop:12,fontStyle:"italic"}}>Owner sign-in removes this preview gate automatically across every app.</div>
           </div>
         </div>
-      </div>
+      </>
     );
   };
 
@@ -2684,7 +2765,7 @@ export default function App(){
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(250px, 1fr))",gap:10}}>
               {toolsApps.filter(a=>a.category===cat).map(app => (
-                <div key={app.id} onClick={()=>setActiveApp(app)} {...kbd(()=>setActiveApp(app))} aria-label={`Open ${app.name}`}
+                <div key={app.id} onClick={()=>{ trackEvent(ownerMode?"app_open_owner":"app_preview_open",{app:app.id,name:app.name}); setActiveApp(app); }} {...kbd(()=>{ trackEvent(ownerMode?"app_open_owner":"app_preview_open",{app:app.id,name:app.name}); setActiveApp(app); })} aria-label={`Open ${app.name}`}
                      style={{padding:"14px",borderRadius:10,background:P.white,border:`1px solid ${app.iconColor}25`,cursor:"pointer",transition:"all 0.18s",display:"flex",flexDirection:"column",gap:10,minHeight:170}}
                      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 18px ${app.iconColor}25`;}}
                      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
@@ -2732,8 +2813,22 @@ export default function App(){
                     </div>
                   )}
 
+                  {/* Teaser strip: curated deliverable chips + blurred snapshot collage */}
+                  <TeaserStrip color={app.iconColor} appId={app.id} deliverables={app.keyDeliverables||(app.scope&&app.scope.included)||(app.capabilities||[])}/>
+
                   {/* Action buttons */}
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    {/* Buy access: only shown when a Stripe link is configured and the visitor is not the owner */}
+                    {!ownerMode && app.commercial && app.commercial.stripeUrl && (
+                      <a
+                        href={app.commercial.stripeUrl}
+                        target="_blank" rel="noopener noreferrer"
+                        onClick={(e)=>{ e.stopPropagation(); trackEvent("buy_access_click",{app:app.id,name:app.name,price:app.commercial.priceLabel||null}); }}
+                        aria-label={`Buy access to ${app.name}`}
+                        style={{flex:"1 1 120px",fontSize:T.small,fontWeight:800,padding:"8px 10px",borderRadius:8,background:P.gold,color:"#3A2C00",border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3,textAlign:"center",textDecoration:"none"}}>
+                        Buy access{app.commercial.priceLabel?` · ${app.commercial.priceLabel}`:""}
+                      </a>
+                    )}
                     {app.requiresKey && !sessionStillValid && (
                       <button
                         onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
@@ -2794,9 +2889,23 @@ export default function App(){
       <BriefingRequestForm apps={toolsApps} accepted={toolsDisclaimerAccepted} setAccepted={setToolsDisclaimerAccepted} />
 
       {/* ═══ APP DETAIL MODAL ═══ */}
-      {activeApp && activeApp.customModal==="learn" && <LearnModal app={activeApp} modules={learnModules} courses={learnCourses} onClose={()=>setActiveApp(null)} />}
-      {activeApp && activeApp.customModal==="capgrid" && <CapacityGridModal app={activeApp} ownerMode={ownerMode} onClose={()=>setActiveApp(null)} />}
-      {activeApp && !activeApp.customModal && <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />}
+      {/* For non-owners, the modal is rendered inside a PreviewGate which blurs
+          contents and overlays a Preview-only notice. Owner mode bypasses it. */}
+      {activeApp && activeApp.customModal==="learn" && (
+        <PreviewGate app={activeApp}>
+          <LearnModal app={activeApp} modules={learnModules} courses={learnCourses} onClose={()=>setActiveApp(null)} />
+        </PreviewGate>
+      )}
+      {activeApp && activeApp.customModal==="capgrid" && (
+        <PreviewGate app={activeApp}>
+          <CapacityGridModal app={activeApp} ownerMode={ownerMode} onClose={()=>setActiveApp(null)} />
+        </PreviewGate>
+      )}
+      {activeApp && !activeApp.customModal && (
+        <PreviewGate app={activeApp}>
+          <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />
+        </PreviewGate>
+      )}
     </div>
   );
 
@@ -2890,6 +2999,7 @@ export default function App(){
       followups:{},        // {personId:{mentorId, confirmed:bool}}  B6a
       meetings:{},         // {personId:[{id,date,targets,notes,nextDate}]}  B6b
       cycles:[],           // [{id,date,label,snapshot:{personId:coverage}}]  B6c
+      validations:{},      // {personId:{by, date, note}}  D1 validation layer: approver confirms scores
     });
     const [state, setState] = useState(null);   // null while loading
     const [busy, setBusy] = useState(true);
@@ -3125,6 +3235,16 @@ export default function App(){
       s.cycles=[...s.cycles,{id:cgId(),date:today,label:label||`Cycle ${s.cycles.length+1}`,snapshot:snap}];
     });
     const delCycle = (cId)=> patch(s=>{ s.cycles=s.cycles.filter(c=>c.id!==cId); });
+    // D1: validation layer. An approver confirms a person's self-scores once
+    // they have reviewed the assessment sheet, optionally with a short note.
+    // The Capability Card then shows a "confirmed by approver" badge so any
+    // decision maker knows the scores have been reviewed, not just self-reported.
+    const validateScores = (personId,approverName,note)=> patch(s=>{
+      s.validations={...s.validations,[personId]:{by:approverName||"Approver",date:new Date().toISOString().slice(0,10),note:note||""}};
+    });
+    const unvalidateScores = (personId)=> patch(s=>{
+      const v={...s.validations}; delete v[personId]; s.validations=v;
+    });
 
     // ---- CSV: export a per-department blank assessment sheet ----
     const csvEscape = (v)=>{ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
@@ -3434,7 +3554,8 @@ export default function App(){
 
             {tab==="cards" && <CapGridCards state={state} personCard={personCard}
               officeName={officeName} deptName={deptName}
-              activePerson={activePerson} setActivePerson={setActivePerson} ownerMode={ownerMode} />}
+              activePerson={activePerson} setActivePerson={setActivePerson} ownerMode={ownerMode}
+              validateScores={validateScores} unvalidateScores={unvalidateScores} />}
 
             {tab==="office" && <CapGridOfficeDash state={state} officeForte={officeForte} ownerMode={ownerMode} />}
 
@@ -4292,7 +4413,7 @@ export default function App(){
   };
 
   // --- B3: Capability Cards panel ---------------------------------------------
-  const CapGridCards = ({state,personCard,officeName,deptName,activePerson,setActivePerson,ownerMode}) => {
+  const CapGridCards = ({state,personCard,officeName,deptName,activePerson,setActivePerson,ownerMode,validateScores,unvalidateScores}) => {
     const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
     const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
 
@@ -4324,9 +4445,102 @@ export default function App(){
               <div style={{display:"flex",gap:6}}>
                 {p.isKey && <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,background:P.gold+"25",color:"#7A5A00",border:`1px solid ${P.gold}55`}}>KEY PERSON</span>}
                 {p.isApprover && <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,background:P.s3+"20",color:P.s3,border:`1px solid ${P.s3}45`}}>APPROVER</span>}
+                {state.validations && state.validations[p.id] && (
+                  <span title={`Confirmed ${state.validations[p.id].date} by ${state.validations[p.id].by}${state.validations[p.id].note?" — "+state.validations[p.id].note:""}`}
+                    style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,background:P.s2+"20",color:P.s2,border:`1px solid ${P.s2}45`}}>CONFIRMED ✓</span>
+                )}
               </div>
             </div>
             {p.jobDesc && <div style={{fontSize:T.small,color:P.charcoal,marginTop:8,lineHeight:1.5}}>{p.jobDesc}</div>}
+            {/* D3: Export / Print as a branded one-pager (opens a print window) */}
+            <div style={{marginTop:8}}>
+              <button onClick={()=>{
+                const v=state.validations&&state.validations[p.id];
+                const esc=(s)=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                const rowsHtml=cd.done.map(r=>`<tr><td>${esc(r.t.category)}</td><td>${esc(r.t.detail)}</td><td style="text-align:center">${r.s.exp===1?"Yes":"No"}</td><td style="text-align:center">${r.s.freq}</td><td style="text-align:center">${r.s.chal}</td></tr>`).join("");
+                const html=`<!doctype html><html><head><meta charset="utf-8"><title>Capability Card  ${esc(p.name)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'DM Sans','Segoe UI',Helvetica,Arial,sans-serif;}
+  body{background:#fff;color:#1C2733;padding:24px;line-height:1.5;}
+  h1,h2,h3,.serif{font-family:Georgia,'Times New Roman',serif;}
+  .head{background:linear-gradient(135deg,#0E2438,#143352);color:#fff;padding:18px 22px;border-radius:10px;margin-bottom:18px;}
+  .head h1{font-size:22px;}
+  .head .sub{font-size:13px;color:#5FB5B5;margin-top:3px;}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:5px;background:rgba(255,255,255,0.2);margin-right:6px;letter-spacing:0.6px;text-transform:uppercase;}
+  .kpis{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .kpi{flex:1 1 120px;text-align:center;padding:12px;background:#F4F1EA;border-radius:9px;border:1px solid rgba(28,39,51,0.10);}
+  .kpi .n{font-family:Georgia,serif;font-size:28px;font-weight:700;}
+  .kpi .l{font-size:11px;font-weight:700;color:#6B7785;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+  th{text-align:left;padding:6px 8px;background:#F4F1EA;font-size:10.5px;font-weight:800;color:#6B7785;text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid rgba(28,39,51,0.1);}
+  td{padding:6px 8px;border-bottom:1px solid rgba(28,39,51,0.06);}
+  .sec{margin-top:18px;}
+  .sec h2{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#1F8A8A;margin-bottom:8px;}
+  .conf{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:5px;background:#E5EFF6;color:#1F6FA8;border:1px solid rgba(31,111,168,0.35);margin-bottom:10px;}
+  .self{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:5px;background:#FCE7E3;color:#C8553D;border:1px solid rgba(200,85,61,0.35);margin-bottom:10px;}
+  footer{margin-top:30px;font-size:10.5px;color:#6B7785;border-top:1px solid rgba(28,39,51,0.1);padding-top:10px;text-align:center;}
+  @media print{body{padding:0;}.head{border-radius:0;}}
+</style>
+</head><body>
+<div class="head">
+  <h1>Capability Card  ${esc(p.name)}</h1>
+  <div class="sub">${esc(p.title||"")} &middot; ${esc(deptName(p.deptId))} &middot; ${esc(officeName(p.officeId))}</div>
+  <div style="margin-top:8px">
+    ${p.isKey?'<span class="badge">Key Person</span>':""}
+    ${p.isApprover?'<span class="badge">Approver</span>':""}
+    <span class="badge" style="background:rgba(255,255,255,0.28)">${esc(p.level||"Engineer")}</span>
+  </div>
+</div>
+${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  &quot;"+esc(v.note)+"&quot;":""}</span>`:'<span class="self">SELF-REPORTED  approver confirmation pending</span>'}
+<div class="kpis">
+  <div class="kpi"><div class="n" style="color:#2E7D6B">${cd.capable.length}</div><div class="l">Tasks known</div></div>
+  <div class="kpi"><div class="n" style="color:#3E8E5A">${cd.strong.length}</div><div class="l">Strong (known + frequent)</div></div>
+  <div class="kpi"><div class="n" style="color:#C8553D">${cd.gaps.length}</div><div class="l">Gaps</div></div>
+  <div class="kpi"><div class="n" style="color:#1F6FA8">${cd.avgExp}%</div><div class="l">Knowledge coverage</div></div>
+</div>
+<div class="sec">
+  <h2>Tasks assessed for this engineer</h2>
+  <table>
+    <thead><tr><th>Stage</th><th>Task</th><th>Known</th><th>Frequency</th><th>Challenge</th></tr></thead>
+    <tbody>${rowsHtml||'<tr><td colspan="5" style="text-align:center;color:#6B7785;font-style:italic">No assessed tasks yet.</td></tr>'}</tbody>
+  </table>
+</div>
+<footer>
+  iStructural Group  CapacityGrid Capability Card.  Knowledge 0 or 1.  Frequency 0 to 5.  Challenge 1 to 5.<br>
+  Printed ${new Date().toISOString().slice(0,10)}. Use your browser's Print to PDF.
+</footer>
+<script>setTimeout(()=>window.print(),300);</script>
+</body></html>`;
+                const w=window.open("","_blank","width=820,height=1000");
+                if(w){ w.document.open(); w.document.write(html); w.document.close(); }
+              }} aria-label={`Export capability card for ${p.name} as a printable page`}
+                style={{fontSize:T.micro,fontWeight:800,padding:"6px 11px",borderRadius:6,background:"transparent",border:`1px solid ${P.s2}55`,color:P.s2,cursor:"pointer",fontFamily:"inherit"}}>
+                Export / Print this card
+              </button>
+            </div>
+            {/* D1: Approver validation control */}
+            {ownerMode && (
+              <div style={{marginTop:10,padding:"8px 10px",background:P.sand,borderRadius:7,border:`1px solid ${P.charcoal}10`,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                {state.validations && state.validations[p.id] ? (
+                  <>
+                    <span style={{fontSize:T.micro,fontWeight:800,color:P.s2}}>Scores confirmed by {state.validations[p.id].by} on {state.validations[p.id].date}</span>
+                    {state.validations[p.id].note && <span style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>"{state.validations[p.id].note}"</span>}
+                    <button onClick={()=>{ if(window.confirm("Remove the approver confirmation for "+p.name+"?")) unvalidateScores(p.id); }}
+                      style={{marginLeft:"auto",fontSize:T.micro,fontWeight:800,padding:"4px 10px",borderRadius:6,background:"transparent",border:`1px solid ${P.coral}55`,color:P.coral,cursor:"pointer",fontFamily:"inherit"}}>Unconfirm</button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{fontSize:T.micro,color:P.slate}}>These scores are self-reported. Approver confirmation removes the self-report caveat.</span>
+                    <button onClick={()=>{
+                      const by=window.prompt("Approver name (will be recorded on the card):","");
+                      if(by===null) return;
+                      const note=window.prompt("Optional note (e.g. how the scores were reviewed):","")||"";
+                      validateScores(p.id, by.trim()||"Approver", note.trim());
+                    }} style={{marginLeft:"auto",fontSize:T.micro,fontWeight:800,padding:"4px 10px",borderRadius:6,background:P.s2,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Confirm scores</button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{...card,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:12}}>
@@ -4849,6 +5063,99 @@ export default function App(){
     );
   };
 
+  // --- Project Assignment Advisor --------------------------------------------
+  // The executive answer to "who should we put on this project". The owner
+  // picks a capability area, a leadership level, and a team size. The advisor
+  // scores every office for fit on that area, then for the top-ranked office
+  // names the top N people by knowledge in that area, with a short rationale.
+  const ProjectAssignmentAdvisor = ({state,offForte,card,sectionTitle})=>{
+    const [area,setArea]=useState("High-rise Towers");
+    const [leadLevel,setLeadLevel]=useState("Senior");
+    const [teamSize,setTeamSize]=useState(3);
+    // For each office, compute the area strength
+    const ranked=offForte
+      .map(x=>({office:x.office, strength:(x.forte.areas[area]||{strength:0}).strength}))
+      .sort((a,b)=>b.strength-a.strength);
+    const winner=ranked[0];
+    // For the winning office, rank its people on tasks tagged to this area
+    const winnerPpl=winner ? state.people.filter(p=>p.officeId===winner.office.id) : [];
+    const areaTaskIds=state.tasks.filter(t=>(t.area||"General")===area).map(t=>t.id);
+    const scored=winnerPpl.map(p=>{
+      const sc=state.assess[p.id]||{};
+      const known=areaTaskIds.filter(tid=>(sc[tid]||{exp:0}).exp===1).length;
+      const totalAssessed=areaTaskIds.filter(tid=> tid in sc).length;
+      const cov=totalAssessed?Math.round(known/totalAssessed*100):0;
+      // freq sum for area, used as a tiebreaker
+      const freqSum=areaTaskIds.reduce((s,tid)=> s+((sc[tid]||{freq:0}).freq||0),0);
+      // level match score: people at or above the lead level get a small boost
+      const lvls=["Technician","Graduate","Engineer","Senior"];
+      const myRank=Math.max(0,lvls.indexOf(p.level||"Engineer"));
+      const wantRank=Math.max(0,lvls.indexOf(leadLevel));
+      const levelMatch = myRank>=wantRank ? 1.0 : 0.7;
+      const fit=Math.round(cov*levelMatch);
+      return {p,cov,known,totalAssessed,freqSum,fit};
+    }).sort((a,b)=> b.fit-a.fit || b.cov-a.cov || b.freqSum-a.freqSum);
+    const top=scored.slice(0,Math.max(1,Math.min(scored.length,teamSize||3)));
+    const inp={padding:"6px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+    return (
+      <div style={{...card,background:P.s3L+"55",border:`1px solid ${P.s3}30`}}>
+        <div style={sectionTitle}>Project Assignment Advisor</div>
+        <div style={{fontSize:T.micro,color:P.slate,marginBottom:10,lineHeight:1.5}}>
+          Score every office on this project. Name the people inside the leading office. Read the rationale before signing.
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:12}}>
+          <div style={{flex:"1 1 220px"}}>
+            <label style={{display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:3,textTransform:"uppercase",letterSpacing:0.4}}>Capability area</label>
+            <select style={{...inp,width:"100%"}} value={area} onChange={e=>setArea(e.target.value)}>
+              {CG_STRUCT_AREAS.filter(a=>a!=="General").map(a=><option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div style={{flex:"1 1 140px"}}>
+            <label style={{display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:3,textTransform:"uppercase",letterSpacing:0.4}}>Lead level</label>
+            <select style={{...inp,width:"100%"}} value={leadLevel} onChange={e=>setLeadLevel(e.target.value)}>
+              {CG_LEVELS.map(L=><option key={L} value={L}>{L}</option>)}
+            </select>
+          </div>
+          <div style={{flex:"0 0 110px"}}>
+            <label style={{display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:3,textTransform:"uppercase",letterSpacing:0.4}}>Team size</label>
+            <input type="number" min="1" max="20" style={{...inp,width:"100%"}} value={teamSize}
+              onChange={e=>setTeamSize(Math.max(1,Math.min(20,parseInt(e.target.value,10)||1)))}/>
+          </div>
+        </div>
+        {/* Office ranking */}
+        <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Office fit ranking</div>
+        {ranked.length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No assessed offices yet.</div>}
+        {ranked.map((r,i)=>(
+          <div key={r.office.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:i===0?P.s3L:P.sand,borderRadius:6,marginBottom:3,fontSize:T.small,border:i===0?`1px solid ${P.s3}45`:`1px solid transparent`}}>
+            <span style={{color:P.charcoal,fontWeight:i===0?800:700}}>{i===0?"⭐ ":""}{r.office.name}</span>
+            <span style={{color:P.slate}}>{r.strength}/100</span>
+          </div>
+        ))}
+        {/* Top people in the winning office */}
+        {winner && top.length>0 && (
+          <div style={{marginTop:12}}>
+            <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Top {top.length} {top.length===1?"person":"people"} at {winner.office.name}</div>
+            {top.map((row,i)=>(
+              <div key={row.p.id} style={{padding:"8px 10px",background:P.white,borderRadius:7,marginBottom:4,border:`1px solid ${P.charcoal}10`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}}>
+                  <span style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{i===0?"Lead: ":"Support: "}{row.p.name}
+                    <span style={{marginLeft:6,fontWeight:600,color:P.slate}}>{row.p.level||"Engineer"}{row.p.title?` · ${row.p.title}`:""}</span></span>
+                  <span style={{fontSize:T.micro,fontWeight:800,color:P.s2}}>Fit {row.fit}/100</span>
+                </div>
+                <div style={{fontSize:T.micro,color:P.slate,marginTop:2}}>
+                  Knows {row.known} of {row.totalAssessed} assessed tasks in {area}{row.freqSum>0?`, recurring frequency ${row.freqSum}`:""}.
+                </div>
+              </div>
+            ))}
+            <div style={{fontSize:T.micro,color:P.slate,marginTop:6,fontStyle:"italic",lineHeight:1.5}}>
+              Rationale: {winner.office.name} has the highest area strength ({winner.strength}/100); the lead is the highest area-fit person at or above {leadLevel} level; the support set is ranked by knowledge then by frequency in {area}.
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // --- Executive dashboard ----------------------------------------------------
   // The owner's skim: the company as one connected body, capability health,
   // active follow-up pairings, meeting promises kept, and a retention signal.
@@ -5002,7 +5309,7 @@ export default function App(){
           </div>
         </div>
 
-        {/* Project routing summary */}
+        {/* Project routing summary (area-by-area) */}
         <div style={card}>
           <div style={sectionTitle}>Project routing summary</div>
           <div style={{fontSize:T.micro,color:P.slate,marginBottom:8,lineHeight:1.5}}>
@@ -5022,6 +5329,9 @@ export default function App(){
             );
           })}
         </div>
+
+        {/* Project Assignment Advisor: live project-to-people matcher */}
+        <ProjectAssignmentAdvisor state={state} offForte={offForte} card={card} sectionTitle={sectionTitle}/>
 
         {/* Promises kept: meetings due */}
         <div style={card}>

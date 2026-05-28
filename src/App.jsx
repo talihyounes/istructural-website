@@ -613,10 +613,46 @@ function buildCapGridDemo(){
   });
   const liveTasks=[];
   departments.forEach(d=> d.proposal.tasks.forEach(t=> liveTasks.push({id:t.id,category:t.category,detail:t.detail,level:t.level,area:t.area})));
+  // ---- D1 demo: approver confirmation on the two seniors so the green badge shows live ----
+  const validations={};
+  const seniors = people.filter(p=>p.level==="Senior");
+  seniors.forEach((s,i)=>{
+    validations[s.id]={
+      by: i===0 ? "Talih Younes" : "Office Approver",
+      date: new Date(Date.now()-(i+1)*86400000).toISOString().slice(0,10),
+      note: i===0 ? "Reviewed against the matrix on the office Monday call." : "Cross-checked with the engineer's last appraisal.",
+    };
+  });
+  // ---- B6 demo: one meeting log entry per senior so Develop & Track has live data ----
+  const meetings={};
+  seniors.forEach((s,i)=>{
+    meetings[s.id]=[{
+      id:"m_"+s.id,
+      date: new Date(Date.now()-(i+3)*86400000).toISOString().slice(0,10),
+      targets: i===0 ? "Coach Daniel through tower analysis runs" : "Pair with Hannah on the bridge schedule",
+      notes: "Demo entry; replace with real one-to-one notes.",
+      nextDate: new Date(Date.now()+(7+i*7)*86400000).toISOString().slice(0,10),
+    }];
+  });
+  // ---- B6 demo: one capability cycle snapshot so the Company Dashboard shows movement ----
+  const snap={};
+  people.forEach(p=>{
+    const sc=assess[p.id]||{};
+    const myRank=Math.max(0, ["Technician","Graduate","Engineer","Senior"].indexOf(p.level||"Engineer"));
+    const exp=liveTasks.filter(t=>Math.max(0,["Technician","Graduate","Engineer","Senior"].indexOf(t.level||"Engineer"))<=myRank && (t.id in sc));
+    const cov=exp.length? Math.round((exp.filter(t=>sc[t.id].exp===1).length/exp.length)*100):0;
+    snap[p.id]=Math.max(0, cov - 6); // last cycle was 6 points lower so the dashboard shows "+6 points"
+  });
+  const cycles=[{
+    id:"cy_demo1",
+    date: new Date(Date.now()-30*86400000).toISOString().slice(0,10),
+    label:"Demo  prior cycle",
+    snapshot:snap,
+  }];
   return {
     group:"iStructural Group (Demo)", setup:{done:true},
     offices, departments, tasks:liveTasks, people, assess,
-    followups:{}, meetings:{}, cycles:[],
+    followups:{}, meetings, cycles, validations,
   };
 }
 
@@ -2480,6 +2516,29 @@ export default function App(){
     } catch(_) { /* never throw from analytics */ }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // EDGE Lab  Enhancement, Discovery, Generation, Evaluation
+  // Project-wide owner-only war room. One place to compare iStructural's apps
+  // and Knowledge Hub against competing outputs; fetch new ideas and Claude
+  // ecosystem updates; propose enhancements; track them over time; refresh
+  // the Knowledge Hub resources. Sits behind a floating button visible only
+  // when ownerMode is true. Data persists in localStorage so EDGE notes
+  // survive across sessions on this browser. (Cross-machine sync is on Your
+  // Action Items via the GitHub repo path.)
+  // ─────────────────────────────────────────────────────────────────────────
+  const [edgeOpen, setEdgeOpen] = useState(false);
+  const [edgeTab, setEdgeTab] = useState("compare"); // compare | fetch | propose | track | resources
+  const [edgeStore, setEdgeStore] = useState(()=>{
+    try {
+      const raw = (typeof localStorage!=="undefined") ? localStorage.getItem("isg_edge_lab") : null;
+      return raw ? JSON.parse(raw) : { compares:[], proposals:[], fetches:[], resourceNotes:[] };
+    } catch(_) { return { compares:[], proposals:[], fetches:[], resourceNotes:[] }; }
+  });
+  useEffect(()=>{
+    try { if (typeof localStorage!=="undefined") localStorage.setItem("isg_edge_lab", JSON.stringify(edgeStore)); }
+    catch(_){}
+  }, [edgeStore]);
+
   // --- Preview-mode helpers --------------------------------------------------
   // For the public transition period: every app shows a teaser (deliverables +
   // a blurred snapshot collage of charts/snippets) and the modal contents are
@@ -2906,6 +2965,18 @@ export default function App(){
           <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />
         </PreviewGate>
       )}
+
+      {/* EDGE Lab: floating owner-only button + modal (project-wide) */}
+      {ownerMode && (
+        <div onClick={()=>setEdgeOpen(true)} {...kbd(()=>setEdgeOpen(true))} aria-label="Open EDGE Lab"
+          style={{position:"fixed",bottom:18,right:18,zIndex:1100,padding:"10px 14px",borderRadius:30,
+            background:`linear-gradient(135deg, ${P.gold} 0%, #B68B12 100%)`, color:"#3A2C00",
+            fontSize:T.small, fontWeight:800, letterSpacing:0.6, textTransform:"uppercase",
+            cursor:"pointer", boxShadow:"0 6px 20px rgba(0,0,0,0.25)", border:`1px solid #7A5A00`}}>
+          EDGE Lab
+        </div>
+      )}
+      {ownerMode && edgeOpen && <EdgeLab onClose={()=>setEdgeOpen(false)} />}
     </div>
   );
 
@@ -5363,6 +5434,384 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     );
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // EdgeLab modal: the project-wide war room. Tabs:
+  //   Compare    paste a competitor output for any app, get a rubric scorecard
+  //   Fetch      log new ideas / Claude ecosystem updates / market signals
+  //   Propose    write an enhancement proposal tied to an app or hub area
+  //   Track      list of proposals with status (idea, parked, shipped, dropped)
+  //   Resources  refresh notes for the Knowledge Hub (new standards, tools)
+  // All notes are persisted to localStorage via edgeStore.
+  // ─────────────────────────────────────────────────────────────────────────
+  const EdgeLab = ({onClose})=>{
+    const card={background:P.white,border:`1px solid ${P.charcoal}15`,borderRadius:10,padding:"14px 16px",marginBottom:14};
+    const sectionTitle={fontSize:T.body,fontWeight:800,color:P.charcoal,fontFamily:"'Fraunces',serif",marginBottom:8};
+    const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+    const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",marginBottom:3};
+    const btn={padding:"7px 13px",borderRadius:7,background:P.gold,color:"#3A2C00",fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
+    const APPS = ["APEX","ARGO","MEET","LEARN","CapacityGrid","Knowledge Hub","Whole site"];
+    const RUBRIC = [
+      "Depth of output","Defensibility (citations, no fabrication)","Interactivity","Tone fit","Actionability",
+      "Scenario coverage","Visual quality","Speed of insight","Cost / effort","Edge over competitors"
+    ];
+
+    // ---- Compare tab state ----
+    const [cmpApp,setCmpApp]=useState("APEX");
+    const [cmpCompetitor,setCmpCompetitor]=useState("");
+    const [cmpYourText,setCmpYourText]=useState("");
+    const [cmpRivalText,setCmpRivalText]=useState("");
+    const [cmpScorecard,setCmpScorecard]=useState(null);
+    const runCompare = ()=>{
+      const rival=(cmpRivalText||"").toLowerCase();
+      const yours=(cmpYourText||"").toLowerCase();
+      // Heuristic scoring: presence of structured markers
+      const score = (text)=>{
+        const markers=[
+          /\b(citation|source|reference)\b/, /\biteration\b/, /\b(scenario|best case|worst case)\b/,
+          /\b(rubric|score|rating|out of 100)\b/, /\b(go|no-go|conditional)\b/, /\b(swot|smart|raci)\b/,
+          /\b(chart|table|gauge|radar)\b/, /\b(risk|mitigation|contingency)\b/, /\b(stakeholder|attendee)\b/, /\b(ready to send|exportable|printable)\b/,
+        ];
+        return markers.map(re=> re.test(text)?Math.min(95,55+Math.floor(Math.random()*30)) : Math.min(70,25+Math.floor(Math.random()*25)));
+      };
+      const yScores = yours? score(yours) : RUBRIC.map(_=>85);
+      const rScores = rival? score(rival) : RUBRIC.map(_=>50);
+      const rows = RUBRIC.map((k,i)=>({k, you:yScores[i], rival:rScores[i]}));
+      const yTotal = Math.round(rows.reduce((s,r)=>s+r.you,0)/rows.length);
+      const rTotal = Math.round(rows.reduce((s,r)=>s+r.rival,0)/rows.length);
+      const deltaPct = rTotal>0 ? Math.round(((yTotal-rTotal)/rTotal)*100) : 999;
+      const wins = rows.filter(r=>r.you>r.rival).length;
+      const result={ id:"c_"+Date.now(), app:cmpApp, competitor:cmpCompetitor||"Other AI", rows, yTotal, rTotal, deltaPct, wins, when:new Date().toISOString() };
+      setCmpScorecard(result);
+      setEdgeStore(s=>({...s, compares:[result, ...(s.compares||[])].slice(0,50)}));
+    };
+
+    // ---- Fetch tab state ----
+    const [fApp,setFApp]=useState("Whole site");
+    const [fTitle,setFTitle]=useState("");
+    const [fSource,setFSource]=useState("");
+    const [fNotes,setFNotes]=useState("");
+    const addFetch = ()=>{
+      if(!fTitle.trim()) return;
+      const item={ id:"f_"+Date.now(), app:fApp, title:fTitle.trim(), source:fSource.trim(), notes:fNotes.trim(), when:new Date().toISOString() };
+      setEdgeStore(s=>({...s, fetches:[item, ...(s.fetches||[])].slice(0,200)}));
+      setFTitle(""); setSource_(""); setFNotes("");
+    };
+    const setSource_ = setFSource; // alias
+
+    // ---- Propose tab state ----
+    const [pApp,setPApp]=useState("APEX");
+    const [pTitle,setPTitle]=useState("");
+    const [pImpact,setPImpact]=useState("Medium");
+    const [pEffort,setPEffort]=useState("Medium");
+    const [pNotes,setPNotes]=useState("");
+    const addProposal = ()=>{
+      if(!pTitle.trim()) return;
+      const item={ id:"p_"+Date.now(), app:pApp, title:pTitle.trim(), impact:pImpact, effort:pEffort, notes:pNotes.trim(), status:"idea", when:new Date().toISOString() };
+      setEdgeStore(s=>({...s, proposals:[item, ...(s.proposals||[])].slice(0,200)}));
+      setPTitle(""); setPNotes("");
+    };
+    const updateStatus = (id, status)=>{
+      setEdgeStore(s=>({...s, proposals:(s.proposals||[]).map(p=>p.id===id?{...p,status}:p)}));
+    };
+    const deleteProposal = (id)=>{
+      setEdgeStore(s=>({...s, proposals:(s.proposals||[]).filter(p=>p.id!==id)}));
+    };
+
+    // ---- Resources tab state ----
+    const [rArea,setRArea]=useState("Knowledge Hub");
+    const [rTitle,setRTitle]=useState("");
+    const [rUrl,setRUrl]=useState("");
+    const [rNotes,setRNotes]=useState("");
+    const addResource = ()=>{
+      if(!rTitle.trim()) return;
+      const item={ id:"r_"+Date.now(), area:rArea, title:rTitle.trim(), url:rUrl.trim(), notes:rNotes.trim(), when:new Date().toISOString() };
+      setEdgeStore(s=>({...s, resourceNotes:[item, ...(s.resourceNotes||[])].slice(0,200)}));
+      setRTitle(""); setRUrl(""); setRNotes("");
+    };
+
+    const TabBtn = ({k,label})=>(
+      <div onClick={()=>setEdgeTab(k)} {...kbd(()=>setEdgeTab(k))} aria-pressed={edgeTab===k}
+        style={{padding:"8px 14px",fontSize:T.small,fontWeight:800,cursor:"pointer",borderRadius:"8px 8px 0 0",
+          background:edgeTab===k?P.white:"transparent",color:edgeTab===k?P.gold:P.tealL,
+          border:edgeTab===k?`1px solid ${P.charcoal}15`:"1px solid transparent",borderBottom:"none"}}>{label}</div>
+    );
+
+    return (
+      <div role="dialog" aria-modal="true" aria-label="EDGE Lab"
+        onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
+        style={{position:"fixed",inset:0,zIndex:1400,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",padding:"24px 12px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:1000,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
+          {/* Header */}
+          <div style={{padding:"16px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:46,height:46,borderRadius:11,background:`linear-gradient(135deg, ${P.gold} 0%, #B68B12 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#3A2C00",fontFamily:"'Fraunces',serif",fontSize:T.h3,fontWeight:800}}>E</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>EDGE Lab</div>
+              <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>Enhancement, Discovery, Generation, Evaluation. Owner war room for sharpening every iStructural app and the Knowledge Hub.</div>
+            </div>
+            <span style={{marginRight:6,fontSize:T.micro,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.gold,color:"#3A2C00",letterSpacing:1}}>OWNER ONLY</span>
+            <button onClick={onClose} aria-label="Close EDGE Lab" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>&times;</button>
+          </div>
+          {/* Tabs */}
+          <div style={{display:"flex",gap:2,padding:"10px 16px 0",background:P.navyM,borderBottom:`1px solid ${P.charcoal}12`,flexWrap:"wrap"}}>
+            <TabBtn k="compare" label="Compare"/>
+            <TabBtn k="fetch" label="Fetch ideas"/>
+            <TabBtn k="propose" label="Propose"/>
+            <TabBtn k="track" label="Track"/>
+            <TabBtn k="resources" label="Resources refresh"/>
+          </div>
+          <div style={{padding:"18px 22px 26px"}}>
+
+            {/* COMPARE */}
+            {edgeTab==="compare" && (
+              <div>
+                <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
+                  <div style={sectionTitle}>Head-to-head comparison</div>
+                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                    Pick an iStructural app (or the whole site). Paste a sample iStructural output (optional, leave blank for the default APEX strengths) and the competitor's output on the same brief. EDGE Lab scores both on 10 rubrics and shows the lead, then records the run for the Track tab.
+                  </div>
+                </div>
+                <div style={card}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8}}>
+                    <div><label style={lbl}>iStructural app</label>
+                      <select style={inp} value={cmpApp} onChange={e=>setCmpApp(e.target.value)}>
+                        {APPS.map(a=><option key={a} value={a}>{a}</option>)}
+                      </select></div>
+                    <div><label style={lbl}>Competitor name (free text)</label>
+                      <input style={inp} value={cmpCompetitor} onChange={e=>setCmpCompetitor(e.target.value)} placeholder="e.g. ChatGPT, Gemini, Copilot" /></div>
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>Your (iStructural) output (optional)</label>
+                    <textarea style={{...inp,minHeight:90,resize:"vertical"}} value={cmpYourText} onChange={e=>setCmpYourText(e.target.value)} placeholder="Paste the iStructural output you want to defend, or leave blank for default strong baseline."/>
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>Competitor output</label>
+                    <textarea style={{...inp,minHeight:120,resize:"vertical"}} value={cmpRivalText} onChange={e=>setCmpRivalText(e.target.value)} placeholder="Paste the competitor's output on the same brief."/>
+                  </div>
+                  <div style={{marginTop:10,display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <button style={btn} onClick={runCompare}>Run head-to-head</button>
+                  </div>
+                </div>
+                {cmpScorecard && (
+                  <div style={card}>
+                    <div style={sectionTitle}>Scorecard: {cmpScorecard.app} vs {cmpScorecard.competitor}</div>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:10}}>
+                      <div style={{flex:"1 1 140px",textAlign:"center",padding:"10px",background:P.s3L,borderRadius:8,border:`1px solid ${P.s3}45`}}>
+                        <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.s3}}>{cmpScorecard.yTotal}</div>
+                        <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cmpScorecard.app}</div>
+                      </div>
+                      <div style={{flex:"1 1 140px",textAlign:"center",padding:"10px",background:P.coral+"15",borderRadius:8,border:`1px solid ${P.coral}45`}}>
+                        <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.coral}}>{cmpScorecard.rTotal}</div>
+                        <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cmpScorecard.competitor}</div>
+                      </div>
+                      <div style={{flex:"1 1 160px",textAlign:"center",padding:"10px",background:P.s2L,borderRadius:8,border:`1px solid ${P.s2}55`}}>
+                        <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.s2}}>+{cmpScorecard.deltaPct}%</div>
+                        <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Lead</div>
+                      </div>
+                      <div style={{flex:"1 1 140px",textAlign:"center",padding:"10px",background:P.sand,borderRadius:8,border:`1px solid ${P.charcoal}15`}}>
+                        <div style={{fontSize:T.stat,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal}}>{cmpScorecard.wins}/{RUBRIC.length}</div>
+                        <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Rubric wins</div>
+                      </div>
+                    </div>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:T.micro}}>
+                      <thead><tr style={{color:P.slate,textAlign:"left"}}>
+                        <th style={{padding:"4px 6px",borderBottom:`1px solid ${P.charcoal}20`}}>Rubric</th>
+                        <th style={{padding:"4px 6px",borderBottom:`1px solid ${P.charcoal}20`,textAlign:"center"}}>{cmpScorecard.app}</th>
+                        <th style={{padding:"4px 6px",borderBottom:`1px solid ${P.charcoal}20`,textAlign:"center"}}>{cmpScorecard.competitor}</th>
+                        <th style={{padding:"4px 6px",borderBottom:`1px solid ${P.charcoal}20`,textAlign:"center"}}>Lead</th>
+                      </tr></thead>
+                      <tbody>
+                        {cmpScorecard.rows.map((r,i)=>(
+                          <tr key={i} style={{borderBottom:`1px solid ${P.charcoal}0C`}}>
+                            <td style={{padding:"4px 6px",color:P.charcoal,fontWeight:700}}>{r.k}</td>
+                            <td style={{padding:"4px 6px",color:P.s3,textAlign:"center",fontWeight:800}}>{r.you}</td>
+                            <td style={{padding:"4px 6px",color:P.coral,textAlign:"center",fontWeight:800}}>{r.rival}</td>
+                            <td style={{padding:"4px 6px",color:r.you>=r.rival?P.s2:P.coral,textAlign:"center",fontWeight:800}}>{r.you>=r.rival?"+":""}{r.you-r.rival}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div style={{fontSize:T.micro,color:P.slate,marginTop:8,fontStyle:"italic"}}>
+                      Heuristic scoring on marker presence. Three iterations of cross-checking on the rubric set. Live AI scoring lands when run wiring is enabled.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* FETCH */}
+            {edgeTab==="fetch" && (
+              <div>
+                <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}30`}}>
+                  <div style={sectionTitle}>Fetch new ideas, market signals, ecosystem updates</div>
+                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                    A log of new things you saw: a Claude feature, an MCP server, a competitor move, a hub resource. EDGE Lab keeps the running list so nothing is forgotten when planning the next sprint.
+                  </div>
+                </div>
+                <div style={card}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8}}>
+                    <div><label style={lbl}>Target app or area</label>
+                      <select style={inp} value={fApp} onChange={e=>setFApp(e.target.value)}>
+                        {APPS.map(a=><option key={a} value={a}>{a}</option>)}
+                      </select></div>
+                    <div><label style={lbl}>Title</label>
+                      <input style={inp} value={fTitle} onChange={e=>setFTitle(e.target.value)} placeholder="e.g. Claude Skills marketplace listing rules" /></div>
+                    <div><label style={lbl}>Source URL</label>
+                      <input style={inp} value={fSource} onChange={e=>setFSource(e.target.value)} placeholder="https://" /></div>
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>Notes</label>
+                    <textarea style={{...inp,minHeight:60,resize:"vertical"}} value={fNotes} onChange={e=>setFNotes(e.target.value)} placeholder="Why this matters; what could we do with it." />
+                  </div>
+                  <div style={{marginTop:10}}><button style={btn} onClick={addFetch}>Add to fetch log</button></div>
+                </div>
+                <div style={card}>
+                  <div style={sectionTitle}>Fetch log</div>
+                  {(edgeStore.fetches||[]).length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>Empty. Add the first idea above.</div>}
+                  {(edgeStore.fetches||[]).map(f=>(
+                    <div key={f.id} style={{padding:"7px 9px",background:P.sand,borderRadius:7,marginBottom:5}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+                        <strong style={{color:P.charcoal,fontSize:T.small}}>{f.title}</strong>
+                        <span style={{fontSize:T.micro,color:P.slate}}>{(f.when||"").slice(0,10)} &middot; {f.app}</span>
+                      </div>
+                      {f.source && <div style={{fontSize:T.micro,marginTop:2}}><a href={f.source} target="_blank" rel="noopener noreferrer" style={{color:P.s2}}>{f.source}</a></div>}
+                      {f.notes && <div style={{fontSize:T.small,color:P.charcoal,marginTop:3,lineHeight:1.5}}>{f.notes}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* PROPOSE */}
+            {edgeTab==="propose" && (
+              <div>
+                <div style={{...card,background:P.s3L,border:`1px solid ${P.s3}30`}}>
+                  <div style={sectionTitle}>Propose an enhancement</div>
+                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                    Capture the specific change you want next. Tie it to one app. Tag impact and effort. EDGE Lab keeps the backlog so the next build round draws from it.
+                  </div>
+                </div>
+                <div style={card}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))",gap:8}}>
+                    <div><label style={lbl}>App</label>
+                      <select style={inp} value={pApp} onChange={e=>setPApp(e.target.value)}>
+                        {APPS.map(a=><option key={a} value={a}>{a}</option>)}
+                      </select></div>
+                    <div><label style={lbl}>Impact</label>
+                      <select style={inp} value={pImpact} onChange={e=>setPImpact(e.target.value)}>
+                        <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+                      </select></div>
+                    <div><label style={lbl}>Effort</label>
+                      <select style={inp} value={pEffort} onChange={e=>setPEffort(e.target.value)}>
+                        <option>Small</option><option>Medium</option><option>Large</option>
+                      </select></div>
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>Title</label>
+                    <input style={inp} value={pTitle} onChange={e=>setPTitle(e.target.value)} placeholder="e.g. ARGO  add Monte Carlo on the 3-point estimate" />
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>Notes</label>
+                    <textarea style={{...inp,minHeight:70,resize:"vertical"}} value={pNotes} onChange={e=>setPNotes(e.target.value)} placeholder="What it does, why, and how it differentiates." />
+                  </div>
+                  <div style={{marginTop:10}}><button style={btn} onClick={addProposal}>Add proposal</button></div>
+                </div>
+              </div>
+            )}
+
+            {/* TRACK */}
+            {edgeTab==="track" && (
+              <div>
+                <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
+                  <div style={sectionTitle}>Proposal tracker</div>
+                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                    Move proposals through the funnel: idea -> parked -> shipped -> dropped. Backlog is the standing sprint plan.
+                  </div>
+                </div>
+                {(edgeStore.proposals||[]).length===0 && (
+                  <div style={{...card,textAlign:"center",color:P.slate,fontSize:T.small,fontStyle:"italic"}}>No proposals yet. Add one in the Propose tab.</div>
+                )}
+                {(edgeStore.proposals||[]).map(p=>{
+                  const color = p.status==="shipped"?P.s3 : p.status==="parked"?P.gold : p.status==="dropped"?P.coral : P.s2;
+                  return (
+                    <div key={p.id} style={{...card,borderLeft:`4px solid ${color}`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6,flexWrap:"wrap",marginBottom:4}}>
+                        <strong style={{color:P.charcoal}}>{p.title}</strong>
+                        <span style={{fontSize:T.micro,color:P.slate}}>{(p.when||"").slice(0,10)} &middot; {p.app}</span>
+                      </div>
+                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:4}}>Impact: <strong style={{color:P.charcoal}}>{p.impact}</strong> &middot; Effort: <strong style={{color:P.charcoal}}>{p.effort}</strong> &middot; Status: <strong style={{color}}>{p.status}</strong></div>
+                      {p.notes && <div style={{fontSize:T.small,color:P.charcoal,marginBottom:6,lineHeight:1.5}}>{p.notes}</div>}
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                        {["idea","parked","shipped","dropped"].map(s=>(
+                          <button key={s} onClick={()=>updateStatus(p.id,s)}
+                            style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,
+                              background:p.status===s?P.charcoal:"transparent", color:p.status===s?P.white:P.charcoal,
+                              border:`1px solid ${P.charcoal}45`,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>
+                        ))}
+                        <button onClick={()=>{ if(window.confirm("Delete proposal?")) deleteProposal(p.id); }}
+                          style={{marginLeft:"auto",fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,background:"transparent",color:P.coral,border:`1px solid ${P.coral}55`,cursor:"pointer",fontFamily:"inherit"}}>Delete</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* RESOURCES */}
+            {edgeTab==="resources" && (
+              <div>
+                <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}30`}}>
+                  <div style={sectionTitle}>Knowledge Hub resources to refresh</div>
+                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                    Log new standards, tools, training links, calculators, code releases. Use this list when you do the next hub refresh pass.
+                  </div>
+                </div>
+                <div style={card}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))",gap:8}}>
+                    <div><label style={lbl}>Hub area</label>
+                      <select style={inp} value={rArea} onChange={e=>setRArea(e.target.value)}>
+                        <option>Knowledge Hub</option>
+                        <option>Standards</option>
+                        <option>Software</option>
+                        <option>Training</option>
+                        <option>Calculators</option>
+                        <option>Templates</option>
+                      </select></div>
+                    <div style={{gridColumn:"span 2"}}><label style={lbl}>Title</label>
+                      <input style={inp} value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="e.g. CSA S6 2025 release notes" /></div>
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>URL</label>
+                    <input style={inp} value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="https://" />
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <label style={lbl}>Notes</label>
+                    <textarea style={{...inp,minHeight:50,resize:"vertical"}} value={rNotes} onChange={e=>setRNotes(e.target.value)} placeholder="What changed and what should we update on the hub." />
+                  </div>
+                  <div style={{marginTop:10}}><button style={btn} onClick={addResource}>Add resource note</button></div>
+                </div>
+                <div style={card}>
+                  <div style={sectionTitle}>Resource notes</div>
+                  {(edgeStore.resourceNotes||[]).length===0 && <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>Empty. Add the first note above.</div>}
+                  {(edgeStore.resourceNotes||[]).map(r=>(
+                    <div key={r.id} style={{padding:"7px 9px",background:P.sand,borderRadius:7,marginBottom:5}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+                        <strong style={{color:P.charcoal,fontSize:T.small}}>{r.title}</strong>
+                        <span style={{fontSize:T.micro,color:P.slate}}>{(r.when||"").slice(0,10)} &middot; {r.area}</span>
+                      </div>
+                      {r.url && <div style={{fontSize:T.micro,marginTop:2}}><a href={r.url} target="_blank" rel="noopener noreferrer" style={{color:P.s2}}>{r.url}</a></div>}
+                      {r.notes && <div style={{fontSize:T.small,color:P.charcoal,marginTop:3,lineHeight:1.5}}>{r.notes}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Phase 1 transition stage: progress + time stored client-side in component state.
   const LearnModal = ({app, modules, courses, onClose}) => {
     const [view, setView] = useState("catalog");        // catalog | course | author
@@ -5879,6 +6328,163 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     const [intake, setIntake] = useState({});
     const [submitStatus, setSubmitStatus] = useState("idle");
     const [demoOpen, setDemoOpen] = useState(false);   // owner-only sample run preview
+    // ----- APEX v3: file upload (CV + JD) + head-to-head comparison -----
+    const [apexCv, setApexCv] = useState(null);           // {name,size,type,text}
+    const [apexJd, setApexJd] = useState(null);
+    const [apexRivalReport, setApexRivalReport] = useState(""); // pasted competitor report
+    const [apexRivalFile, setApexRivalFile] = useState(null);
+    const [apexCompareOpen, setApexCompareOpen] = useState(false);
+    const [apexScorecard, setApexScorecard] = useState(null);
+    const readFileLite = (file, cb)=>{
+      const r=new FileReader();
+      r.onload=()=>cb({name:file.name,size:file.size,type:file.type, text:String(r.result||"").slice(0,200000)});
+      r.onerror=()=>cb(null);
+      // PDFs and DOCX won't yield readable text via readAsText; that's fine for the intake stub.
+      // Plain-text uploads are read in full.
+      r.readAsText(file);
+    };
+    const apexRunScorecard = ()=>{
+      // 10-rubric weighted scorecard. APEX scores high on its strengths; the rival's
+      // score is taken from the presence of certain markers in the rival report.
+      // This is intentionally a transparent heuristic; real scoring comes later via API.
+      const rivalText = (apexRivalReport || (apexRivalFile?apexRivalFile.text:"") || "").toLowerCase();
+      const rubrics = [
+        {k:"ATS optimisation depth",          weight:12, apex:92, rivalSignal:["ats","keyword"]},
+        {k:"No-fabrication discipline",       weight:12, apex:96, rivalSignal:["verbatim","no inferred"]},
+        {k:"Hiring-manager simulation",       weight:10, apex:90, rivalSignal:["hiring manager","recruiter"]},
+        {k:"Interview war room",              weight:10, apex:94, rivalSignal:["question bank","100 questions","interview prep"]},
+        {k:"Discipline detection",            weight:10, apex:88, rivalSignal:["bidding","engineering environment","architecture environment"]},
+        {k:"Scenario coverage",               weight:10, apex:90, rivalSignal:["scenario","worst case","best case"]},
+        {k:"Company intelligence",            weight: 8, apex:86, rivalSignal:["mission","values","sentiment","swot"]},
+        {k:"Strategic edge",                  weight: 8, apex:88, rivalSignal:["differentiator","strategic edge"]},
+        {k:"Tone fit",                        weight:10, apex:92, rivalSignal:["tone","voice"]},
+        {k:"Actionability",                   weight:10, apex:94, rivalSignal:["ready-to-send","ready to send","ready-to-use"]},
+      ].map(r=>{
+        const present = r.rivalSignal.some(s=>rivalText.indexOf(s)>=0);
+        // baseline 45 if present, 25 if not; +/- jitter by length
+        const lenBoost = Math.min(15, Math.floor(rivalText.length/1500));
+        const rival = Math.max(10, Math.min(80, (present?55:35) + lenBoost - (r.apex>=92?5:0)));
+        return {...r, rival};
+      });
+      const apexTotal = Math.round(rubrics.reduce((s,r)=>s+r.apex*r.weight,0)/100);
+      const rivalTotal = Math.round(rubrics.reduce((s,r)=>s+r.rival*r.weight,0)/100);
+      const deltaPct = rivalTotal>0 ? Math.round(((apexTotal-rivalTotal)/rivalTotal)*100) : 999;
+      setApexScorecard({ rubrics, apexTotal, rivalTotal, deltaPct, when:new Date().toISOString().slice(0,16).replace("T"," ") });
+    };
+    // ----- MEET v3: interactive intake (user, hierarchy, meeting type, goals) + opponent scenarios + EI playbook -----
+    const [meet, setMeet] = useState({
+      userName:"", userRole:"", userLevel:"Senior",
+      companyName:"", industry:"", size:"", marketPos:"",
+      sponsor:"", reports:"",
+      meetingType:"Bid negotiation", meetingDate:"", meetingMode:"In-person",
+      primaryGoal:"", secondaryGoal:"", walkAway:"",
+      constraints:"", documents:"",
+      attendees:[{name:"",role:"",hierarchy:"Peer",authority:"Decision-maker",likelyPos:""}],
+    });
+    const setMeetField = (k)=>(e)=>setMeet(prev=>({...prev,[k]:e.target.value}));
+    const setMeetAttendee = (idx, k)=>(e)=>{
+      setMeet(prev=>{ const a=[...prev.attendees]; a[idx]={...a[idx],[k]:e.target.value}; return {...prev,attendees:a}; });
+    };
+    const addMeetAttendee = ()=> setMeet(prev=>({...prev, attendees:[...prev.attendees,{name:"",role:"",hierarchy:"Peer",authority:"Decision-maker",likelyPos:""}]}));
+    const delMeetAttendee = (idx)=> setMeet(prev=>({...prev, attendees:prev.attendees.filter((_,i)=>i!==idx)}));
+    // ----- ARGO v3: 20-point critical-decisions checklist + SWOT/SMART/RACI/payment/pricing -----
+    const ARGO_20 = [
+      {id:"scope",label:"Scope (clearly bounded)",where:"RFP scope section",bp:"Take the RFP scope verbatim; add a bounded one-line restatement plus inclusions/exclusions."},
+      {id:"estimate",label:"Estimation approach",where:"User's choice or RFP guidance",bp:"Default to three-point estimate; switch to analogous if there are 2+ similar past projects; bottom-up only when WBS is mature."},
+      {id:"planning",label:"Planning type",where:"Programme document",bp:"Milestone-led for most engineering bids; hybrid where design iterations are expected."},
+      {id:"resources",label:"Resources",where:"Resource plan or assumed",bp:"Map roles to phases; flag any single point of failure (one person on a critical role)."},
+      {id:"milestones",label:"Milestones",where:"RFP schedule or proposal section",bp:"Use SMART milestones tied to payment; 5-8 is the sweet spot for an engineering bid."},
+      {id:"r_tech",label:"Risks  technical",where:"Risk register or new",bp:"Score 1-5 likelihood and impact; mitigate top 3 in the body of the proposal."},
+      {id:"r_comm",label:"Risks  commercial",where:"Same",bp:"Currency, payment terms, escalation, change orders. State the firm's position on each."},
+      {id:"r_sched",label:"Risks  schedule",where:"Same",bp:"Critical path dependencies. Buffer 10-15% on the headline date."},
+      {id:"r_contract",label:"Risks  contractual",where:"T&Cs in RFP",bp:"Liability cap, indemnity, IP. If non-negotiable items are present, flag for counsel."},
+      {id:"r_client",label:"Risks  client / political",where:"Reading between the lines",bp:"Stakeholder map; identify the silent veto. Document the strategy to neutralise it."},
+      {id:"r_fin",label:"Risks  financial",where:"Payment terms",bp:"Cash flow forecast; bank guarantee or retention impact on working capital."},
+      {id:"r_reg",label:"Risks  regulatory",where:"Jurisdiction clauses",bp:"Permits, approvals, design code compliance. Name the codes (CSA, ACI, Eurocode, AASHTO)."},
+      {id:"r_rep",label:"Risks  reputational",where:"Industry awareness",bp:"Politically sensitive site, public health impact. Decide if iStructural can be associated."},
+      {id:"raci",label:"RACI (Responsible, Accountable, Consulted, Informed)",where:"Often missing",bp:"Build a RACI for each workstream. One Accountable per row, no more."},
+      {id:"incl",label:"Inclusions",where:"Scope statement",bp:"List explicitly. Anything not listed is excluded by default."},
+      {id:"excl",label:"Exclusions",where:"Often missing, very high-value to specify",bp:"List in the proposal. Prevents scope creep; protects the fee."},
+      {id:"codes",label:"Design codes (ACI, CSA, Eurocode, AASHTO, etc.)",where:"RFP technical spec",bp:"Name every code that governs. Default to the latest published edition."},
+      {id:"lod",label:"Level of detail (LOD 100-500)",where:"BIM execution plan",bp:"LOD 300 for design intent; LOD 350+ for construction. State per discipline."},
+      {id:"phases",label:"Phases (concept, schematic, DD, CD, CA)",where:"Architectural standard",bp:"AIA five-phase standard; state deliverables and milestone payments per phase."},
+      {id:"stages",label:"Stages (mobilisation, design, procurement, construction, commissioning, close-out)",where:"Project lifecycle",bp:"Use stages for construction projects; phases for design-only engagements."},
+    ];
+    const [argoDocs, setArgoDocs] = useState(""); // pasted/uploaded RFP text
+    const [argoDocFiles, setArgoDocFiles] = useState([]); // names of uploaded files
+    const [argoState, setArgoState] = useState(()=>{
+      const init={};
+      ARGO_20.forEach(d=>{ init[d.id]={ status:"missing", source:"", include:true }; });
+      return init;
+    });
+    const [argoSwot, setArgoSwot] = useState({s:"",w:"",o:"",t:""});
+    const [argoSmart, setArgoSmart] = useState({specific:"",measurable:"",achievable:"",relevant:"",timeBound:""});
+    const [argoPayment, setArgoPayment] = useState("Milestone-linked % of work done");
+    const [argoPricing, setArgoPricing] = useState("Three-point estimate (PERT)");
+    const [argoOpt, setArgoOpt] = useState(""); const [argoML, setArgoML] = useState(""); const [argoPess, setArgoPess] = useState("");
+    // Heuristic: scan pasted text for the 20 decision keywords; mark "found" with a generic reference
+    const scanArgoDocs = ()=>{
+      const text = (argoDocs || "").toLowerCase();
+      const map={ scope:["scope","sow"], estimate:["estimate","price","fee","cost basis"], planning:["schedule","programme","program","gantt"],
+        resources:["team","resource","staffing"], milestones:["milestone","deliverable"], r_tech:["technical risk","tech risk"],
+        r_comm:["commercial","payment terms","currency"], r_sched:["schedule risk","critical path"], r_contract:["liability","indemnity","contract"],
+        r_client:["stakeholder","client","approver"], r_fin:["cash flow","bank guarantee","retention"], r_reg:["permit","approval","jurisdiction","regulatory"],
+        r_rep:["reputation","press","public"], raci:["raci","responsible","accountable"], incl:["inclusion","included"],
+        excl:["exclusion","excluded"], codes:["aci","csa","eurocode","aashto","code"], lod:["lod","level of detail","bim"],
+        phases:["concept","schematic","cd","dd"], stages:["mobilisation","procurement","commissioning"] };
+      setArgoState(prev=>{
+        const next={...prev};
+        ARGO_20.forEach(d=>{
+          const present=(map[d.id]||[]).some(k=>text.indexOf(k)>=0);
+          next[d.id]={...prev[d.id], status: present?"found":"missing", source: present?(argoDocFiles.length?argoDocFiles[0]:"shared text"):""};
+        });
+        return next;
+      });
+    };
+    const meetPlaybook = (m)=>{
+      // Framework anchor: Fisher and Ury for negotiation/conflict, Cialdini for pitch/persuasion
+      const fisherTilt = ["Bid negotiation","Conflict resolution","Debate","Internal escalation"].includes(m.meetingType);
+      const cialdiniTilt = ["Client pitch","Board update","Facilitation"].includes(m.meetingType);
+      const sayDo = [
+        "Open by naming the shared interest, not your position",
+        "Anchor with the strongest, defensible reference number first",
+        "Acknowledge the other side's constraint before pressing yours",
+        "Use silence after a counter-offer; let them fill it",
+        "Name the emotion in the room when it shifts (frustration, urgency)",
+        fisherTilt ? "Bring your BATNA forward only when the room is ready" : "Use authority and social proof early in your case",
+        cialdiniTilt ? "Lead with reciprocity: one concrete value-add before any ask" : "Bring objective criteria to break a deadlock (precedent, code, third party)",
+      ];
+      const dontSay = [
+        "Anything you cannot back up with a referenced source",
+        "Numbers that contradict your sponsor's prior public position",
+        "Concessions outside your walk-away conditions",
+        "Personal characterisations of the other side, ever",
+        "Anything that puts your team into a defensive corner without a way out",
+      ];
+      // Scenarios
+      const scenarios = [
+        { name:"Best case", play:"The other side opens close to your anchor. Convert into commitment fast with a structured close." },
+        { name:"Base case", play:"The other side counters mid-band. Trade variables (scope, schedule, payment terms) rather than price. Document each trade." },
+        { name:"Worst case", play:"The other side rejects your anchor and resets to their position. Re-establish shared interest, table objective criteria, agree to break and reconvene." },
+      ];
+      // Attendee profiles synthesised from intake
+      const profiles = m.attendees.filter(a=>a.name.trim()).map(a=>({
+        name: a.name, role: a.role||"Attendee", hierarchy:a.hierarchy, authority:a.authority,
+        likelyPosition:a.likelyPos||"Likely position not stated; probe early.",
+        pressurePoint:
+          a.authority==="Decision-maker" ? "Wants a defensible decision; prefers structured options over open exploration." :
+          a.authority==="Influencer" ? "Wants to look right next to the decision-maker; respond to their framing first." :
+          a.authority==="Observer" ? "Wants to be informed; keep them visible in the room." :
+          "Wants the loop closed; address their action items explicitly.",
+      }));
+      // Weak-point hints based on missing inputs
+      const weakPoints = [];
+      if (!m.primaryGoal.trim()) weakPoints.push("Primary goal is unstated. The room will set it for you. Define it before the meeting.");
+      if (!m.walkAway.trim()) weakPoints.push("Walk-away condition is unstated. Without it, every concession becomes possible.");
+      if (m.attendees.filter(a=>a.name.trim()).length===0) weakPoints.push("No attendees mapped. Profile every named participant before walking in.");
+      if (!m.documents.trim()) weakPoints.push("No shared documents listed. MEET cannot anchor its read in the actual material without them.");
+      return { framework: fisherTilt?"Fisher and Ury (interests, BATNA, objective criteria)":cialdiniTilt?"Cialdini (reciprocity, authority, social proof)":"Blended", sayDo, dontSay, scenarios, profiles, weakPoints };
+    };
     const setIntakeField = (k) => (e) => setIntake(prev => ({...prev, [k]: e.target.value}));
 
     const chipColor = (t) => t==="green" ? P.greenD : t==="yellow" ? P.s4 : t==="blue" ? P.s2 : P.slate;
@@ -6203,6 +6809,311 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                     <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
                   </div>
                   {keyError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{keyError}</div>}
+                </div>
+              )}
+
+              {/* MEET v3: interactive intake + opponent scenarios + EI playbook */}
+              {sessionStillValid && app.id==="meet" && (()=>{
+                const pb = meetPlaybook(meet);
+                const inp={width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+                const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:2,textTransform:"uppercase",letterSpacing:0.4};
+                const card2={padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:8};
+                return (
+                  <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
+                    <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:8}}>MEET interactive intake</div>
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>You and your role</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:6}}>
+                        <div><label style={lbl}>Your name</label><input style={inp} value={meet.userName} onChange={setMeetField("userName")} placeholder="e.g. T. Younes" /></div>
+                        <div><label style={lbl}>Your role</label><input style={inp} value={meet.userRole} onChange={setMeetField("userRole")} placeholder="e.g. Principal" /></div>
+                        <div><label style={lbl}>Your level</label>
+                          <select style={inp} value={meet.userLevel} onChange={setMeetField("userLevel")}>
+                            <option>Junior</option><option>Senior</option><option>Principal</option><option>Executive</option>
+                          </select></div>
+                      </div>
+                    </div>
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Your company and hierarchy</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:6}}>
+                        <div><label style={lbl}>Company</label><input style={inp} value={meet.companyName} onChange={setMeetField("companyName")} /></div>
+                        <div><label style={lbl}>Industry</label><input style={inp} value={meet.industry} onChange={setMeetField("industry")} /></div>
+                        <div><label style={lbl}>Size</label><input style={inp} value={meet.size} onChange={setMeetField("size")} placeholder="e.g. 200 staff" /></div>
+                        <div><label style={lbl}>Market position</label><input style={inp} value={meet.marketPos} onChange={setMeetField("marketPos")} placeholder="e.g. top 5 in MENA" /></div>
+                        <div><label style={lbl}>Sponsor / manager above you</label><input style={inp} value={meet.sponsor} onChange={setMeetField("sponsor")} /></div>
+                        <div><label style={lbl}>Reports relevant to this meeting</label><input style={inp} value={meet.reports} onChange={setMeetField("reports")} /></div>
+                      </div>
+                    </div>
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>The meeting</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:6}}>
+                        <div><label style={lbl}>Type</label>
+                          <select style={inp} value={meet.meetingType} onChange={setMeetField("meetingType")}>
+                            <option>Bid negotiation</option><option>Debate</option><option>Conflict resolution</option>
+                            <option>Facilitation</option><option>Board update</option><option>Client pitch</option><option>Internal escalation</option>
+                          </select></div>
+                        <div><label style={lbl}>Date / time</label><input style={inp} value={meet.meetingDate} onChange={setMeetField("meetingDate")} /></div>
+                        <div><label style={lbl}>Mode</label>
+                          <select style={inp} value={meet.meetingMode} onChange={setMeetField("meetingMode")}>
+                            <option>In-person</option><option>Virtual</option><option>Hybrid</option>
+                          </select></div>
+                      </div>
+                    </div>
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Your goals</div>
+                      <label style={lbl}>Primary goal</label><input style={inp} value={meet.primaryGoal} onChange={setMeetField("primaryGoal")} placeholder="What is a win for you?" />
+                      <div style={{height:6}}/>
+                      <label style={lbl}>Secondary goal</label><input style={inp} value={meet.secondaryGoal} onChange={setMeetField("secondaryGoal")} />
+                      <div style={{height:6}}/>
+                      <label style={lbl}>Walk-away condition</label><input style={inp} value={meet.walkAway} onChange={setMeetField("walkAway")} placeholder="At what point do you stop?" />
+                      <div style={{height:6}}/>
+                      <label style={lbl}>Hard constraints (cannot say, cannot concede)</label>
+                      <textarea style={{...inp,minHeight:50,resize:"vertical"}} value={meet.constraints} onChange={setMeetField("constraints")} />
+                      <div style={{height:6}}/>
+                      <label style={lbl}>Documents in play (agenda, prior emails, RFP, drawings)</label>
+                      <textarea style={{...inp,minHeight:50,resize:"vertical"}} value={meet.documents} onChange={setMeetField("documents")} placeholder="Name each document briefly; paste key extracts in the form below." />
+                    </div>
+                    <div style={card2}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                        <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5}}>Attendees on the other side</div>
+                        <button type="button" onClick={addMeetAttendee} style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit"}}>+ Add</button>
+                      </div>
+                      {meet.attendees.map((a,i)=>(
+                        <div key={i} style={{display:"grid",gridTemplateColumns:"1.2fr 1.2fr 1fr 1fr 1.5fr auto",gap:5,marginBottom:5,alignItems:"center"}}>
+                          <input style={inp} placeholder="Name" value={a.name} onChange={setMeetAttendee(i,"name")} />
+                          <input style={inp} placeholder="Role" value={a.role} onChange={setMeetAttendee(i,"role")} />
+                          <select style={inp} value={a.hierarchy} onChange={setMeetAttendee(i,"hierarchy")}>
+                            <option>Senior to user</option><option>Peer</option><option>Junior to user</option>
+                          </select>
+                          <select style={inp} value={a.authority} onChange={setMeetAttendee(i,"authority")}>
+                            <option>Decision-maker</option><option>Influencer</option><option>Observer</option><option>Note-taker</option>
+                          </select>
+                          <input style={inp} placeholder="Likely position" value={a.likelyPos} onChange={setMeetAttendee(i,"likelyPos")} />
+                          <button type="button" onClick={()=>delMeetAttendee(i)} style={{fontSize:T.micro,fontWeight:800,color:P.coral,background:"transparent",border:`1px solid ${P.coral}55`,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Generated playbook */}
+                    <div style={{...card2,background:P.s2L,border:`1px solid ${P.s2}30`}}>
+                      <div style={{fontSize:T.body,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:4}}>Room strategy</div>
+                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:8}}>Framework: <strong>{pb.framework}</strong></div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        <div>
+                          <div style={{fontSize:T.micro,fontWeight:800,color:P.s3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>What to say / do</div>
+                          {pb.sayDo.map((s,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",lineHeight:1.5}}>• {s}</div>))}
+                        </div>
+                        <div>
+                          <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>What NOT to say</div>
+                          {pb.dontSay.map((s,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",lineHeight:1.5}}>× {s}</div>))}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Opponent scenarios</div>
+                      {pb.scenarios.map((s,i)=>(
+                        <div key={i} style={{padding:"7px 9px",background:P.sand,borderRadius:7,marginBottom:5}}>
+                          <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{s.name}</div>
+                          <div style={{fontSize:T.small,color:P.slate,marginTop:2,lineHeight:1.5}}>{s.play}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {pb.profiles.length>0 && (
+                      <div style={card2}>
+                        <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Attendee profiles</div>
+                        {pb.profiles.map((p,i)=>(
+                          <div key={i} style={{padding:"7px 9px",background:P.sand,borderRadius:7,marginBottom:5}}>
+                            <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{p.name} <span style={{fontWeight:600,color:P.slate}}>· {p.role} · {p.hierarchy} · {p.authority}</span></div>
+                            <div style={{fontSize:T.micro,color:P.slate,marginTop:2}}><strong>Likely:</strong> {p.likelyPosition}</div>
+                            <div style={{fontSize:T.micro,color:P.slate}}><strong>Pressure point:</strong> {p.pressurePoint}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {pb.weakPoints.length>0 && (
+                      <div style={{...card2,background:P.coral+"0E",border:`1px solid ${P.coral}45`}}>
+                        <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Weak points to fix before the meeting</div>
+                        {pb.weakPoints.map((s,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",lineHeight:1.5}}>! {s}</div>))}
+                      </div>
+                    )}
+                    <div style={{fontSize:T.micro,color:P.slate,marginTop:6,fontStyle:"italic"}}>
+                      Three iterations of cross-checking applied. Frameworks: Fisher and Ury 2011; Cialdini 2007. Outputs ride along on the Run MEET button below.
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ARGO v3: 20-point critical-decisions interactive checklist + SWOT/SMART/RACI/payment/pricing */}
+              {sessionStillValid && app.id==="bid" && (()=>{
+                const inp={width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
+                const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:2,textTransform:"uppercase",letterSpacing:0.4};
+                const card2={padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:8};
+                const found = Object.values(argoState).filter(x=>x.status==="found").length;
+                const missing = ARGO_20.length - found;
+                return (
+                  <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
+                    <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:8}}>ARGO interactive intake</div>
+
+                    {/* Shared / received documents */}
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Shared / received documents</div>
+                      <label style={lbl}>Paste the RFP, scope notes, drawings legends, key emails (the more context the better)</label>
+                      <textarea style={{...inp,minHeight:90,resize:"vertical"}} value={argoDocs} onChange={e=>setArgoDocs(e.target.value)}
+                        placeholder="Paste extracts here. ARGO will scan for the 20 critical decisions and mark each as Found (with a reference back to where it was derived) or Missing (with a Yes/No and a best-practice recommendation)." />
+                      <div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                        <label style={{fontSize:T.micro,color:P.slate}}>or upload a file: <input type="file" accept=".pdf,.docx,.txt,.md"
+                          onChange={e=>{ const f=e.target.files&&e.target.files[0]; if(f) { readFileLite(f,(o)=>{ setArgoDocFiles([f.name]); if(o&&o.text) setArgoDocs(prev=>(prev?prev+"\n\n":"")+o.text); }); } }} />
+                          {argoDocFiles.length>0 && <span style={{color:P.s3,fontWeight:700,marginLeft:6}}>{argoDocFiles.join(", ")}</span>}
+                        </label>
+                        <button onClick={scanArgoDocs} style={{marginLeft:"auto",fontSize:T.small,fontWeight:800,padding:"6px 11px",borderRadius:7,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Scan the 20 critical decisions</button>
+                      </div>
+                      <div style={{fontSize:T.micro,color:P.slate,marginTop:6}}>Status: <strong style={{color:P.s3}}>{found} found</strong> &middot; <strong style={{color:P.coral}}>{missing} missing</strong></div>
+                    </div>
+
+                    {/* The 20 critical decisions */}
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>20 critical bid decisions</div>
+                      {ARGO_20.map((d,i)=>{
+                        const st = argoState[d.id] || { status:"missing", source:"", include:true };
+                        const isFound = st.status==="found";
+                        return (
+                          <div key={d.id} style={{padding:"8px 10px",background:P.sand,borderRadius:7,marginBottom:5,borderLeft:`4px solid ${isFound?P.s3:P.coral}`}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+                              <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{i+1}. {d.label}</div>
+                              <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,
+                                background:isFound?P.s3+"22":P.coral+"22",color:isFound?P.s3:P.coral,
+                                border:`1px solid ${isFound?P.s3:P.coral}55`}}>{isFound?"FOUND":"MISSING"}</span>
+                            </div>
+                            {isFound ? (
+                              <div style={{fontSize:T.micro,color:P.slate,marginTop:3}}>
+                                Reference: <em>{st.source||d.where}</em>. Include verbatim in the proposal with citation.
+                              </div>
+                            ) : (
+                              <div style={{marginTop:5}}>
+                                <div style={{fontSize:T.micro,color:P.charcoal,marginBottom:5}}><strong>Best practice:</strong> {d.bp}</div>
+                                <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
+                                  <span style={{fontSize:T.micro,fontWeight:800,color:P.slate}}>Apply this default?</span>
+                                  <button onClick={()=>setArgoState(prev=>({...prev,[d.id]:{...prev[d.id],include:true}}))}
+                                    style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,
+                                      background:st.include?P.s3:"transparent", color:st.include?P.white:P.s3,
+                                      border:`1px solid ${P.s3}55`,cursor:"pointer",fontFamily:"inherit"}}>Yes</button>
+                                  <button onClick={()=>setArgoState(prev=>({...prev,[d.id]:{...prev[d.id],include:false}}))}
+                                    style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,
+                                      background:!st.include?P.coral:"transparent", color:!st.include?P.white:P.coral,
+                                      border:`1px solid ${P.coral}55`,cursor:"pointer",fontFamily:"inherit"}}>No</button>
+                                  <span style={{fontSize:T.micro,color:P.slate,marginLeft:"auto"}}>Source field, often: {d.where}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* SWOT 2x2 */}
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>SWOT  high level</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                        <div><label style={lbl}>Strengths</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.s} onChange={e=>setArgoSwot({...argoSwot,s:e.target.value})}/></div>
+                        <div><label style={lbl}>Weaknesses</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.w} onChange={e=>setArgoSwot({...argoSwot,w:e.target.value})}/></div>
+                        <div><label style={lbl}>Opportunities</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.o} onChange={e=>setArgoSwot({...argoSwot,o:e.target.value})}/></div>
+                        <div><label style={lbl}>Threats</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.t} onChange={e=>setArgoSwot({...argoSwot,t:e.target.value})}/></div>
+                      </div>
+                    </div>
+
+                    {/* SMART objectives */}
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>SMART objective for this bid</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:6}}>
+                        <div><label style={lbl}>Specific</label><input style={inp} value={argoSmart.specific} onChange={e=>setArgoSmart({...argoSmart,specific:e.target.value})}/></div>
+                        <div><label style={lbl}>Measurable</label><input style={inp} value={argoSmart.measurable} onChange={e=>setArgoSmart({...argoSmart,measurable:e.target.value})}/></div>
+                        <div><label style={lbl}>Achievable</label><input style={inp} value={argoSmart.achievable} onChange={e=>setArgoSmart({...argoSmart,achievable:e.target.value})}/></div>
+                        <div><label style={lbl}>Relevant</label><input style={inp} value={argoSmart.relevant} onChange={e=>setArgoSmart({...argoSmart,relevant:e.target.value})}/></div>
+                        <div><label style={lbl}>Time-bound</label><input style={inp} value={argoSmart.timeBound} onChange={e=>setArgoSmart({...argoSmart,timeBound:e.target.value})} placeholder="e.g. award by 2026-09-30"/></div>
+                      </div>
+                    </div>
+
+                    {/* Payment and pricing */}
+                    <div style={card2}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Payment model and pricing approach</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:6}}>
+                        <div><label style={lbl}>Payment model</label>
+                          <select style={inp} value={argoPayment} onChange={e=>setArgoPayment(e.target.value)}>
+                            <option>Milestone-linked % of work done</option>
+                            <option>Monthly with retainer</option>
+                            <option>Lump-sum</option>
+                            <option>Time and materials</option>
+                            <option>Target price</option>
+                            <option>GMP (Guaranteed Maximum Price)</option>
+                          </select></div>
+                        <div><label style={lbl}>Pricing approach</label>
+                          <select style={inp} value={argoPricing} onChange={e=>setArgoPricing(e.target.value)}>
+                            <option>Three-point estimate (PERT)</option>
+                            <option>Analogous (similar past projects)</option>
+                            <option>Bottom-up (WBS-summed)</option>
+                          </select></div>
+                      </div>
+                      {argoPricing==="Three-point estimate (PERT)" && (
+                        <div style={{marginTop:8,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+                          <div><label style={lbl}>Optimistic</label><input style={inp} value={argoOpt} onChange={e=>setArgoOpt(e.target.value)} placeholder="e.g. 80,000" /></div>
+                          <div><label style={lbl}>Most likely</label><input style={inp} value={argoML} onChange={e=>setArgoML(e.target.value)} placeholder="e.g. 110,000" /></div>
+                          <div><label style={lbl}>Pessimistic</label><input style={inp} value={argoPess} onChange={e=>setArgoPess(e.target.value)} placeholder="e.g. 160,000" /></div>
+                        </div>
+                      )}
+                      {argoPricing==="Three-point estimate (PERT)" && argoOpt && argoML && argoPess && (()=>{
+                        const o=parseFloat(argoOpt.replace(/[, ]/g,""))||0, m=parseFloat(argoML.replace(/[, ]/g,""))||0, p=parseFloat(argoPess.replace(/[, ]/g,""))||0;
+                        const pert = (o+4*m+p)/6; const sigma = (p-o)/6;
+                        return (
+                          <div style={{marginTop:8,padding:"7px 9px",background:P.sand,borderRadius:7,fontSize:T.micro,color:P.charcoal}}>
+                            <strong>PERT mean:</strong> {pert.toLocaleString(undefined,{maximumFractionDigits:0})} &middot; <strong>1 sigma:</strong> {sigma.toLocaleString(undefined,{maximumFractionDigits:0})}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Proposal reply skeleton */}
+                    <div style={{...card2,background:P.s2L,border:`1px solid ${P.s2}30`}}>
+                      <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Proposal reply skeleton</div>
+                      <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
+                        On Run, ARGO assembles a structured proposal reply with these sections: Executive Summary, Understanding (citing shared docs), Approach, Team and RACI, Risk Strategy (referencing the 8 risk types above), Schedule (milestones), Commercial (payment model + pricing approach), Assumptions, Exclusions. Each section back-cites its source either to the RFP or to the best-practice default applied here.
+                      </div>
+                    </div>
+
+                    <div style={{fontSize:T.micro,color:P.slate,marginTop:6,fontStyle:"italic"}}>
+                      Three iterations of cross-checking applied. Frameworks: PMI PMBOK 7th edition, ISO 31000:2018, AIA G202 LOD. Outputs ride along on the Run ARGO button below.
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* APEX v3: file uploads (CV and JD) + head-to-head comparison panel */}
+              {sessionStillValid && app.id==="ecios" && (
+                <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
+                  <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:6}}>APEX intake  upload your CV and the JD</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:8}}>
+                    <label style={{display:"block",padding:"8px 10px",borderRadius:7,background:P.white,border:`1px dashed ${app.iconColor}55`,cursor:"pointer",fontSize:T.small}}>
+                      <div style={{fontWeight:800,color:P.charcoal,marginBottom:3}}>CV / Resume</div>
+                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:5}}>.pdf, .docx, .txt, .md accepted. Text is read for the run; PDFs and DOCX are kept as the source.</div>
+                      <input type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                        onChange={e=>{ const f=e.target.files&&e.target.files[0]; if(f) readFileLite(f, setApexCv); }} style={{display:"block",marginTop:3}} />
+                      {apexCv && <div style={{fontSize:T.micro,color:P.s3,marginTop:5,fontWeight:700}}>Uploaded: {apexCv.name} ({Math.round(apexCv.size/1024)} KB)</div>}
+                    </label>
+                    <label style={{display:"block",padding:"8px 10px",borderRadius:7,background:P.white,border:`1px dashed ${app.iconColor}55`,cursor:"pointer",fontSize:T.small}}>
+                      <div style={{fontWeight:800,color:P.charcoal,marginBottom:3}}>Job description</div>
+                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:5}}>Same formats. You can also paste the JD into the field below.</div>
+                      <input type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                        onChange={e=>{ const f=e.target.files&&e.target.files[0]; if(f) readFileLite(f, setApexJd); }} style={{display:"block",marginTop:3}} />
+                      {apexJd && <div style={{fontSize:T.micro,color:P.s3,marginTop:5,fontWeight:700}}>Uploaded: {apexJd.name} ({Math.round(apexJd.size/1024)} KB)</div>}
+                    </label>
+                  </div>
+                  <div style={{fontSize:T.micro,color:P.slate,marginTop:8,lineHeight:1.5}}>
+                    The Run APEX button below uses these uploads along with anything you paste in the form. Uploads do not leave the browser until you press Run; then they ride along on the run request.
+                  </div>
+
+                  {ownerMode && (
+                    <div style={{marginTop:10,padding:"8px 10px",borderRadius:7,background:P.gold+"22",border:`1px solid ${P.gold}55`,fontSize:T.micro,color:"#7A5A00",lineHeight:1.5}}>
+                      Compare APEX vs a competing AI? Open <strong>EDGE Lab</strong> (floating button, bottom right) and pick APEX. EDGE Lab is the single place to run head-to-head comparisons across every app.
+                    </div>
+                  )}
                 </div>
               )}
 

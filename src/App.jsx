@@ -702,10 +702,14 @@ export default function App(){
   // on machines where Google sign-in is awkward, and as a backstop.
   // ─────────────────────────────────────────────────────────────────────────
   const OWNER_EMAIL_WHITELIST = [
-    "talih.younes@istructgroup.com",   // primary Workspace mailbox
-    "info@istructgroup.com",           // alias to the same mailbox
-    "talih.younes@me.com",             // personal Apple email
+    "info@istructgroup.com",           // PRIMARY public-facing alias (shown to visitors and in the owner badge)
+    "talih.younes@istructgroup.com",   // same Workspace mailbox, signed-in via Google account picker
+    "talih.younes@me.com",             // personal Apple email backup
   ];
+  // Public-facing "owner contact" address. All authenticated emails fold to this
+  // string when displayed in the UI so a visitor or screen recording never sees
+  // a personal address.
+  const OWNER_PUBLIC_EMAIL = "info@istructgroup.com";
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyASG9l1UDzQAFm0o24cSXi0k9HYtiqQm9w",
     authDomain: "istructural-edge.firebaseapp.com",

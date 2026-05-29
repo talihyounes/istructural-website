@@ -5605,6 +5605,62 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
       setEdgeStore(s=>({...s, compares:[result, ...(s.compares||[])].slice(0,50)}));
     };
 
+    // ---- Research & Intelligence tab state ----
+    // The whole point of this tab: ask Claude to act as a professional cowork
+    // researcher, scoped to the iStructural site (Knowledge Hub + Tools Box first),
+    // with named sources, a defensible assessment, and proposed actions that
+    // become entries in the Propose tab.
+    const RESEARCH_AREAS = ["Whole site","Knowledge Hub","Tools Box","APEX","ARGO","MEET","LEARN","CapacityGrid"];
+    const [rsTopic,setRsTopic]=useState("");
+    const [rsArea,setRsArea]=useState("Knowledge Hub");
+    const [rsSources,setRsSources]=useState("");  // newline-separated URLs
+    const [rsDepth,setRsDepth]=useState("Standard");
+    // Findings draft (the result fields the user or Claude later fills in)
+    const [rsSummary,setRsSummary]=useState("");
+    const [rsWinning,setRsWinning]=useState("");
+    const [rsMatched,setRsMatched]=useState("");
+    const [rsBehind,setRsBehind]=useState("");
+    const [rsActions,setRsActions]=useState(""); // newline-separated proposed actions
+
+    const submitResearchBrief = ()=>{
+      if(!rsTopic.trim()) return;
+      const item={
+        id:"rs_"+Date.now(),
+        topic:rsTopic.trim(), area:rsArea, depth:rsDepth,
+        sources:rsSources.split("\n").map(s=>s.trim()).filter(Boolean),
+        status:"briefed",
+        findings:{ summary:"", winning:"", matched:"", behind:"" },
+        actions:[],
+        when:new Date().toISOString(),
+      };
+      setEdgeStore(s=>({...s, researches:[item, ...(s.researches||[])].slice(0,200)}));
+      setRsTopic(""); setRsSources("");
+    };
+    const recordFindings = (id)=>{
+      // Save the current findings draft against a chosen research item
+      if(!id) return;
+      const actionLines = rsActions.split("\n").map(s=>s.trim()).filter(Boolean);
+      setEdgeStore(s=>({...s, researches:(s.researches||[]).map(r=> r.id===id ? {
+        ...r,
+        status: actionLines.length>0 ? "findings ready" : "in progress",
+        findings:{ summary:rsSummary.trim(), winning:rsWinning.trim(), matched:rsMatched.trim(), behind:rsBehind.trim() },
+        actions: actionLines,
+      } : r)}));
+      // mirror each action into the Propose tab so it joins the backlog
+      actionLines.forEach((line,i)=>{
+        const prop={ id:"p_rs_"+Date.now()+"_"+i, app:rsArea, title:line, impact:"Medium", effort:"Medium",
+          notes:"From Research run: "+(rsTopic||""), status:"idea", when:new Date().toISOString() };
+        setEdgeStore(s=>({...s, proposals:[prop, ...(s.proposals||[])].slice(0,200)}));
+      });
+      setRsSummary(""); setRsWinning(""); setRsMatched(""); setRsBehind(""); setRsActions("");
+    };
+    const updateResearchStatus = (id, status)=>{
+      setEdgeStore(s=>({...s, researches:(s.researches||[]).map(r=>r.id===id?{...r,status}:r)}));
+    };
+    const deleteResearch = (id)=>{
+      setEdgeStore(s=>({...s, researches:(s.researches||[]).filter(r=>r.id!==id)}));
+    };
+
     // ---- Fetch tab state ----
     const [fApp,setFApp]=useState("Whole site");
     const [fTitle,setFTitle]=useState("");
@@ -5674,6 +5730,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
           {/* Tabs */}
           <div style={{display:"flex",gap:2,padding:"10px 16px 0",background:P.navyM,borderBottom:`1px solid ${P.charcoal}12`,flexWrap:"wrap"}}>
             <TabBtn k="compare" label="Compare"/>
+            <TabBtn k="research" label="Research & Intelligence"/>
             <TabBtn k="fetch" label="Fetch ideas"/>
             <TabBtn k="propose" label="Propose"/>
             <TabBtn k="track" label="Track"/>
@@ -5757,6 +5814,158 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                 )}
               </div>
             )}
+
+            {/* RESEARCH & INTELLIGENCE */}
+            {edgeTab==="research" && (()=>{
+              const items = edgeStore.researches||[];
+              const briefed = items.filter(r=>r.status==="briefed").length;
+              const inProgress = items.filter(r=>r.status==="in progress").length;
+              const ready = items.filter(r=>r.status==="findings ready").length;
+              const acted = items.filter(r=>r.status==="acted on").length;
+              return (
+                <div>
+                  <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
+                    <div style={sectionTitle}>Research & Intelligence  the cowork research desk</div>
+                    <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
+                      The owner's standing research desk. Brief a topic; point Claude at named sources (news outlets, vendor blogs, competitor pages, standards bodies, RSS feeds); receive a defensible assessment with citations. Findings convert directly into Propose backlog items. Scope is the whole iStructural site, with emphasis on the Knowledge Hub and the Tools Box. Note: X / Twitter access via Claude is not available yet; use direct URLs and public web for now.
+                    </div>
+                  </div>
+                  {/* KPI strip */}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginBottom:14}}>
+                    <div style={{padding:"10px",borderRadius:8,background:P.sand,textAlign:"center",border:`1px solid ${P.charcoal}15`}}>
+                      <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.gold}}>{briefed}</div>
+                      <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Briefed</div>
+                    </div>
+                    <div style={{padding:"10px",borderRadius:8,background:P.sand,textAlign:"center",border:`1px solid ${P.charcoal}15`}}>
+                      <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.s2}}>{inProgress}</div>
+                      <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>In progress</div>
+                    </div>
+                    <div style={{padding:"10px",borderRadius:8,background:P.sand,textAlign:"center",border:`1px solid ${P.charcoal}15`}}>
+                      <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.s3}}>{ready}</div>
+                      <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Findings ready</div>
+                    </div>
+                    <div style={{padding:"10px",borderRadius:8,background:P.sand,textAlign:"center",border:`1px solid ${P.charcoal}15`}}>
+                      <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal}}>{acted}</div>
+                      <div style={{fontSize:T.micro,color:P.slate,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Acted on</div>
+                    </div>
+                  </div>
+
+                  {/* NEW BRIEF */}
+                  <div style={card}>
+                    <div style={sectionTitle}>1. Brief a new research run</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>
+                      <div><label style={lbl}>Target area</label>
+                        <select style={inp} value={rsArea} onChange={e=>setRsArea(e.target.value)}>
+                          {RESEARCH_AREAS.map(a=><option key={a} value={a}>{a}</option>)}
+                        </select></div>
+                      <div><label style={lbl}>Depth</label>
+                        <select style={inp} value={rsDepth} onChange={e=>setRsDepth(e.target.value)}>
+                          <option>Quick scan</option><option>Standard</option><option>Deep dive</option>
+                        </select></div>
+                    </div>
+                    <div style={{marginTop:8}}>
+                      <label style={lbl}>Topic / brief</label>
+                      <textarea style={{...inp,minHeight:60,resize:"vertical"}} value={rsTopic} onChange={e=>setRsTopic(e.target.value)}
+                        placeholder="What do you want researched? Example: How are top engineering hubs (NCEES, IStructE, IABSE, ASCE) presenting digital twins and AI-aided assessment in 2026? Find specific items the iStructural Knowledge Hub does not yet cover."/>
+                    </div>
+                    <div style={{marginTop:8}}>
+                      <label style={lbl}>Sources (one URL per line)</label>
+                      <textarea style={{...inp,minHeight:70,resize:"vertical"}} value={rsSources} onChange={e=>setRsSources(e.target.value)}
+                        placeholder={"https://www.istructe.org\nhttps://www.iabse.org\nhttps://www.asce.org\nhttps://www.ncees.org\n..."}/>
+                    </div>
+                    <div style={{marginTop:10,display:"flex",gap:6,flexWrap:"wrap"}}>
+                      <button style={btn} onClick={submitResearchBrief} disabled={!rsTopic.trim()}>Submit brief</button>
+                      <span style={{fontSize:T.micro,color:P.slate,fontStyle:"italic",alignSelf:"center"}}>X / Twitter list research is on hold until Anthropic ships X access in Claude; meanwhile use direct URLs.</span>
+                    </div>
+                  </div>
+
+                  {/* RECORD FINDINGS */}
+                  <div style={card}>
+                    <div style={sectionTitle}>2. Record findings against a brief</div>
+                    {items.length===0 ? (
+                      <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>Brief a research run above first.</div>
+                    ) : (
+                      <div>
+                        <label style={lbl}>Attach to brief</label>
+                        <select id="rs-attach" style={inp} defaultValue="">
+                          <option value="">Pick a brief</option>
+                          {items.filter(r=>r.status!=="acted on").map(r=>(
+                            <option key={r.id} value={r.id}>{(r.when||"").slice(0,10)} · {r.area} · {r.topic.slice(0,80)}</option>
+                          ))}
+                        </select>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:8,marginTop:8}}>
+                          <div><label style={lbl}>Summary</label>
+                            <textarea style={{...inp,minHeight:60,resize:"vertical"}} value={rsSummary} onChange={e=>setRsSummary(e.target.value)} placeholder="One paragraph: what did the sources say." /></div>
+                          <div><label style={lbl}>Where iStructural already wins</label>
+                            <textarea style={{...inp,minHeight:60,resize:"vertical"}} value={rsWinning} onChange={e=>setRsWinning(e.target.value)}/></div>
+                          <div><label style={lbl}>Where iStructural is matched</label>
+                            <textarea style={{...inp,minHeight:60,resize:"vertical"}} value={rsMatched} onChange={e=>setRsMatched(e.target.value)}/></div>
+                          <div><label style={lbl}>Where iStructural is behind</label>
+                            <textarea style={{...inp,minHeight:60,resize:"vertical"}} value={rsBehind} onChange={e=>setRsBehind(e.target.value)}/></div>
+                        </div>
+                        <div style={{marginTop:8}}>
+                          <label style={lbl}>Proposed actions (one per line; each becomes a Propose item)</label>
+                          <textarea style={{...inp,minHeight:70,resize:"vertical"}} value={rsActions} onChange={e=>setRsActions(e.target.value)}
+                            placeholder={"Add an IStructE digital-twin reference page to the Knowledge Hub\nUpgrade APEX with NCEES-aligned ATS rubric\n..."}/>
+                        </div>
+                        <div style={{marginTop:10}}>
+                          <button style={btn} onClick={()=>{ const sel=document.getElementById("rs-attach"); if(sel && sel.value) recordFindings(sel.value); }}>Save findings & push actions to Propose</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HISTORY */}
+                  <div style={card}>
+                    <div style={sectionTitle}>3. Research history</div>
+                    {items.length===0 ? (
+                      <div style={{fontSize:T.small,color:P.slate,fontStyle:"italic"}}>No research runs yet.</div>
+                    ) : items.map(r=>{
+                      const statusColor = r.status==="acted on"?P.s3 : r.status==="findings ready"?P.s2 : r.status==="in progress"?P.gold : P.slate;
+                      return (
+                        <div key={r.id} style={{...card,borderLeft:`4px solid ${statusColor}`,marginBottom:8,padding:"10px 12px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6,flexWrap:"wrap",marginBottom:4}}>
+                            <strong style={{color:P.charcoal,fontSize:T.small}}>{r.topic}</strong>
+                            <span style={{fontSize:T.micro,color:P.slate}}>{(r.when||"").slice(0,10)} · {r.area} · {r.depth}</span>
+                          </div>
+                          <div style={{fontSize:T.micro,fontWeight:800,color:statusColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{r.status}</div>
+                          {r.sources && r.sources.length>0 && (
+                            <div style={{marginBottom:6}}>
+                              <div style={{fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.5,textTransform:"uppercase",marginBottom:2}}>Sources</div>
+                              {r.sources.map((s,i)=>(<div key={i} style={{fontSize:T.micro}}><a href={s} target="_blank" rel="noopener noreferrer" style={{color:P.s2}}>{s}</a></div>))}
+                            </div>
+                          )}
+                          {r.findings && (r.findings.summary || r.findings.winning || r.findings.matched || r.findings.behind) && (
+                            <div style={{marginTop:4,padding:"6px 8px",background:P.sand,borderRadius:6,fontSize:T.small,color:P.charcoal}}>
+                              {r.findings.summary && <div style={{marginBottom:3}}><strong>Summary:</strong> {r.findings.summary}</div>}
+                              {r.findings.winning && <div style={{marginBottom:3,color:P.s3}}><strong>Wins:</strong> {r.findings.winning}</div>}
+                              {r.findings.matched && <div style={{marginBottom:3,color:P.gold}}><strong>Matched:</strong> {r.findings.matched}</div>}
+                              {r.findings.behind && <div style={{marginBottom:3,color:P.coral}}><strong>Behind:</strong> {r.findings.behind}</div>}
+                            </div>
+                          )}
+                          {r.actions && r.actions.length>0 && (
+                            <div style={{marginTop:6}}>
+                              <div style={{fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.5,textTransform:"uppercase",marginBottom:2}}>Proposed actions (also in Propose tab)</div>
+                              {r.actions.map((a,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"2px 0"}}>• {a}</div>))}
+                            </div>
+                          )}
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:8}}>
+                            {["briefed","in progress","findings ready","acted on"].map(s=>(
+                              <button key={s} onClick={()=>updateResearchStatus(r.id,s)}
+                                style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,
+                                  background:r.status===s?P.charcoal:"transparent",color:r.status===s?P.white:P.charcoal,
+                                  border:`1px solid ${P.charcoal}45`,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>
+                            ))}
+                            <button onClick={()=>{ if(window.confirm("Delete research run?")) deleteResearch(r.id); }}
+                              style={{marginLeft:"auto",fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,background:"transparent",color:P.coral,border:`1px solid ${P.coral}55`,cursor:"pointer",fontFamily:"inherit"}}>Delete</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* FETCH */}
             {edgeTab==="fetch" && (

@@ -693,22 +693,123 @@ export default function App(){
   // who signed in stays signed in across page refreshes for the browser
   // session. sessionStorage (not localStorage) means it clears when the tab
   // closes, which is appropriate for a soft, client-side owner gate.
-  const [ownerMode,setOwnerMode]=useState(()=>{
-    try { return typeof sessionStorage !== "undefined" && sessionStorage.getItem("isg_owner") === "1"; }
-    catch(e){ return false; }
-  });
-  const [ownerSignInOpen,setOwnerSignInOpen]=useState(false); // inline owner sign-in field toggle
-  const [ownerSignInInput,setOwnerSignInInput]=useState("");  // owner passphrase field value
-  const [ownerSignInError,setOwnerSignInError]=useState("");  // owner sign-in error message
-  // Persist owner mode whenever it changes. Declared AFTER ownerMode so the
-  // dependency array never references it in the temporal dead zone.
+  // ─────────────────────────────────────────────────────────────────────────
+  // OWNER SIGN-IN  Firebase Google sign-in (with passphrase fallback)
+  // The owner whitelist: only these Google addresses unlock owner mode.
+  // Session persists 30 days via localStorage so the owner doesn't re-sign
+  // every visit. Signing out clears it on this browser.
+  // The passphrase fallback stays for one rollout cycle: useful for testing
+  // on machines where Google sign-in is awkward, and as a backstop.
+  // ─────────────────────────────────────────────────────────────────────────
+  const OWNER_EMAIL_WHITELIST = [
+    "talih.younes@istructgroup.com",   // primary Workspace mailbox
+    "info@istructgroup.com",           // alias to the same mailbox
+    "talih.younes@me.com",             // personal Apple email
+  ];
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyASG9l1UDzQAFm0o24cSXi0k9HYtiqQm9w",
+    authDomain: "istructural-edge.firebaseapp.com",
+    projectId: "istructural-edge",
+    storageBucket: "istructural-edge.firebasestorage.app",
+    messagingSenderId: "125762505073",
+    appId: "1:125762505073:web:452800fefee54191b38ed0",
+  };
+  const OWNER_SESSION_DAYS = 30;
+  const OWNER_STORAGE_KEY = "isg_owner_session_v2";
+
+  // restore owner mode from a 30-day localStorage record on first load
+  const ownerRestore = (()=>{
+    try {
+      if (typeof localStorage==="undefined") return null;
+      const raw = localStorage.getItem(OWNER_STORAGE_KEY);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (!o || !o.email || !o.expiresAt) return null;
+      if (Date.now() > o.expiresAt) { localStorage.removeItem(OWNER_STORAGE_KEY); return null; }
+      if (OWNER_EMAIL_WHITELIST.map(e=>e.toLowerCase()).indexOf(String(o.email).toLowerCase()) < 0) return null;
+      return o;
+    } catch(_) { return null; }
+  })();
+
+  const [ownerMode, setOwnerMode] = useState(!!ownerRestore);
+  const [ownerEmail, setOwnerEmail] = useState(ownerRestore ? ownerRestore.email : "");
+  const [ownerSignInOpen, setOwnerSignInOpen] = useState(false);
+  const [ownerSignInInput, setOwnerSignInInput] = useState("");
+  const [ownerSignInError, setOwnerSignInError] = useState("");
+  const [fbLoaded, setFbLoaded] = useState(false);    // Firebase scripts loaded
+  const [fbAuth, setFbAuth] = useState(null);         // Firebase Auth instance
+
+  // Load Firebase SDK from CDN once. Compat builds expose window.firebase,
+  // no bundler required. Two scripts: app + auth.
+  useEffect(()=>{
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (window.firebase && window.firebase.auth) { setFbLoaded(true); return; }
+    const loadScript = (src)=> new Promise((resolve,reject)=>{
+      const s = document.createElement("script");
+      s.src = src; s.async = true; s.onload = ()=>resolve(); s.onerror = ()=>reject(new Error("script load failed: "+src));
+      document.head.appendChild(s);
+    });
+    (async ()=>{
+      try {
+        await loadScript("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
+        await loadScript("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js");
+        if (!window.firebase.apps || window.firebase.apps.length === 0) {
+          window.firebase.initializeApp(FIREBASE_CONFIG);
+        }
+        setFbAuth(window.firebase.auth());
+        setFbLoaded(true);
+      } catch (err) {
+        console.warn("[owner] Firebase failed to load; passphrase fallback still works.", err && err.message);
+      }
+    })();
+  }, []);
+
+  // Persist owner mode whenever it changes
   useEffect(()=>{
     try {
-      if (typeof sessionStorage === "undefined") return;
-      if (ownerMode) sessionStorage.setItem("isg_owner","1");
-      else sessionStorage.removeItem("isg_owner");
-    } catch(e){ /* storage blocked, owner mode still works for this render */ }
-  }, [ownerMode]);
+      if (typeof localStorage === "undefined") return;
+      if (ownerMode && ownerEmail) {
+        const rec = { email: ownerEmail, expiresAt: Date.now() + OWNER_SESSION_DAYS*86400000 };
+        localStorage.setItem(OWNER_STORAGE_KEY, JSON.stringify(rec));
+      } else {
+        localStorage.removeItem(OWNER_STORAGE_KEY);
+      }
+    } catch(_) {}
+  }, [ownerMode, ownerEmail]);
+
+  // Google sign-in via popup. Whitelisted email -> owner mode unlocks.
+  const signInWithGoogle = async ()=>{
+    setOwnerSignInError("");
+    if (!fbAuth) { setOwnerSignInError("Google sign-in not ready yet. Try again in a moment."); return; }
+    try {
+      const provider = new window.firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const result = await fbAuth.signInWithPopup(provider);
+      const email = (result && result.user && result.user.email || "").toLowerCase();
+      const ok = OWNER_EMAIL_WHITELIST.map(e=>e.toLowerCase()).indexOf(email) >= 0;
+      if (!ok) {
+        try { await fbAuth.signOut(); } catch(_) {}
+        setOwnerSignInError("This Google account is not authorised for owner mode.");
+        return;
+      }
+      setOwnerEmail(email);
+      setOwnerMode(true);
+      setOwnerSignInOpen(false);
+    } catch (err) {
+      const code = (err && err.code) || "";
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        setOwnerSignInError("Sign-in cancelled.");
+      } else {
+        setOwnerSignInError("Sign-in failed: " + (err && err.message || code || "unknown"));
+      }
+    }
+  };
+
+  const signOutOwner = async ()=>{
+    try { if (fbAuth) await fbAuth.signOut(); } catch(_) {}
+    setOwnerMode(false);
+    setOwnerEmail("");
+  };
   // ── SCROLL-FIX (the real one) ─────────────────────────────────────────────
   // The snap-back-to-top bug after opening/closing an app modal was caused by
   // setting `document.body.style.overflow = "hidden"`. Locking the BODY element
@@ -2691,10 +2792,11 @@ export default function App(){
         <p style={{fontSize:T.lead,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
         <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap",alignItems:"center"}}>
           {ownerMode ? (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:T.body,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:T.body,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s2,color:P.white,letterSpacing:1}}>OWNER</span>
               <span>Unlimited access  no session cap on any app</span>
-              <button onClick={()=>setOwnerMode(false)} aria-label="Sign out of owner mode"
+              {ownerEmail && <span style={{fontSize:T.micro,fontWeight:600,color:P.tealL,opacity:0.85}}>{ownerEmail}</span>}
+              <button onClick={signOutOwner} aria-label="Sign out of owner mode"
                 style={{padding:"2px 8px",borderRadius:5,background:"transparent",border:`1px solid ${P.s2L}`,fontSize:T.micro,fontWeight:700,color:"#E9D6F0",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5}}>Sign out</button>
             </div>
           ) : sessionStillValid ? (
@@ -2706,9 +2808,23 @@ export default function App(){
             <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:T.body,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
           )}
           {!ownerMode && !ownerSignInOpen && (
-            <button onClick={()=>{ setOwnerSignInOpen(true); setOwnerSignInError(""); }}
-              aria-label="Owner sign in"
-              style={{padding:"6px 12px",borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,fontSize:T.small,fontWeight:700,color:P.tealL,cursor:"pointer",fontFamily:"inherit"}}>Owner sign in</button>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+              <button onClick={signInWithGoogle} disabled={!fbLoaded}
+                aria-label="Sign in with Google"
+                style={{padding:"6px 12px",borderRadius:7,background:P.white,border:`1px solid ${P.tealL}40`,fontSize:T.small,fontWeight:700,color:P.charcoal,cursor:fbLoaded?"pointer":"wait",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+                <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/>
+                  <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/>
+                  <path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/>
+                  <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/>
+                </svg>
+                {fbLoaded?"Sign in with Google":"Loading..."}
+              </button>
+              <button onClick={()=>{ setOwnerSignInOpen(true); setOwnerSignInError(""); }}
+                aria-label="Use passphrase fallback"
+                style={{padding:"6px 10px",borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,fontSize:T.micro,fontWeight:700,color:P.tealL,cursor:"pointer",fontFamily:"inherit"}}>Use passphrase</button>
+              {ownerSignInError && <span style={{fontSize:T.small,fontWeight:700,color:"#FFD1C9"}}>{ownerSignInError}</span>}
+            </div>
           )}
           {!ownerMode && ownerSignInOpen && (
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
@@ -2716,13 +2832,13 @@ export default function App(){
                 type="password"
                 value={ownerSignInInput}
                 onChange={(e)=>setOwnerSignInInput(e.target.value)}
-                onKeyDown={(e)=>{ if(e.key==="Enter"){ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } } }}
+                onKeyDown={(e)=>{ if(e.key==="Enter"){ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerEmail("passphrase-fallback"); setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } } }}
                 placeholder="Owner passphrase"
                 aria-label="Owner passphrase"
                 autoFocus
                 style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${P.tealL}50`,background:P.navyM,color:P.white,fontSize:T.body,fontFamily:"inherit",width:150}} />
               <button
-                onClick={()=>{ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } }}
+                onClick={()=>{ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerEmail("passphrase-fallback"); setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } }}
                 style={{padding:"6px 12px",borderRadius:7,background:P.teal,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock</button>
               <button
                 onClick={()=>{ setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); }}

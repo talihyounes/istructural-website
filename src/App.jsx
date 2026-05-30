@@ -1,4 +1,5 @@
-// iStructural website v5.3  (2026-05-30)  Per-app + all-apps Stripe gate, 24h pass, expiry toast, skip-to-content, form privacy note, Hub-to-Tools cross-links. Deploys as src/App.jsx.
+// iStructural website v5.3 (2026-05-30): Stripe gate (per-app + bundle), 24h pass, expiry toast, skip-to-content, form privacy note, Hub-to-Tools links, outcome-first app cards. Deploys as src/App.jsx.
+
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 
 // ── Meta injection (for Vercel / Next.js move, use next/head instead) ──
@@ -2813,7 +2814,7 @@ export default function App(){
         {!ownerMode && (
           <div style={{position:"absolute",top:6,right:8,fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.charcoal,color:P.white,letterSpacing:0.6,textTransform:"uppercase",pointerEvents:"none"}}>Preview</div>
         )}
-        {/* Item 8: deliverable chips now lead the card above, so they are not repeated here. */}
+        {/* Item 8: deliverable chips lead the card above; not repeated here. */}
       </div>
     );
   };
@@ -3038,7 +3039,6 @@ export default function App(){
                       <div style={{fontSize:T.small,color:P.slate,marginTop:1}}>{app.tagline}</div>
                     </div>
                   </div>
-                  {/* Item 8: outcome-first. Lead the card with what the buyer gets. */}
                   {app.keyDeliverables && app.keyDeliverables.length>0 && (
                     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:2}}>
                       {app.keyDeliverables.slice(0,4).map((d,di)=>(

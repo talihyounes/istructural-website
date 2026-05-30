@@ -1,4 +1,4 @@
-// iStructural website v5.3 (2026-05-30): Stripe gate (per-app + bundle), 24h pass, expiry toast, skip-to-content, form privacy note, Hub-to-Tools links, outcome-first app cards. Deploys as src/App.jsx.
+// iStructural website v5.4 (2026-05-30): v5.3 + LEARN removed from Tools Box (moved to iStructural_PEng_Tutors plugin). Deploys as src/App.jsx.
 
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 
@@ -2301,52 +2301,6 @@ export default function App(){
           {id:"cards", label:"Generate capability cards"},
         ],
       },
-    },
-    {
-      id:"learn",
-      name:"LEARN",
-      tagline:"Structured courses, studied with you, progress tracked",
-      category:"Learning",
-      shortDesc:"Owner-authored courses grounded in real material. Ask questions, get step by step solutions, draft practice. Every answer carries a source label and an accuracy and confidence score. Progress bar and time analytics per course.",
-      iconColor:P.s3,
-      iconLetter:"L",
-      icon:"book",
-      requiresKey:true,
-      requiresEntitlement:"learn",
-      plan:{tier:"Free preview",priceHint:"Free during transition stage",status:"coming"}, // dormant: commercialization, shown faded
-      keyDeliverables:["Step-by-step solutions","Authored course library","Progress and time tracking","Source-scored answers"],
-      scope:{
-        upload:[
-          "Nothing required to start, courses are pre-authored",
-          "Images or documents as study material, where the course allows it (optional)",
-          "Your questions and practice attempts as you study",
-        ],
-        included:[
-          "Owner-authored modules and courses grounded in verified material",
-          "Question answering, practice drafting, step by step solutions",
-          "Every answer labelled by source with an accuracy and confidence score",
-          "Progress bar, time on course and daily use analytics",
-        ],
-        excluded:[
-          "Not a formal certification or accredited qualification",
-          "Internet search only with your explicit consent",
-          "No professional engineering sign off, study support only",
-        ],
-        expect:[
-          "Interactive study inside this app, progress saved for the session",
-          "Sourced, dated answers, no em dashes",
-          "New modules added by the author over time",
-        ],
-      },
-      customModal:"learn",
-      capabilities:[
-        "Modules and courses authored by iStructural, grounded in verified source material",
-        "Question answering, practice question drafting, step by step problem solutions",
-        "Every answer labelled: from course material, from a course-provided source, or from the internet",
-        "Accuracy and confidence percentages shown on every answer",
-        "Internet search only with explicit consent, external sources cited with dates",
-        "Progress bar, total time on course, average use per day analytics",
-      ],
     },
     {
       id:"meet",

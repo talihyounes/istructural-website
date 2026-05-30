@@ -1,3 +1,4 @@
+// iStructural website v5.3  (2026-05-30)  Per-app + all-apps Stripe gate, 24h pass, expiry toast, skip-to-content, form privacy note, Hub-to-Tools cross-links. Deploys as src/App.jsx.
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 
 // ── Meta injection (for Vercel / Next.js move, use next/head instead) ──
@@ -720,6 +721,36 @@ export default function App(){
   };
   const OWNER_SESSION_DAYS = 30;
   const OWNER_STORAGE_KEY = "isg_owner_session_v2";
+
+  // SITE-WIDE ALL-APPS DAY PASS (commercial gate, Phase 1)
+  // One purchase unlocks every Tools Box app (APEX, ARGO, MEET, LEARN,
+  // CapacityGrid) for a fixed window. The Knowledge Hub is always free and is
+  // never gated by this. Paste a single Stripe Payment Link below when ready;
+  // while it is empty, no Buy button shows and the site behaves exactly as
+  // before (key-on-request only). The Stripe success URL should return to the
+  // site with ?paid_key=<KEY>; the existing handler grants the day pass.
+  // Phase 2 will move validation server-side (signed token).
+  // COMMERCIAL MODEL (Phase 1, client-side):
+  // Two ways to buy, both granting 24-hour access:
+  //   - Per-app pass: each app has its own Stripe link; unlocks only that app.
+  //   - All-apps bundle (SITE_PASS): one Stripe link; unlocks every app.
+  // The Knowledge Hub is always free and never gated. Leave a link empty to hide
+  // its Buy button. Paste links when ready.
+  const PASS_DURATION_MINUTES = 24 * 60; // 24-hour access for any paid pass
+  // Per-app Stripe links, keyed by app id. Empty = no Buy button for that app.
+  const APP_PASSES = {
+    ecios: { stripeUrl: "", priceLabel: "CAD 19 / 24h" },   // APEX
+    bid:   { stripeUrl: "", priceLabel: "CAD 19 / 24h" },   // ARGO
+    meet:  { stripeUrl: "", priceLabel: "CAD 15 / 24h" },   // MEET
+    learn: { stripeUrl: "", priceLabel: "CAD 12 / 24h" },   // LEARN
+    capacity: { stripeUrl: "", priceLabel: "CAD 29 / 24h" }, // CapacityGrid
+  };
+  // All-apps bundle (the upsell). Empty = no bundle button.
+  const SITE_PASS = {
+    stripeUrl: "",
+    priceLabel: "CAD 49 / 24h all-apps",
+    durationMinutes: PASS_DURATION_MINUTES,
+  };
 
   // restore owner mode from a 30-day localStorage record on first load
   const ownerRestore = (()=>{
@@ -1502,6 +1533,10 @@ export default function App(){
                   </a>
                 ))}
               </div>
+              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open the Tools Box assessment apps" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s3L,border:`1px dashed ${P.s3}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Want this turned into a stamped assessment? The Tools Box apps take a photo or report and triage damage for you.</div>
+                <span style={{color:P.s3,fontWeight:800,whiteSpace:"nowrap"}}>Open Tools Box &#8594;</span>
+              </div>
             </div>
           )}
 
@@ -1566,6 +1601,10 @@ export default function App(){
                     <div style={{fontSize:T.micro,color:P.s2,fontWeight:700,marginTop:6}}>Open free calculator &#x2197;</div>
                   </a>
                 ))}
+              </div>
+              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open the Tools Box apps" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Need the decision, not just the number? ARGO turns a calculation into a go or no-go bid call; APEX builds the hiring or career case around it.</div>
+                <span style={{color:P.s2,fontWeight:800,whiteSpace:"nowrap"}}>Open Tools Box &#8594;</span>
               </div>
             </div>
           )}
@@ -1917,7 +1956,7 @@ export default function App(){
       // the Buy access button is hidden and the existing Request 60-min key flow stays.
       // After purchase, your Stripe success URL should return to the site with
       // ?paid_key=<KEY> in the URL; the app will pick that up and grant a session.
-      commercial:{ stripeUrl:"", priceLabel:"CAD 19 / single run", currency:"CAD" },
+      commercial:{ stripeUrl:"", priceLabel:"included in all-apps pass", currency:"CAD" },
       // scope: the Yes-No inclusion / exclusion card shown at the start of the
       // app so the user knows up front what to upload, what is included, what
       // is excluded, and what to expect back. Rendered before the pre-run panel.
@@ -2516,7 +2555,7 @@ export default function App(){
   const sessionStillValid = ownerMode || (sessionMsLeft > 0 && !sessionExpired);
   const sessionSecondsLeft = sessionMsLeft > 0 ? Math.floor(sessionMsLeft / 1000) : 0;
   const sessionMinutesLeft = Math.floor(sessionSecondsLeft / 60);
-  const SESSION_TOTAL_SECONDS = 60 * 60; // 60 minute slot during this transition stage
+  const SESSION_TOTAL_SECONDS = (toolsSession.grantedSeconds && toolsSession.grantedSeconds > 0) ? toolsSession.grantedSeconds : 60 * 60; // 60 minute slot during this transition stage
 
   // SandTimer: a small self-ticking sand-clock that drains as the 60 min
   // session runs down. SCROLL-FIX: this is a LEAF component. It owns its own
@@ -2541,8 +2580,11 @@ export default function App(){
     }, [endMs]);
     const secondsLeft = endMs ? Math.max(0, Math.floor((endMs - Date.now())/1000)) : 0;
     const frac = Math.max(0, Math.min(1, secondsLeft / total)); // 1 full, 0 empty
-    const mm = String(Math.floor(secondsLeft / 60)).padStart(2,"0");
-    const ss = String(secondsLeft % 60).padStart(2,"0");
+    const hrs = Math.floor(secondsLeft / 3600);
+    const mins = Math.floor((secondsLeft % 3600) / 60);
+    const secs = secondsLeft % 60;
+    const mm = String(total > 3600 ? hrs : mins).padStart(2,"0");
+    const ss = String(total > 3600 ? mins : secs).padStart(2,"0");
     const topFill = frac;          // sand still in the top bulb
     const botFill = 1 - frac;      // sand collected in the bottom bulb
     const glassStroke = dark ? "#9BBCD6" : P.navy;
@@ -2563,8 +2605,32 @@ export default function App(){
           {/* Bottom sand: a triangle that grows from the base */}
           <path d={`M 14 ${31 - 12.5*botFill} L ${14-7*botFill} 31 L ${14+7*botFill} 31 Z`} fill={sandColor} opacity="0.92"/>
         </svg>
-        <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:T.body,fontWeight:800,color:txtColor,letterSpacing:0.5}}>{mm}:{ss}</span>
+        <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:T.body,fontWeight:800,color:txtColor,letterSpacing:0.5}}>{mm}:{ss}<span style={{fontSize:T.small,fontWeight:600,opacity:0.7,marginLeft:3}}>{total>3600?"h:m":"m:s"}</span></span>
       </span>
+    );
+  };
+
+  const ExpiryToast = ({endMs, onExpire}) => {
+    const [, force] = useState(0);
+    const firedExpire = useRef(false);
+    useEffect(()=>{
+      if (!endMs) return;
+      const id = setInterval(()=>{
+        force(n=>n+1);
+        if (Date.now() >= endMs && !firedExpire.current) { firedExpire.current = true; if (onExpire) onExpire(); }
+      }, 1000);
+      return ()=>clearInterval(id);
+    }, [endMs]);
+    const secondsLeft = endMs ? Math.max(0, Math.floor((endMs - Date.now())/1000)) : 0;
+    if (secondsLeft <= 0 || secondsLeft > 300) return null;
+    const mm = String(Math.floor(secondsLeft/60)).padStart(2,"0");
+    const ss = String(secondsLeft%60).padStart(2,"0");
+    return (
+      <div role="status" aria-live="polite"
+        style={{position:"fixed",left:16,bottom:16,zIndex:1500,background:P.coral,color:P.white,padding:"10px 14px",borderRadius:10,boxShadow:"0 6px 24px rgba(0,0,0,0.25)",display:"flex",alignItems:"center",gap:10,maxWidth:300,animation:"fadeUp 0.2s ease-out"}}>
+        <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontWeight:800,fontSize:T.lead,letterSpacing:0.5}}>{mm}:{ss}</span>
+        <span style={{fontSize:T.small,fontWeight:600,lineHeight:1.3}}>Session ends soon. Finish or save your work; buy again to continue.</span>
+      </div>
     );
   };
 
@@ -2573,8 +2639,16 @@ export default function App(){
     // Format expected: ISG-XXXXX-XXXXX (8-15 chars total). This is a soft check. Phase 2 moves validation server-side.
     return typeof k === "string" && k.trim().length >= 6;
   };
-  const grantSession = (k, durationMinutes=60) => {
-    setToolsSession(s => ({...s, accessKey:k, keyValidUntil:new Date(Date.now() + durationMinutes*60000).toISOString()}));
+  const grantSession = (k, durationMinutes=60, scope="all") => {
+    setToolsSession(s => ({...s, accessKey:k, keyValidUntil:new Date(Date.now() + durationMinutes*60000).toISOString(), grantedSeconds: Math.round(durationMinutes*60), grantedApp: scope}));
+  };
+  // Per-app unlock check. Owner unlocks everything. A paid/free session unlocks
+  // either every app (scope "all") or only the app it was bought for.
+  const appUnlocked = (appId) => {
+    if (ownerMode) return true;
+    if (!(sessionMsLeft > 0 && !sessionExpired)) return false;
+    const scope = toolsSession.grantedApp || "all";
+    return scope === "all" || scope === appId;
   };
 
   // Post-purchase return path. Stripe (or any payment processor) redirects back
@@ -2585,14 +2659,16 @@ export default function App(){
     try {
       const url=new URL(window.location.href);
       const pk=url.searchParams.get("paid_key");
+      const pa=url.searchParams.get("paid_app"); // "all" or an app id
       if (pk && validateAccessKey(pk)) {
-        grantSession(pk.trim(), 60);
+        grantSession(pk.trim(), PASS_DURATION_MINUTES, (pa && pa.trim()) ? pa.trim() : "all");
         // best-effort analytics
         try {
           window.dataLayer = window.dataLayer || [];
           window.dataLayer.push({event:"paid_session_granted",ts:new Date().toISOString()});
         } catch(_) {}
         url.searchParams.delete("paid_key");
+        url.searchParams.delete("paid_app");
         window.history.replaceState({},"",url.pathname+(url.search?"?"+url.searchParams.toString():"")+url.hash);
       }
     } catch(_) {}
@@ -2737,13 +2813,7 @@ export default function App(){
         {!ownerMode && (
           <div style={{position:"absolute",top:6,right:8,fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.charcoal,color:P.white,letterSpacing:0.6,textTransform:"uppercase",pointerEvents:"none"}}>Preview</div>
         )}
-        {deliverables && deliverables.length>0 && (
-          <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:7}}>
-            {deliverables.slice(0,4).map((d,i)=>(
-              <span key={i} style={{fontSize:T.micro,fontWeight:700,padding:"2px 7px",borderRadius:4,background:color+"15",color:color,border:`1px solid ${color}30`,lineHeight:1.4}}>{d}</span>
-            ))}
-          </div>
-        )}
+        {/* Item 8: deliverable chips now lead the card above, so they are not repeated here. */}
       </div>
     );
   };
@@ -2809,7 +2879,15 @@ export default function App(){
               <SandTimer endMs={sessionEndMs} size={30} dark={true} onExpire={()=>setSessionExpired(true)}/>
             </div>
           ) : (
-            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:T.body,fontWeight:700}}>No active session · Request a 60 minute key on any app card</div>
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:T.body,fontWeight:700}}>No active session · {SITE_PASS.stripeUrl ? "Buy the all-apps pass below, or request a 60 minute key on any app card" : "Request a 60 minute key on any app card"}</div>
+          )}
+          {!ownerMode && !sessionStillValid && SITE_PASS.stripeUrl && (
+            <a href={SITE_PASS.stripeUrl} target="_blank" rel="noopener noreferrer"
+              onClick={()=>trackEvent("buy_access_click",{pass:"all_apps_day",from:"tools_hero",price:SITE_PASS.priceLabel})}
+              aria-label="Buy the all-apps day pass"
+              style={{padding:"7px 14px",borderRadius:8,background:P.gold,color:"#3A2C00",fontSize:T.body,fontWeight:800,textDecoration:"none",letterSpacing:0.3}}>
+              Buy all-apps pass{SITE_PASS.priceLabel?` · ${SITE_PASS.priceLabel}`:""}
+            </a>
           )}
           {!ownerMode && !ownerSignInOpen && (
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
@@ -2960,7 +3038,15 @@ export default function App(){
                       <div style={{fontSize:T.small,color:P.slate,marginTop:1}}>{app.tagline}</div>
                     </div>
                   </div>
-                  <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55,flex:1}}>{app.shortDesc}</div>
+                  {/* Item 8: outcome-first. Lead the card with what the buyer gets. */}
+                  {app.keyDeliverables && app.keyDeliverables.length>0 && (
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:2}}>
+                      {app.keyDeliverables.slice(0,4).map((d,di)=>(
+                        <span key={di} style={{fontSize:T.micro,fontWeight:700,color:app.iconColor,background:app.iconColor+"12",border:`1px solid ${app.iconColor}30`,padding:"3px 8px",borderRadius:20,letterSpacing:0.2}}>{d}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{fontSize:T.small,color:P.slate,lineHeight:1.55,flex:1,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{app.shortDesc}</div>
 
                   {/* Session status line on the card */}
                   {app.requiresKey && (
@@ -2998,17 +3084,27 @@ export default function App(){
                   {/* Action buttons */}
                   <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     {/* Buy access: only shown when a Stripe link is configured and the visitor is not the owner */}
-                    {!ownerMode && app.commercial && app.commercial.stripeUrl && (
+                    {!ownerMode && !appUnlocked(app.id) && APP_PASSES[app.id] && APP_PASSES[app.id].stripeUrl && (
                       <a
-                        href={app.commercial.stripeUrl}
+                        href={APP_PASSES[app.id].stripeUrl}
                         target="_blank" rel="noopener noreferrer"
-                        onClick={(e)=>{ e.stopPropagation(); trackEvent("buy_access_click",{app:app.id,name:app.name,price:app.commercial.priceLabel||null}); }}
-                        aria-label={`Buy access to ${app.name}`}
+                        onClick={(e)=>{ e.stopPropagation(); trackEvent("buy_access_click",{pass:"per_app",app:app.id,price:APP_PASSES[app.id].priceLabel}); }}
+                        aria-label={`Buy a 24 hour pass for ${app.name}`}
                         style={{flex:"1 1 120px",fontSize:T.small,fontWeight:800,padding:"8px 10px",borderRadius:8,background:P.gold,color:"#3A2C00",border:"none",cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3,textAlign:"center",textDecoration:"none"}}>
-                        Buy access{app.commercial.priceLabel?` · ${app.commercial.priceLabel}`:""}
+                        Buy {app.name}{APP_PASSES[app.id].priceLabel?` · ${APP_PASSES[app.id].priceLabel}`:""}
                       </a>
                     )}
-                    {app.requiresKey && !sessionStillValid && (
+                    {!ownerMode && !appUnlocked(app.id) && SITE_PASS.stripeUrl && (
+                      <a
+                        href={SITE_PASS.stripeUrl}
+                        target="_blank" rel="noopener noreferrer"
+                        onClick={(e)=>{ e.stopPropagation(); trackEvent("buy_access_click",{pass:"all_apps_day",from_app:app.id,price:SITE_PASS.priceLabel}); }}
+                        aria-label="Buy the all-apps bundle"
+                        style={{flex:"1 1 120px",fontSize:T.small,fontWeight:700,padding:"8px 10px",borderRadius:8,background:"transparent",color:P.gold,border:`1px solid ${P.gold}`,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3,textAlign:"center",textDecoration:"none"}}>
+                        All-apps{SITE_PASS.priceLabel?` · ${SITE_PASS.priceLabel}`:""}
+                      </a>
+                    )}
+                    {app.requiresKey && !appUnlocked(app.id) && (
                       <button
                         onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
                         {...kbd(()=>setActiveApp(app))}
@@ -3021,8 +3117,8 @@ export default function App(){
                       onClick={(e)=>{ e.stopPropagation(); setActiveApp(app); }}
                       {...kbd(()=>setActiveApp(app))}
                       aria-label={`Open ${app.name}`}
-                      style={{flex:1,fontSize:T.small,fontWeight:800,padding:"8px 10px",borderRadius:8,background:(app.requiresKey && !sessionStillValid) ? "transparent" : app.iconColor,color:(app.requiresKey && !sessionStillValid) ? app.iconColor : P.white,border:`1px solid ${app.iconColor}`,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
-                      {sessionStillValid ? "Open app ↗" : "View details"}
+                      style={{flex:1,fontSize:T.small,fontWeight:800,padding:"8px 10px",borderRadius:8,background:(app.requiresKey && !appUnlocked(app.id)) ? "transparent" : app.iconColor,color:(app.requiresKey && !appUnlocked(app.id)) ? app.iconColor : P.white,border:`1px solid ${app.iconColor}`,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.3}}>
+                      {appUnlocked(app.id) ? "Open app ↗" : "View details"}
                     </button>
                   </div>
                 </div>
@@ -3148,8 +3244,9 @@ export default function App(){
             <CaptchaBlock captcha={captcha} status={status} />
             <label style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:12,cursor:"pointer"}}>
               <input type="checkbox" checked={!!accepted} onChange={(e)=>setAccepted(e.target.checked)} aria-label="Accept terms" style={{marginTop:3,flexShrink:0}} />
-              <span style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>The Tools Box apps are informational and decision-support tools only, no professional advice, no guarantee of outcome. My details are used only to follow up on this request and are not shared with third parties. *</span>
+              <span style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>The Tools Box apps are informational and decision-support tools only, no professional advice, no guarantee of outcome. My details are used only to follow up on this request and are not sold or used for advertising. *</span>
             </label>
+            <div style={{fontSize:T.micro,color:P.slate,lineHeight:1.5,marginTop:8}}>Privacy: this form is delivered through a third-party form processor (Formspree / FormSubmit) so we receive your message by email. Please do not include confidential CV, RFP, or personal data you would not normally email.</div>
             <button type="submit" disabled={status==="sending"||status==="success"||!accepted} style={{...submitStyle(P.teal), opacity:(!accepted ? 0.55 : 1), cursor:(!accepted ? "not-allowed" : "pointer")}}>
               {status==="sending" ? "Sending..." : status==="success" ? "Received, we will be in touch" : (accepted ? "Send Request" : "Accept the terms to enable submit")}
             </button>
@@ -6202,7 +6299,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     };
 
     const tryUnlock = () => {
-      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), 60); setKeyError(""); }
+      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), PASS_DURATION_MINUTES, app.id); setKeyError(""); }
       else { setKeyError("Access key invalid. Request a 60 minute key from info@istructgroup.com"); }
     };
     const tryOwner = () => {
@@ -6405,7 +6502,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                           </div>
                         ))}
                       </div>
-                      {!sessionStillValid ? (
+                      {!appUnlocked(app.id) ? (
                         <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`}}>
                           <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8}}>Studying requires a free 60 minute session key during this transition stage.</div>
                           <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural LEARN  60 minute key request")}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the LEARN app.\n\nFull name: \nRole: \nEmail: \n\nThank you.")}`}
@@ -6820,7 +6917,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     const chipFill  = (t) => (chipColor(t))+"15";
 
     const tryUnlock = () => {
-      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), 60); setKeyError(""); }
+      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), PASS_DURATION_MINUTES, app.id); setKeyError(""); }
       else { setKeyError("Access key invalid. Request a key from info@istructgroup.com"); }
     };
 
@@ -7086,7 +7183,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                 "want" intake field was removed. onRun always overwrites
                 intake.want with the current toggle selection (human-readable
                 labels) so changing the toggles and re-applying stays in sync. */}
-            {app.preRun && sessionStillValid && (
+            {app.preRun && appUnlocked(app.id) && (
               <PreRunPanel app={app} onRun={(sel)=>{
                 const labelFor = (id)=>{
                   const item = (app.preRun.want||[]).find(w=>w.id===id);
@@ -7106,7 +7203,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
             )}
 
             {/* H3. Counterparty profiling panel (shared module) */}
-            {app.profiling && sessionStillValid && <ProfilingPanel app={app} />}
+            {app.profiling && appUnlocked(app.id) && <ProfilingPanel app={app} />}
 
             {/* I. Access key gate + intake */}
             <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
@@ -7116,7 +7213,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                   <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.s2+"15",border:`1px solid ${P.s2}40`}}>
                     <span style={{fontSize:T.micro,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner  Unlimited</span>
                   </div>
-                ) : sessionStillValid && (
+                ) : appUnlocked(app.id) && (
                   <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}35`}}>
                     <span style={{fontSize:T.micro,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
                     <SandTimer endMs={sessionEndMs} size={28} dark={false} onExpire={()=>setSessionExpired(true)}/>
@@ -7124,7 +7221,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                 )}
               </div>
 
-              {!sessionStillValid && (
+              {!appUnlocked(app.id) && (
                 <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`,marginBottom:10}}>
                   <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8}}>This app requires a time limited access key. During this transition stage every key unlocks a free <strong>60 minute</strong> session. Request a key, then paste it here to start the countdown.</div>
                   <a
@@ -7142,7 +7239,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
               )}
 
               {/* MEET v3: interactive intake + opponent scenarios + EI playbook */}
-              {sessionStillValid && app.id==="meet" && (()=>{
+              {appUnlocked(app.id) && app.id==="meet" && (()=>{
                 const pb = meetPlaybook(meet);
                 const inp={width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
                 const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:2,textTransform:"uppercase",letterSpacing:0.4};
@@ -7272,7 +7369,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
               })()}
 
               {/* ARGO v3: 20-point critical-decisions interactive checklist + SWOT/SMART/RACI/payment/pricing */}
-              {sessionStillValid && app.id==="bid" && (()=>{
+              {appUnlocked(app.id) && app.id==="bid" && (()=>{
                 const inp={width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
                 const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:2,textTransform:"uppercase",letterSpacing:0.4};
                 const card2={padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:8};
@@ -7415,7 +7512,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
               })()}
 
               {/* APEX v3: file uploads (CV and JD) + head-to-head comparison panel */}
-              {sessionStillValid && app.id==="ecios" && (
+              {appUnlocked(app.id) && app.id==="ecios" && (
                 <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
                   <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:6}}>APEX intake  upload your CV and the JD</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:8}}>
@@ -7446,7 +7543,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                 </div>
               )}
 
-              {sessionStillValid && (
+              {appUnlocked(app.id) && (
                 <form onSubmit={submitIntake}>
                   {app.intakeFields.map(f=>(
                     <div key={f.key} style={{marginBottom:8}}>
@@ -7477,7 +7574,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                 server-side enforcement (the server never sends locked detail)
                 is the Phase 2 backend. The rule now: never render full detail
                 to a tier that has not earned it. */}
-            {(ownerMode || sessionStillValid) && (() => {
+            {(ownerMode || appUnlocked(app.id)) && (() => {
               const tierFull = ownerMode;                       // owner sees everything
               const sections = app.id==="ecios" ? [
                 {n:"01 Fit summary", s:"Candidate-to-JD alignment, scored across required and preferred criteria, with strengths and gaps.", d:"Full criterion-by-criterion scoring table, every requirement matched or flagged, ranked gap list, and the one-line fit verdict with its reasoning."},
@@ -8117,7 +8214,10 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
         [role="button"]:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid #0A7C6E; outline-offset: 2px; }
         /* A11Y: visually-hidden helper for screen readers */
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+        .skip-link { position:absolute; left:8px; top:-48px; z-index:2000; background:#0A7C6E; color:#fff; padding:8px 14px; border-radius:8px; font-size:14px; font-weight:700; text-decoration:none; transition:top 0.15s; }
+        .skip-link:focus { top:8px; }
       `}</style>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {/* SCROLL-FIX: page components are defined inside App, so on every App
           re-render they become NEW function references. Rendering them as
           elements (<HomePage/>) makes React see a new component type each
@@ -8127,6 +8227,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
           React only diffs the DOM and never remounts. This is the true fix
           for the scroll-snaps-back-up bug. */}
       {Nav()}
+      <main id="main-content" tabIndex={-1} style={{outline:"none"}}>
       {page==="home"&&HomePage()}
       {page==="s1"&&S1Page()}
       {page==="s2"&&S2Page()}
@@ -8137,7 +8238,12 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
       {page==="training"&&TrainingPage()}
       {page==="start"&&StartPage()}
       {page==="contact"&&ContactPage()}
+      </main>
       {Footer()}
+
+      {!ownerMode && sessionStillValid && sessionEndMs > 0 && (
+        <ExpiryToast endMs={sessionEndMs} onExpire={()=>setSessionExpired(true)} />
+      )}
 
       {/* ═══ MOBILE NAV DRAWER ═══ */}
       {mobileNavOpen && (

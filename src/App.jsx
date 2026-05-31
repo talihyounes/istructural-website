@@ -1,4 +1,4 @@
-// iStructural website v5.4 (2026-05-30): v5.3 + LEARN removed from Tools Box (moved to iStructural_PEng_Tutors plugin). Deploys as src/App.jsx.
+// iStructural website v5.5 (2026-05-30): LEARN fully removed from site (now the iStructural_PEng_Tutors plugin). 4 apps: APEX, ARGO, MEET, CapacityGrid. Deploys as src/App.jsx.
 
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 
@@ -724,7 +724,7 @@ export default function App(){
   const OWNER_STORAGE_KEY = "isg_owner_session_v2";
 
   // SITE-WIDE ALL-APPS DAY PASS (commercial gate, Phase 1)
-  // One purchase unlocks every Tools Box app (APEX, ARGO, MEET, LEARN,
+  // One purchase unlocks every Tools Box app (APEX, ARGO, MEET,
   // CapacityGrid) for a fixed window. The Knowledge Hub is always free and is
   // never gated by this. Paste a single Stripe Payment Link below when ready;
   // while it is empty, no Buy button shows and the site behaves exactly as
@@ -743,7 +743,6 @@ export default function App(){
     ecios: { stripeUrl: "", priceLabel: "CAD 19 / 24h" },   // APEX
     bid:   { stripeUrl: "", priceLabel: "CAD 19 / 24h" },   // ARGO
     meet:  { stripeUrl: "", priceLabel: "CAD 15 / 24h" },   // MEET
-    learn: { stripeUrl: "", priceLabel: "CAD 12 / 24h" },   // LEARN
     capacity: { stripeUrl: "", priceLabel: "CAD 29 / 24h" }, // CapacityGrid
   };
   // All-apps bundle (the upsell). Empty = no bundle button.
@@ -1186,7 +1185,7 @@ export default function App(){
           </svg>
           <div>
             <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
-            <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career war room, ARGO bid decisions, LEARN courses. More apps arriving as we draft them. Open the box.</div>
+            <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career war room, ARGO bid decisions, MEET room strategy. More apps arriving as we draft them. Open the box.</div>
           </div>
         </div>
         <div style={{background:P.teal,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
@@ -1224,7 +1223,7 @@ export default function App(){
         </svg>
         <div>
           <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
-          <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career intelligence, ARGO bid decisions, CapacityGrid workforce intelligence, LEARN courses. Open the box.</div>
+          <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career intelligence, ARGO bid decisions, CapacityGrid workforce intelligence, MEET room strategy. Open the box.</div>
         </div>
       </div>
       <div style={{background:P.teal,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
@@ -2394,41 +2393,7 @@ export default function App(){
   // ── LEARN  module catalog (33 modules: PEO live, 32 named Coming later) ──
   // moduleId is stable. status: "live" once a published course exists, else "soon".
   // group: "featured" shows in the top row, "drawer" sits in the collapsible Coming later drawer.
-  const learnModules = [
-    {id:"peo", n:"Professional Engineering of Ontario", status:"live", group:"featured"},
-    {id:"m13", n:"Structural Engineering", status:"soon", group:"featured"},
-    {id:"m12", n:"Fire Safety Engineering", status:"soon", group:"featured"},
-    {id:"m03", n:"Mechanical Engineering (HVAC & Drainage)", status:"soon", group:"featured"},
-    {id:"m04", n:"Electrical Engineering (Building Services)", status:"soon", group:"featured"},
-    {id:"m29", n:"BIM (Building Information Modeling)", status:"soon", group:"featured"},
-    {id:"m19", n:"Construction Management", status:"soon", group:"featured"},
-    {id:"m18", n:"Project Management", status:"soon", group:"featured"},
-    {id:"m20", n:"Cost Estimation", status:"soon", group:"featured"},
-    {id:"m31", n:"Risk Management", status:"soon", group:"featured"},
-    {id:"m22", n:"Health & Safety", status:"soon", group:"featured"},
-    {id:"m16", n:"Sustainability Engineering", status:"soon", group:"featured"},
-    {id:"m23", n:"Environmental Engineering", status:"soon", group:"featured"},
-    {id:"m24", n:"Transportation Engineering", status:"soon", group:"featured"},
-    {id:"m01", n:"Urban Planning & Smart Cities", status:"soon", group:"drawer"},
-    {id:"m02", n:"Architecture & Building Design", status:"soon", group:"drawer"},
-    {id:"m05", n:"Building Automation & Controls", status:"soon", group:"drawer"},
-    {id:"m06", n:"Facility Management & Operations", status:"soon", group:"drawer"},
-    {id:"m07", n:"Real Estate Development", status:"soon", group:"drawer"},
-    {id:"m08", n:"Property Management", status:"soon", group:"drawer"},
-    {id:"m09", n:"Hospitality Operations", status:"soon", group:"drawer"},
-    {id:"m10", n:"Retail Management", status:"soon", group:"drawer"},
-    {id:"m11", n:"Logistics & Supply Chain", status:"soon", group:"drawer"},
-    {id:"m14", n:"Interior Design", status:"soon", group:"drawer"},
-    {id:"m15", n:"Landscape Architecture", status:"soon", group:"drawer"},
-    {id:"m17", n:"Energy Management", status:"soon", group:"drawer"},
-    {id:"m21", n:"Procurement & Contracts", status:"soon", group:"drawer"},
-    {id:"m25", n:"Urban Economics", status:"soon", group:"drawer"},
-    {id:"m26", n:"Smart Infrastructure", status:"soon", group:"drawer"},
-    {id:"m27", n:"Digital Twins", status:"soon", group:"drawer"},
-    {id:"m28", n:"GIS & Mapping", status:"soon", group:"drawer"},
-    {id:"m30", n:"Quality Assurance", status:"soon", group:"drawer"},
-    {id:"m32", n:"Operations Strategy", status:"soon", group:"drawer"},
-  ];
+  
 
   // ── LEARN  published courses, keyed to a module ──────────────────────────
   // The PEO module carries a Structural Engineering track with three live
@@ -2438,40 +2403,7 @@ export default function App(){
   // or ask LEARN to generate worked example questions and answers and explain
   // concepts. Material is user-supplied and runs under the user's own IP
   // responsibility (see the upload-agreement gate in the study panel).
-  const learnCourses = [
-    {
-      id:"c-a233", module:"peo", track:"Structural Engineering",
-      code:"CSA A23.3", title:"Elementary Structural Design  CSA A23.3 Concrete Design",
-      status:"live",
-      summary:"Reinforced concrete design to CSA A23.3. Flexure, shear, columns, development, serviceability. Upload your course material and study it with LEARN.",
-      concepts:["Limit states and load factors","Flexural design of beams and slabs","Shear and torsion","Columns and slenderness","Development length and detailing","Deflection and crack control"],
-      uploadHint:"Upload your A23.3 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
-    },
-    {
-      id:"c-s16", module:"peo", track:"Structural Engineering",
-      code:"CSA S16", title:"Elementary Structural Design  CSA S16 Steel Design",
-      status:"live",
-      summary:"Structural steel design to CSA S16. Tension, compression, flexure, connections, stability. Upload your course material and study it with LEARN.",
-      concepts:["Tension members and block shear","Compression members and buckling","Beam design and lateral torsional buckling","Beam-columns and combined actions","Bolted and welded connections","Stability and effective length"],
-      uploadHint:"Upload your S16 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
-    },
-    {
-      id:"c-o86", module:"peo", track:"Structural Engineering",
-      code:"CSA O86", title:"Elementary Structural Design  CSA O86 Wood Design",
-      status:"live",
-      summary:"Timber and engineered wood design to CSA O86. Bending, shear, compression, connections, modification factors. Upload your course material and study it with LEARN.",
-      concepts:["Specified strengths and modification factors","Bending members and lateral stability","Shear and bearing","Compression and combined loading","Connections: nails, bolts, timber rivets","Engineered wood products"],
-      uploadHint:"Upload your O86 course notes, textbook excerpts, solved examples, problem sets, lecture or tutorial material.",
-    },
-    {
-      id:"c-econ", module:"peo", track:"Engineering Economics and Practice",
-      code:"Eng. Econ.", title:"Engineering Economics  PEO Foundational",
-      status:"live",
-      summary:"Economic decision making for engineers. Time value of money, cash flow analysis, replacement, depreciation, taxes, inflation, sensitivity and risk. Upload your course material and study it with LEARN.",
-      concepts:["Time value of money: PV, FV, PMT, NPV, IRR","Cash flow diagrams and equivalence","Comparing alternatives: present worth, annual worth, rate of return, B/C ratio","Replacement analysis and economic service life","Depreciation methods and after-tax cash flow","Inflation, real vs nominal rates","Sensitivity analysis, break-even, risk and uncertainty","Capital budgeting and decision rules"],
-      uploadHint:"Upload your engineering economics course notes, textbook excerpts (Newnan, Park, or Fraser), solved examples, problem sets, formula sheets, lecture or tutorial material.",
-    },
-  ];
+  
 
   // ── COMMERCIAL TIER MODEL (dormant) ──────────────────────────────────────
   // Visible but inactive. Phase 1 shows this so the commercial structure is
@@ -2483,13 +2415,13 @@ export default function App(){
   const commercialTiers = [
     {id:"free", name:"Free preview", price:"0", cadence:"", tag:"Current stage",
      blurb:"Try the apps with a small run allowance. No card.",
-     points:["A few small runs per month","LEARN questions, limited","60 minute access keys by request"]},
+     points:["A few small runs per month","Quick tries, limited","60 minute access keys by request"]},
     {id:"starter", name:"Starter", price:"TBD", cadence:"per month",
      blurb:"For students and light, single-app use.",
-     points:["Monthly credit allowance for light use","LEARN courses and study workspace","Email support"]},
+     points:["Monthly credit allowance for light use","Full app access for light use","Email support"]},
     {id:"pro", name:"Pro", price:"TBD", cadence:"per month", featured:true,
      blurb:"For job seekers, consultants and regular users.",
-     points:["Larger monthly credit allowance","All apps: APEX, ARGO, MEET, LEARN","Counterparty profiling included","Overage credits available"]},
+     points:["Larger monthly credit allowance","All apps: APEX, ARGO, MEET, CapacityGrid","Counterparty profiling included","Overage credits available"]},
     {id:"firm", name:"Firm", price:"TBD", cadence:"per month",
      blurb:"For engineering firms running bids and hiring.",
      points:["Team seats and shared allowance","Priority run queue","Large credit pool, volume pricing"]},
@@ -2750,7 +2682,6 @@ export default function App(){
   const COLLAGE_BY_APP = {
     capgrid: ["radar","gauge","chart","card","chart"],         // workforce intelligence visuals
     bid:     ["gauge","gauge","chart","card","gauge"],          // ARGO: decision gauges
-    learn:   ["card","card","chart","card","gauge"],            // LEARN: course cards + progress
     ecios:   ["chart","gauge","chart","card","chart"],          // APEX: scoring bars + hiring gauge
     meet:    ["card","radar","card","chart","card"],            // MEET: attendee cards + room radar
   };
@@ -3120,11 +3051,6 @@ export default function App(){
       {/* ═══ APP DETAIL MODAL ═══ */}
       {/* For non-owners, the modal is rendered inside a PreviewGate which blurs
           contents and overlays a Preview-only notice. Owner mode bypasses it. */}
-      {activeApp && activeApp.customModal==="learn" && (
-        <PreviewGate app={activeApp}>
-          <LearnModal app={activeApp} modules={learnModules} courses={learnCourses} onClose={()=>setActiveApp(null)} />
-        </PreviewGate>
-      )}
       {activeApp && activeApp.customModal==="capgrid" && (
         <PreviewGate app={activeApp}>
           <CapacityGridModal app={activeApp} ownerMode={ownerMode} onClose={()=>setActiveApp(null)} />
@@ -5620,7 +5546,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
     const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",marginBottom:3};
     const btn={padding:"7px 13px",borderRadius:7,background:P.gold,color:"#3A2C00",fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
-    const APPS = ["APEX","ARGO","MEET","LEARN","CapacityGrid","Knowledge Hub","Whole site"];
+    const APPS = ["APEX","ARGO","MEET","CapacityGrid","Knowledge Hub","Whole site"];
     const RUBRIC = [
       "Depth of output","Defensibility (citations, no fabrication)","Interactivity","Tone fit","Actionability",
       "Scenario coverage","Visual quality","Speed of insight","Cost / effort","Edge over competitors"
@@ -5661,7 +5587,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     // researcher, scoped to the iStructural site (Knowledge Hub + Tools Box first),
     // with named sources, a defensible assessment, and proposed actions that
     // become entries in the Propose tab.
-    const RESEARCH_AREAS = ["Whole site","Knowledge Hub","Tools Box","APEX","ARGO","MEET","LEARN","CapacityGrid"];
+    const RESEARCH_AREAS = ["Whole site","Knowledge Hub","Tools Box","APEX","ARGO","MEET","CapacityGrid"];
     const [rsTopic,setRsTopic]=useState("");
     const [rsArea,setRsArea]=useState("Knowledge Hub");
     const [rsSources,setRsSources]=useState("");  // newline-separated URLs
@@ -6193,431 +6119,6 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
   };
 
   // Phase 1 transition stage: progress + time stored client-side in component state.
-  const LearnModal = ({app, modules, courses, onClose}) => {
-    const [view, setView] = useState("catalog");        // catalog | course | author
-    const [activeModule, setActiveModule] = useState(null);
-    const [activeCourse, setActiveCourse] = useState(null); // selected course within a module
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const [studyTab, setStudyTab] = useState("ask");    // ask | findq | examples | concepts
-    const [studyInput, setStudyInput] = useState("");
-    const [keyInput, setKeyInput] = useState("");
-    const [keyError, setKeyError] = useState("");
-    const [ownerPhrase, setOwnerPhrase] = useState("");
-    const [ownerUnlocked, setOwnerUnlocked] = useState(false);
-    const [ownerError, setOwnerError] = useState("");
-    const [courseStartedAt] = useState(Date.now());     // session start, drives the live time stat
-    const [ipAgreed, setIpAgreed] = useState(false);    // LIABILITY GATE: user accepts IP responsibility before any upload
-    // ── LEARN local library (browser storage) ──
-    const [library, setLibrary] = useState([]);          // saved material for the open course
-    const [libBusy, setLibBusy] = useState(false);       // save/load in progress
-    const [libMsg, setLibMsg] = useState("");            // status or error message
-    const [sourceFolder, setSourceFolder] = useState(""); // the folder label the user is filing into / reading from
-    // Load saved material whenever a course is opened. Effect declared inside
-    // LearnModal, depends on activeCourse which is declared above it.
-    useEffect(()=>{
-      if (!activeCourse) { setLibrary([]); return; }
-      let cancelled = false;
-      setLibBusy(true); setLibMsg("");
-      isgListMaterials(activeCourse.id)
-        .then(items=>{ if(!cancelled){ setLibrary(items); setLibBusy(false); } })
-        .catch(err=>{ if(!cancelled){ setLibMsg(err.message||"Could not load saved material."); setLibBusy(false); } });
-      return ()=>{ cancelled = true; };
-    }, [activeCourse]);
-    // Save the picked files into browser storage under the open course.
-    const handleMaterialUpload = async (e)=>{
-      const files = Array.from(e.target.files||[]);
-      e.target.value = ""; // allow re-picking the same file
-      if (!files.length || !activeCourse) return;
-      setLibBusy(true); setLibMsg("");
-      try {
-        for (const f of files) {
-          await isgSaveMaterial({
-            id: `${activeCourse.id}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-            courseId: activeCourse.id,
-            folder: (sourceFolder||"").trim() || "default",
-            name: f.name, type: f.type||"file", size: f.size,
-            blob: f, savedAt: Date.now(),
-          });
-        }
-        const items = await isgListMaterials(activeCourse.id);
-        setLibrary(items);
-        setLibMsg(`${files.length} item${files.length>1?"s":""} saved to this browser.`);
-      } catch(err){ setLibMsg(err.message||"Save failed."); }
-      setLibBusy(false);
-    };
-    const removeMaterial = async (id)=>{
-      setLibBusy(true);
-      try { await isgDeleteMaterial(id); const items = await isgListMaterials(activeCourse.id); setLibrary(items); setLibMsg("Item removed."); }
-      catch(err){ setLibMsg(err.message||"Could not remove the item."); }
-      setLibBusy(false);
-    };
-
-    const tryUnlock = () => {
-      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), PASS_DURATION_MINUTES, app.id); setKeyError(""); }
-      else { setKeyError("Access key invalid. Request a 60 minute key from info@istructgroup.com"); }
-    };
-    const tryOwner = () => {
-      if (ownerPhrase.trim().toUpperCase() === OWNER_PHRASE) { setOwnerUnlocked(true); setOwnerMode(true); setOwnerError(""); }
-      else { setOwnerError("Owner passphrase not recognized."); }
-    };
-
-    const featured = modules.filter(m=>m.group==="featured");
-    const drawer = modules.filter(m=>m.group==="drawer");
-    // Session-time minutes for the analytics strip. SCROLL-FIX: computed from
-    // Date.now() at render time, not from a per-second App tick, so the LEARN
-    // modal is never remounted under the user. It refreshes on any real
-    // interaction (coarse minute counter, so this is fine).
-    const minsThisSession = Math.max(0, Math.floor((Date.now() - courseStartedAt)/60000));
-
-    const moduleCard = (m) => {
-      const live = m.status==="live";
-      return (
-        <div key={m.id}
-          onClick={()=>{ if(live){ setActiveModule(m); setView("course"); } }}
-          {...(live ? kbd(()=>{ setActiveModule(m); setView("course"); }) : {})}
-          aria-label={live ? `Open module ${m.n}` : `${m.n} coming later`}
-          style={{padding:"11px 12px",borderRadius:9,background:live?P.white:P.sand,border:`1px solid ${live?P.s3+"40":P.charcoal+"18"}`,cursor:live?"pointer":"default",opacity:live?1:0.7,display:"flex",flexDirection:"column",gap:6,minHeight:74}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-            <span style={{fontSize:T.body,fontWeight:800,color:live?P.charcoal:P.slate,lineHeight:1.3}}>{m.n}</span>
-            {live
-              ? <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`,whiteSpace:"nowrap"}}>LIVE</span>
-              : <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s4+"20",color:P.s4,border:`1px solid ${P.s4}45`,whiteSpace:"nowrap"}}>COMING LATER</span>}
-          </div>
-          {live && <span style={{fontSize:T.small,fontWeight:700,color:P.s3}}>Open module &#x2197;</span>}
-        </div>
-      );
-    };
-
-    return (
-      <div role="dialog" aria-modal="true" aria-label="LEARN"
-           onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
-           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"24px 12px",boxSizing:"border-box"}}>
-        <div style={{maxWidth:920,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
-
-          {/* Header */}
-          <div style={{padding:"16px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:46,height:46,borderRadius:11,background:`linear-gradient(135deg, ${P.s3} 0%, ${P.s3}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <AppIcon id="book" size={26} color={P.white} accent={P.tealL}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>LEARN</div>
-              <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>{app.tagline}</div>
-            </div>
-            {ownerMode
-              ? <span style={{marginRight:6,fontSize:T.micro,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>
-              : sessionStillValid && <div style={{marginRight:6}}><SandTimer endMs={sessionEndMs} size={28} dark={true} onExpire={()=>setSessionExpired(true)}/></div>}
-            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
-          </div>
-
-          {/* Disclaimer chip */}
-          <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
-            <strong>Study support only.</strong> LEARN is not official Professional Engineers Ontario material and does not guarantee exam success. Answers carry accuracy and confidence estimates, not guarantees. By using LEARN you accept the full terms at the top of the Tools Box page.
-          </div>
-
-          {/* View tabs */}
-          <div style={{display:"flex",gap:6,padding:"10px 22px 0",background:P.sand}}>
-            {[{k:"catalog",l:"Module Catalog"},{k:"course",l:"Course"},{k:"author",l:"Course Builder (owner)"}].map(t=>(
-              <div key={t.k} onClick={()=>setView(t.k)} {...kbd(()=>setView(t.k))} role="tab" aria-selected={view===t.k}
-                style={{padding:"7px 12px",borderRadius:"8px 8px 0 0",fontSize:T.small,fontWeight:800,cursor:"pointer",background:view===t.k?P.white:"transparent",color:view===t.k?P.s3:P.slate,border:`1px solid ${view===t.k?P.charcoal+"15":"transparent"}`,borderBottom:"none"}}>
-                {t.l}
-              </div>
-            ))}
-          </div>
-
-          <div style={{padding:"16px 22px",background:P.sand}}>
-
-            {/* ───── CATALOG VIEW ───── */}
-            {view==="catalog" && (
-              <div>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif",marginBottom:4}}>Modules</div>
-                <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>One catalog of modules. Professional Engineering of Ontario is live. The rest are named and arriving as iStructural authors them.</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8}}>
-                  {featured.map(moduleCard)}
-                </div>
-                <div onClick={()=>setDrawerOpen(v=>!v)} {...kbd(()=>setDrawerOpen(v=>!v))} aria-expanded={drawerOpen}
-                  style={{marginTop:12,padding:"8px 12px",borderRadius:8,background:P.charcoal+"08",border:`1px solid ${P.charcoal}15`,cursor:"pointer",fontSize:T.small,fontWeight:800,color:P.charcoal,display:"flex",justifyContent:"space-between"}}>
-                  <span>{drawerOpen ? "Hide" : "Show"} the other {drawer.length} modules  Coming later</span>
-                  <span>{drawerOpen ? "▾" : "▸"}</span>
-                </div>
-                {drawerOpen && (
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:8,marginTop:8}}>
-                    {drawer.map(moduleCard)}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ───── COURSE VIEW ───── */}
-            {view==="course" && (
-              <div>
-                {!activeModule && (
-                  <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
-                    Select a live module from the Module Catalog to begin.
-                  </div>
-                )}
-                {activeModule && activeModule.status!=="live" && (
-                  <div style={{fontSize:T.body,color:P.slate,fontStyle:"italic",padding:"20px 0",textAlign:"center"}}>
-                    {activeModule.n} is coming later. No published course yet.
-                  </div>
-                )}
-                {activeModule && activeModule.status==="live" && (() => {
-                  const moduleCourses = (courses||[]).filter(c=>c.module===activeModule.id);
-                  const tracks = [...new Set(moduleCourses.map(c=>c.track))];
-                  // ── COURSE PICKER: track then the three CSA courses ──
-                  if (!activeCourse) {
-                    return (
-                      <div>
-                        <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeModule.n}</div>
-                        <div style={{fontSize:T.small,color:P.slate,marginBottom:12}}>Choose a course to begin. Each course is a workspace: upload your study material, then ask questions, find questions for answers, request worked examples, or learn the concepts.</div>
-                        {tracks.map(track=>(
-                          <div key={track} style={{marginBottom:14}}>
-                            <div style={{fontSize:T.small,fontWeight:800,color:P.s3,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>{track}</div>
-                            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(230px, 1fr))",gap:8}}>
-                              {moduleCourses.filter(c=>c.track===track).map(c=>(
-                                <div key={c.id} onClick={()=>{ setActiveCourse(c); setIpAgreed(false); }} {...kbd(()=>{ setActiveCourse(c); setIpAgreed(false); })}
-                                  aria-label={`Open course ${c.title}`}
-                                  style={{padding:"12px 13px",borderRadius:9,background:P.white,border:`1px solid ${P.s3}40`,cursor:"pointer",display:"flex",flexDirection:"column",gap:5}}>
-                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-                                    <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{c.code}</span>
-                                    <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}45`}}>LIVE</span>
-                                  </div>
-                                  <div style={{fontSize:T.body,fontWeight:800,color:P.charcoal,lineHeight:1.35}}>{c.title}</div>
-                                  <div style={{fontSize:T.small,color:P.slate,lineHeight:1.5}}>{c.summary}</div>
-                                  <span style={{fontSize:T.small,fontWeight:800,color:P.s3,marginTop:2}}>Open course &#x2197;</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-                  // ── COURSE WORKSPACE: one CSA course open ──
-                  return (
-                  <div>
-                    <div onClick={()=>setActiveCourse(null)} {...kbd(()=>setActiveCourse(null))} aria-label="Back to courses"
-                      style={{fontSize:T.small,fontWeight:800,color:P.s3,cursor:"pointer",marginBottom:6}}>&#8592; All {activeModule.n} courses</div>
-                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
-                      <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.navy,color:P.white,letterSpacing:0.6}}>{activeCourse.code}</span>
-                      <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>{activeCourse.title}</div>
-                    </div>
-                    <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>{activeCourse.summary}</div>
-
-                    {/* Concepts covered */}
-                    <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"11px 13px",marginBottom:12}}>
-                      <div style={{fontSize:T.body,fontWeight:800,color:P.s3,marginBottom:6}}>Concepts in this course</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                        {activeCourse.concepts.map((cc,i)=>(
-                          <span key={i} style={{fontSize:T.small,fontWeight:700,color:P.charcoal,padding:"3px 8px",borderRadius:5,background:P.s3+"10",border:`1px solid ${P.s3}30`}}>{cc}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Progress + time analytics strip */}
-                    <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px",marginBottom:12}}>
-                      <div style={{fontSize:T.body,fontWeight:800,color:P.s3,marginBottom:8}}>Your Progress</div>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                        <div style={{flex:1,height:12,borderRadius:6,background:P.charcoal+"10",overflow:"hidden"}}>
-                          <div style={{height:"100%",width:"0%",background:`linear-gradient(90deg, ${P.s3} 0%, ${P.tealL} 100%)`,borderRadius:6}}></div>
-                        </div>
-                        <span style={{fontSize:T.body,fontWeight:800,color:P.charcoal}}>0%</span>
-                      </div>
-                      <div style={{fontSize:T.small,color:P.slate,marginBottom:10}}>Progress fills as you complete lessons, examples and practice in a published course.</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))",gap:8}}>
-                        {[
-                          {l:"Time this session", v:`${minsThisSession} min`},
-                          {l:"Total time on module", v:`${minsThisSession} min`},
-                          {l:"Average per day", v:`${minsThisSession} min`},
-                          {l:"Active days", v:"1"},
-                          {l:"Current streak", v:"1 day"},
-                        ].map((s,i)=>(
-                          <div key={i} style={{padding:"8px 10px",borderRadius:8,background:P.s3+"0C",border:`1px solid ${P.s3}25`}}>
-                            <div style={{fontSize:T.lead,fontWeight:800,color:P.s3}}>{s.v}</div>
-                            <div style={{fontSize:T.micro,color:P.slate,marginTop:1}}>{s.l}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Study panel  the run-on-materials workspace */}
-                    <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"12px 14px"}}>
-                      <div style={{fontSize:T.body,fontWeight:800,color:P.s3,marginBottom:3}}>Study Workspace</div>
-                      <div style={{fontSize:T.small,color:P.slate,marginBottom:9,lineHeight:1.5}}>This is where you run on your material. Upload your {activeCourse.code} study material, then pick how you want to work with it.</div>
-                      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-                        {[
-                          {k:"ask",l:"Ask the material"},
-                          {k:"findq",l:"Answers, find the questions"},
-                          {k:"examples",l:"Example Q + A to learn from"},
-                          {k:"concepts",l:"Learn the concepts"},
-                        ].map(t=>(
-                          <div key={t.k} onClick={()=>setStudyTab(t.k)} {...kbd(()=>setStudyTab(t.k))} role="tab" aria-selected={studyTab===t.k}
-                            style={{padding:"6px 10px",borderRadius:7,fontSize:T.small,fontWeight:800,cursor:"pointer",background:studyTab===t.k?P.s3:"transparent",color:studyTab===t.k?P.white:P.slate,border:`1px solid ${studyTab===t.k?P.s3:"#ccc"}`}}>
-                            {t.l}
-                          </div>
-                        ))}
-                      </div>
-                      {!appUnlocked(app.id) ? (
-                        <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`}}>
-                          <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8}}>Studying requires a free 60 minute session key during this transition stage.</div>
-                          <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural LEARN  60 minute key request")}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the LEARN app.\n\nFull name: \nRole: \nEmail: \n\nThank you.")}`}
-                            style={{display:"inline-block",padding:"8px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.body,fontWeight:800,textDecoration:"none",marginBottom:8}}>Request 60-min key by email</a>
-                          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                            <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key" aria-label="Access key" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit"}} />
-                            <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
-                          </div>
-                          {keyError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{keyError}</div>}
-                        </div>
-                      ) : (
-                        <div>
-                          {/* ── LIABILITY GATE: required before any material upload ── */}
-                          <div style={{padding:"10px 12px",borderRadius:8,background:P.coral+"0E",border:`1px solid ${P.coral}45`,marginBottom:10}}>
-                            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-                              <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1,textTransform:"uppercase"}}>Before you upload</span>
-                            </div>
-                            <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.6,marginBottom:7}}>
-                              Material you upload is supplied by you, not by iStructural. iStructural does not own, license, verify or endorse it. CSA standards (A23.3, S16, O86) are themselves copyrighted by CSA Group. You confirm you own or are properly licensed to use everything you upload, you hold all intellectual property and copyright responsibility, and you release and indemnify iStructural Group Inc. against any claim arising from your uploaded material. LEARN answers in original wording for your personal study and does not redistribute copyrighted standards.
-                            </div>
-                            <label style={{display:"flex",alignItems:"flex-start",gap:7,cursor:"pointer"}}>
-                              <input type="checkbox" checked={ipAgreed} onChange={(e)=>setIpAgreed(e.target.checked)} aria-label="I accept the upload and intellectual property terms" style={{marginTop:1,width:14,height:14,flexShrink:0,accentColor:P.coral}} />
-                              <span style={{fontSize:T.small,fontWeight:700,color:P.charcoal,lineHeight:1.5}}>I own or am licensed to use the material I upload, I accept full intellectual property responsibility, and I indemnify iStructural Group Inc.</span>
-                            </label>
-                          </div>
-
-                          <textarea value={studyInput} onChange={(e)=>setStudyInput(e.target.value)}
-                            placeholder={
-                              studyTab==="ask" ? "Type your question. LEARN answers from the material you upload for this course." :
-                              studyTab==="findq" ? "Paste an answer or a worked solution. LEARN finds and frames the questions it answers, from your material." :
-                              studyTab==="examples" ? "Name a topic or clause, for example flexural design or block shear. LEARN drafts example questions with full answers to learn from." :
-                              "Name a concept, for example lateral torsional buckling or development length. LEARN explains it from the course material, step by step."}
-                            aria-label="Study input"
-                            style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
-                          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:8}}>
-                            <button disabled={!ipAgreed}
-                              style={{padding:"9px 16px",borderRadius:8,background:ipAgreed?P.s3:"#bbb",color:P.white,fontSize:T.body,fontWeight:800,border:"none",cursor:ipAgreed?"pointer":"not-allowed",fontFamily:"inherit"}}>
-                              {studyTab==="ask" ? "Ask the material" : studyTab==="findq" ? "Find the questions" : studyTab==="examples" ? "Generate example Q + A" : "Explain the concept"}
-                            </button>
-                            <label style={{fontSize:T.small,fontWeight:700,color:ipAgreed?P.s3:"#999",cursor:ipAgreed?"pointer":"not-allowed",display:"flex",alignItems:"center",gap:4}}>
-                              <span style={{fontSize:T.lead}}>+</span> Upload {activeCourse.code} material
-                              <input type="file" multiple disabled={!ipAgreed} onChange={handleMaterialUpload} accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload course study material" style={{display:"none"}} />
-                            </label>
-                          </div>
-                          {!ipAgreed && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:700}}>Tick the box above to enable upload and run.</div>}
-                          <div style={{marginTop:9,fontSize:T.micro,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>{activeCourse.uploadHint}</div>
-
-                          {/* ── SOURCE FOLDER + SAVED MATERIAL LIBRARY (browser storage) ── */}
-                          {ipAgreed && (
-                            <div style={{marginTop:11,padding:"11px 13px",borderRadius:8,background:P.s3+"08",border:`1px solid ${P.s3}35`}}>
-                              <div style={{fontSize:T.small,fontWeight:800,color:P.s3,marginBottom:5}}>Source folder and saved material</div>
-                              <label style={{display:"block",fontSize:T.micro,fontWeight:700,color:P.charcoal,marginBottom:3}}>Source folder, the app retrieves and files material here</label>
-                              <input value={sourceFolder} onChange={(e)=>setSourceFolder(e.target.value)}
-                                placeholder={`e.g. ${activeCourse.code.toLowerCase().replace(/[^a-z0-9]/g,"-")}-notes`}
-                                aria-label="Source folder name"
-                                style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box",marginBottom:7}} />
-                              {libMsg && <div style={{fontSize:T.micro,fontWeight:700,color:libMsg.toLowerCase().includes("fail")||libMsg.toLowerCase().includes("could not")?P.coral:P.greenD,marginBottom:6}}>{libMsg}</div>}
-                              {libBusy && <div style={{fontSize:T.micro,color:P.slate,marginBottom:6}}>Working...</div>}
-                              {library.length===0 && !libBusy && (
-                                <div style={{fontSize:T.micro,color:P.slate,fontStyle:"italic"}}>No saved material yet. Use Upload above. Saved material stays in this browser and is here next time you open the course.</div>
-                              )}
-                              {library.map(m=>(
-                                <div key={m.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"6px 8px",borderRadius:6,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:4}}>
-                                  <div style={{minWidth:0,flex:1}}>
-                                    <div style={{fontSize:T.micro,fontWeight:700,color:P.charcoal,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.name}</div>
-                                    <div style={{fontSize:T.micro,color:P.slate}}>{m.folder} · {(m.size/1024).toFixed(0)} KB</div>
-                                  </div>
-                                  <button onClick={()=>removeMaterial(m.id)} aria-label={`Remove ${m.name}`}
-                                    style={{flexShrink:0,fontSize:T.micro,fontWeight:700,color:P.coral,background:"transparent",border:`1px solid ${P.coral}45`,borderRadius:5,padding:"3px 8px",cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
-                                </div>
-                              ))}
-                              <div style={{marginTop:6,fontSize:T.micro,color:P.slate,fontStyle:"italic",lineHeight:1.5}}>Browser storage, free, no account. Material is saved on this device and browser only. Clearing browser data removes it. A shared cloud folder comes in the next stage.</div>
-                            </div>
-                          )}
-                          <div style={{marginTop:9,padding:"10px 12px",borderRadius:8,background:P.s3+"0C",border:`1px dashed ${P.s3}40`,fontSize:T.small,color:P.slate,lineHeight:1.6}}>
-                            LEARN works from the material you upload for this course. Every answer carries a source chip (from your uploaded material, from a course-provided source, or from the internet), an accuracy percentage, and a confidence percentage. If your material cannot answer, LEARN asks your permission before searching the internet and cites any external source with its date. No em dashes. Three iterations stated.
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* ───── COURSE BUILDER (owner) ───── */}
-            {view==="author" && (
-              <div>
-                {!ownerUnlocked ? (
-                  <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s2}40`,padding:"14px 16px"}}>
-                    <div style={{fontSize:T.lead,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:6}}>Course Builder  Owner Access</div>
-                    <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8,lineHeight:1.6}}>The Course Builder is restricted to the iStructural owner. Enter the owner passphrase to author modules and courses.</div>
-                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                      <input type="password" value={ownerPhrase} onChange={(e)=>setOwnerPhrase(e.target.value)} placeholder="Owner passphrase" aria-label="Owner passphrase" style={{flex:"1 1 200px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit"}} />
-                      <button onClick={tryOwner} style={{padding:"8px 14px",borderRadius:7,background:P.s2,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock Builder</button>
-                    </div>
-                    {ownerError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{ownerError}</div>}
-                  </div>
-                ) : (
-                  <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.s3}40`,padding:"14px 16px"}}>
-                    <div style={{fontSize:T.lead,fontWeight:800,color:P.s3,fontFamily:"'Fraunces',serif",marginBottom:8}}>Course Builder</div>
-                    <div style={{fontSize:T.small,color:P.slate,marginBottom:12,lineHeight:1.6}}>Author a course inside a module. Fill the form, attach source material, embed your design requirements and instructions, then publish. Adding a course is filling this form, no code.</div>
-                    {[
-                      {l:"Module", h:"Select an existing module (PEO) or create a new one."},
-                      {l:"Course title and summary", h:"What this course is and who it is for."},
-                      {l:"Design requirements and instructions", h:"How LEARN should behave for this course: tone, depth, exam focus, terminology rules, what it may and may not do.", big:true},
-                    ].map((f,i)=>(
-                      <div key={i} style={{marginBottom:8}}>
-                        <label style={{display:"block",fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
-                        {f.big
-                          ? <textarea placeholder={f.h} aria-label={f.l} style={{width:"100%",minHeight:70,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
-                          : <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",boxSizing:"border-box"}} />}
-                      </div>
-                    ))}
-
-                    {/* Source material upload: images and documents, with a purpose selector */}
-                    <div style={{marginBottom:8,padding:"10px 12px",borderRadius:8,background:P.s3+"0A",border:`1px solid ${P.s3}30`}}>
-                      <label style={{display:"block",fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>Source material  images and documents</label>
-                      <div style={{fontSize:T.small,color:P.slate,marginBottom:6,lineHeight:1.55}}>Upload books, notes, slides, lecture or video transcripts, and images. LEARN learns from every item. Tell LEARN what each upload is so it knows how to use it.</div>
-                      <label style={{display:"block",fontSize:T.small,fontWeight:700,color:P.charcoal,marginBottom:2}}>What is this upload?</label>
-                      <select aria-label="Upload purpose" style={{width:"100%",padding:"7px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box",marginBottom:6}}>
-                        <option>Study material  index and learn from it</option>
-                        <option>Questions only  save as practice or exam material</option>
-                        <option>Answers only  save as reference to check learner answers</option>
-                        <option>Questions with answers  LEARN checks and verifies them</option>
-                      </select>
-                      <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-label="Upload images or documents"
-                        style={{width:"100%",fontSize:T.small,fontFamily:"inherit",color:P.charcoal}} />
-                      <div style={{fontSize:T.micro,color:P.slate,marginTop:5,fontStyle:"italic"}}>Accepted: images (JPG, PNG), PDF, Word, PowerPoint, text. Owner uploads always. Learner upload is allowed only where the course is configured to permit it.</div>
-                      <div style={{marginTop:7,padding:"7px 9px",borderRadius:6,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:T.micro,color:P.charcoal,lineHeight:1.55}}>
-                        To save material that persists right now, open the course from the Module Catalog and use the <strong>Source folder and saved material</strong> panel in the study workspace. It saves to browser storage on this device. This Course Builder upload is the authoring shell; it connects to the shared cloud library in the next stage.
-                      </div>
-                    </div>
-
-                    {[
-                      {l:"Units and lessons", h:"Structure the course into units, each with lessons, examples and practice sets."},
-                      {l:"Allow learner uploads", h:"If on, learners may also upload images and documents into this course. Default off."},
-                      {l:"Confidence threshold", h:"Below this percentage LEARN flags caution. Default 70."},
-                      {l:"Internet permission", h:"Allowed with learner consent, or never, for this course."},
-                      {l:"Status", h:"Draft or Published. Learners see Published only."},
-                    ].map((f,i)=>(
-                      <div key={"b"+i} style={{marginBottom:8}}>
-                        <label style={{display:"block",fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>{f.l}</label>
-                        <input placeholder={f.h} aria-label={f.l} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",boxSizing:"border-box"}} />
-                      </div>
-                    ))}
-                    <div style={{marginTop:6,padding:"9px 12px",borderRadius:8,background:P.s4+"14",border:`1px dashed ${P.s4}50`,fontSize:T.small,color:P.charcoal,lineHeight:1.6}}>
-                      Phase 1 transition stage: this Course Builder is the authoring shell. Persisting authored courses and uploaded material to the per-user library, and running the Comprehension Map, are wired in the next step once you author your first PEO course.
-                    </div>
-                    <button style={{marginTop:10,padding:"9px 16px",borderRadius:8,background:P.s3,color:P.white,fontSize:T.body,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Save course draft</button>
-                  </div>
-                )}
-              </div>
-            )}
-
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ══════════════════════ PRE-RUN PANEL ══════════════════════
   // Shared Yes-No front door for every app. The user states what they have and what

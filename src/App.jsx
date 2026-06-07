@@ -1,4 +1,4 @@
-// iStructural website v5.5 (2026-05-30): LEARN fully removed from site (now the iStructural_PEng_Tutors plugin). 4 apps: APEX, ARGO, MEET, CapacityGrid. Deploys as src/App.jsx.
+// iStructural website v5.6 (2026-06-05): Single tool, Capacity Grid (Resources Management, under Management Services). APEX, ARGO, MEET removed. Passphrase sign-in removed (Google-only). Deploys as src/App.jsx.
 
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 
@@ -676,7 +676,7 @@ export default function App(){
   const [projSearchQ,setProjSearchQ]=useState("");
   const [inquiryProj,setInquiryProj]=useState(null);
 
-  // ── Tools Box Phase 1  modular apps with dormant auth/identity scaffolding ──
+  // ── Resources Management Phase 1  modular apps with dormant auth/identity scaffolding ──
   const [activeApp,setActiveApp]=useState(null);          // app object when an app modal is open
   const [appAccessKey,setAppAccessKey]=useState("");      // user-entered access key
   const [accessRequest,setAccessRequest]=useState(null);  // app object when access-request form is open
@@ -696,11 +696,11 @@ export default function App(){
   // session. sessionStorage (not localStorage) means it clears when the tab
   // closes, which is appropriate for a soft, client-side owner gate.
   // ─────────────────────────────────────────────────────────────────────────
-  // OWNER SIGN-IN  Firebase Google sign-in (with passphrase fallback)
+  // OWNER SIGN-IN  Firebase Google sign-in (Google-only)
   // The owner whitelist: only these Google addresses unlock owner mode.
   // Session persists 30 days via localStorage so the owner doesn't re-sign
   // every visit. Signing out clears it on this browser.
-  // The passphrase fallback stays for one rollout cycle: useful for testing
+  // Google sign-in is the only owner path.
   // on machines where Google sign-in is awkward, and as a backstop.
   // ─────────────────────────────────────────────────────────────────────────
   const OWNER_EMAIL_WHITELIST = [
@@ -723,27 +723,16 @@ export default function App(){
   const OWNER_SESSION_DAYS = 30;
   const OWNER_STORAGE_KEY = "isg_owner_session_v2";
 
-  // SITE-WIDE ALL-APPS DAY PASS (commercial gate, Phase 1)
-  // One purchase unlocks every Tools Box app (APEX, ARGO, MEET,
-  // CapacityGrid) for a fixed window. The Knowledge Hub is always free and is
-  // never gated by this. Paste a single Stripe Payment Link below when ready;
-  // while it is empty, no Buy button shows and the site behaves exactly as
-  // before (key-on-request only). The Stripe success URL should return to the
-  // site with ?paid_key=<KEY>; the existing handler grants the day pass.
+  // COMMERCIAL GATE (Phase 1, client-side)
+  // Capacity Grid is the live tool. The Knowledge Hub is always free and never
+  // gated. Paste a Stripe Payment Link below when ready; while empty, no Buy
+  // button shows and access is key-on-request only. The Stripe success URL
+  // should return with ?paid_key=<KEY>; the existing handler grants the pass.
   // Phase 2 will move validation server-side (signed token).
-  // COMMERCIAL MODEL (Phase 1, client-side):
-  // Two ways to buy, both granting 24-hour access:
-  //   - Per-app pass: each app has its own Stripe link; unlocks only that app.
-  //   - All-apps bundle (SITE_PASS): one Stripe link; unlocks every app.
-  // The Knowledge Hub is always free and never gated. Leave a link empty to hide
-  // its Buy button. Paste links when ready.
   const PASS_DURATION_MINUTES = 24 * 60; // 24-hour access for any paid pass
   // Per-app Stripe links, keyed by app id. Empty = no Buy button for that app.
   const APP_PASSES = {
-    ecios: { stripeUrl: "", priceLabel: "CAD 19 / 24h" },   // APEX
-    bid:   { stripeUrl: "", priceLabel: "CAD 19 / 24h" },   // ARGO
-    meet:  { stripeUrl: "", priceLabel: "CAD 15 / 24h" },   // MEET
-    capacity: { stripeUrl: "", priceLabel: "CAD 29 / 24h" }, // CapacityGrid
+    capgrid: { stripeUrl: "", priceLabel: "CAD 29 / 24h" }, // Capacity Grid
   };
   // All-apps bundle (the upsell). Empty = no bundle button.
   const SITE_PASS = {
@@ -768,8 +757,6 @@ export default function App(){
 
   const [ownerMode, setOwnerMode] = useState(!!ownerRestore);
   const [ownerEmail, setOwnerEmail] = useState(ownerRestore ? ownerRestore.email : "");
-  const [ownerSignInOpen, setOwnerSignInOpen] = useState(false);
-  const [ownerSignInInput, setOwnerSignInInput] = useState("");
   const [ownerSignInError, setOwnerSignInError] = useState("");
   const [fbLoaded, setFbLoaded] = useState(false);    // Firebase scripts loaded
   const [fbAuth, setFbAuth] = useState(null);         // Firebase Auth instance
@@ -794,7 +781,7 @@ export default function App(){
         setFbAuth(window.firebase.auth());
         setFbLoaded(true);
       } catch (err) {
-        console.warn("[owner] Firebase failed to load; passphrase fallback still works.", err && err.message);
+        console.warn("[owner] Firebase failed to load; Google sign-in unavailable.", err && err.message);
       }
     })();
   }, []);
@@ -829,7 +816,6 @@ export default function App(){
       }
       setOwnerEmail(email);
       setOwnerMode(true);
-      setOwnerSignInOpen(false);
     } catch (err) {
       const code = (err && err.code) || "";
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
@@ -886,7 +872,7 @@ export default function App(){
     accessKey:"",                                          // currently empty until user enters key
     keyValidUntil:null,                                    // ISO timestamp when the session expires
     tier:"trial",                                          // dormant — Phase 2 will set free/pro/enterprise
-    entitlements:["ecios","bid"],                          // dormant — Phase 2 will gate per subscription
+    entitlements:["capgrid"],                          // dormant — Phase 2 will gate per subscription
   });
   // When a new key is granted the session is fresh again, so clear the expired flag.
   // (grantSession updates toolsSession.keyValidUntil.) Declared AFTER toolsSession
@@ -1050,7 +1036,7 @@ export default function App(){
           </div>
           {servicesOpen && (
             <div role="menu" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:P.navyM,borderRadius:8,border:`1px solid ${P.tealL}30`,boxShadow:"0 10px 30px rgba(0,0,0,0.5)",padding:5,minWidth:170,zIndex:20}}>
-              {[{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"}].map(n=>(
+              {[{id:"s1",l:"Management"},{id:"tools",l:"Resources Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"}].map(n=>(
                 <div key={n.id} role="menuitem" onClick={()=>{setPage(n.id);setServicesOpen(false);}} {...kbd(()=>{setPage(n.id);setServicesOpen(false);})} aria-current={page===n.id?"page":undefined}
                   style={{padding:"7px 10px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
               ))}
@@ -1058,7 +1044,7 @@ export default function App(){
           )}
         </div>
         {/* Remaining flat items */}
-        {[{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>
+        {[{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"contact",l:"Contact"}].map(n=>
           <div key={n.id} onClick={()=>setPage(n.id)} {...kbd(()=>setPage(n.id))} aria-label={`Go to ${n.l}`} aria-current={page===n.id?"page":undefined} style={{padding:"4px 8px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#8BA0B5",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
         )}
         {/* Search icon */}
@@ -1169,9 +1155,9 @@ export default function App(){
       </div>
 
       {/* TOOLS BOX teaser  introduces the modular app launcher */}
-      <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Tools Box" style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
+      <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management" style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
-          {/* Apps-grid motif, matches the Tools Box page */}
+          {/* Apps-grid motif, matches the Resources Management page */}
           <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
             <line x1="22" y1="22" x2="11" y2="11" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
             <line x1="22" y1="22" x2="33" y2="11" stroke={P.tealL} strokeWidth="1.1" opacity="0.5"/>
@@ -1184,8 +1170,8 @@ export default function App(){
             <circle cx="22" cy="22" r="6.5" fill={P.tealL}/>
           </svg>
           <div>
-            <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
-            <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career war room, ARGO bid decisions, MEET room strategy. More apps arriving as we draft them. Open the box.</div>
+            <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Resources Management, a growing collection of iStructural apps</div>
+            <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>Capacity Grid, workforce capability intelligence under Resources Management. Open it.</div>
           </div>
         </div>
         <div style={{background:P.teal,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
@@ -1203,11 +1189,11 @@ export default function App(){
   );
 
   // ══════════════════════ S1 ══════════════════════
-  // Reusable Tools Box cross-link strip. Dropped at the foot of the service,
-  // Projects and Training pages so the Tools Box is reachable everywhere, the
+  // Reusable Resources Management cross-link strip. Dropped at the foot of the service,
+  // Projects and Training pages so the Resources Management is reachable everywhere, the
   // same way the Knowledge Hub strip is surfaced across the site.
   const ToolsBoxStrip=()=>(
-    <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Tools Box"
+    <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management"
       style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
       <div style={{display:"flex",alignItems:"center",gap:14}}>
         <svg width="40" height="40" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
@@ -1222,8 +1208,8 @@ export default function App(){
           <circle cx="22" cy="22" r="6.5" fill={P.tealL}/>
         </svg>
         <div>
-          <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Tools Box, a growing collection of iStructural apps</div>
-          <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>APEX career intelligence, ARGO bid decisions, CapacityGrid workforce intelligence, MEET room strategy. Open the box.</div>
+          <div style={{fontSize:T.body,fontWeight:700,color:P.tealL}}>Resources Management, a growing collection of iStructural apps</div>
+          <div style={{fontSize:T.small,color:"#AFC4D8",marginTop:3}}>Capacity Grid, workforce capability intelligence under Resources Management. Open it.</div>
         </div>
       </div>
       <div style={{background:P.teal,color:P.white,padding:"8px 16px",borderRadius:8,fontSize:T.small,fontWeight:700,whiteSpace:"nowrap"}}>Open the box &#8594;</div>
@@ -1533,9 +1519,9 @@ export default function App(){
                   </a>
                 ))}
               </div>
-              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open the Tools Box assessment apps" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s3L,border:`1px dashed ${P.s3}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-                <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Want this turned into a stamped assessment? The Tools Box apps take a photo or report and triage damage for you.</div>
-                <span style={{color:P.s3,fontWeight:800,whiteSpace:"nowrap"}}>Open Tools Box &#8594;</span>
+              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s3L,border:`1px dashed ${P.s3}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Want this turned into a stamped assessment? The Resources Management apps take a photo or report and triage damage for you.</div>
+                <span style={{color:P.s3,fontWeight:800,whiteSpace:"nowrap"}}>Open Resources Management &#8594;</span>
               </div>
             </div>
           )}
@@ -1602,9 +1588,9 @@ export default function App(){
                   </a>
                 ))}
               </div>
-              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open the Tools Box apps" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-                <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Need the decision, not just the number? ARGO turns a calculation into a go or no-go bid call; APEX builds the hiring or career case around it.</div>
-                <span style={{color:P.s2,fontWeight:800,whiteSpace:"nowrap"}}>Open Tools Box &#8594;</span>
+              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Turn capability data into decisions: Capacity Grid shows which office and which people fit a project.</div>
+                <span style={{color:P.s2,fontWeight:800,whiteSpace:"nowrap"}}>Open Resources Management &#8594;</span>
               </div>
             </div>
           )}
@@ -1816,7 +1802,7 @@ export default function App(){
   );
 
   // ══════════════════════ TOOLS BOX  modular app launcher (Phase 1) ══════════════════════
-  // Phase 1 scope: launcher + 2 apps (APEX + ARGO). Auth + payments dormant.
+  // Phase 1 scope: launcher + Capacity Grid. Auth + payments dormant.
   // Each app entry is fully declarative; adding a new app = 1 new entry in this registry.
   //
   // ICON LIBRARY  reusable shapes referenced by string id from each app's "icon" field.
@@ -1828,7 +1814,7 @@ export default function App(){
     const half = s/2;
     if (id && typeof id === "object" && id.custom) return id.custom;
     switch (id) {
-      case "summit": // APEX  mountain peak with flag
+      case "summit": // mountain peak with flag
         return (
           <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M 14 5 L 25 22 L 3 22 Z" fill={color} stroke={a} strokeWidth="0.9"/>
@@ -1837,7 +1823,7 @@ export default function App(){
             <path d="M 14 1.5 L 19 3 L 14 4.2 Z" fill={a}/>
           </svg>
         );
-      case "compass": // ARGO  cardinal ring with rotating needle
+      case "compass": // cardinal ring with rotating needle
         return (
           <svg width={s} height={s} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <circle cx="14" cy="14" r="11" fill="none" stroke={color} strokeWidth="1.2"/>
@@ -1940,302 +1926,11 @@ export default function App(){
 
   const toolsApps = [
     {
-      id:"ecios",
-      name:"APEX",
-      tagline:"Applied Persona and Executive eXecution",
-      category:"Career & Hiring",
-      shortDesc:"A JD-driven war room. APEX reads your resume and the job description, detects every discipline the role spans (bidding, engineering, architecture, business, management) and builds the full preparation environment for that one job. One unified war-room report.",
-      iconColor:P.s2,
-      iconLetter:"A",
-      icon:"summit",
-      requiresKey:true,
-      requiresEntitlement:"ecios",
-      plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
-      keyDeliverables:["ATS-optimised resume","One-page cover letter","Hiring risk dashboard","Interview war room (Q&A)"],
-      // Commercial gate: paste a Stripe payment link here when ready. While empty,
-      // the Buy access button is hidden and the existing Request 60-min key flow stays.
-      // After purchase, your Stripe success URL should return to the site with
-      // ?paid_key=<KEY> in the URL; the app will pick that up and grant a session.
-      commercial:{ stripeUrl:"", priceLabel:"included in all-apps pass", currency:"CAD" },
-      // scope: the Yes-No inclusion / exclusion card shown at the start of the
-      // app so the user knows up front what to upload, what is included, what
-      // is excluded, and what to expect back. Rendered before the pre-run panel.
-      scope:{
-        upload:[
-          "Your CV or resume (PDF or Word)",
-          "The job description or a link to it",
-          "Your existing cover letter, if you have one (optional)",
-          "Names of interviewers, if known (optional, for profiling)",
-        ],
-        included:[
-          "JD discipline scan and full war-room assessment",
-          "ATS scoring out of 100 across multiple vendors",
-          "Tailored one A4 cover letter, executive tone",
-          "CV optimization with no inferred experience",
-          "Interview war room with 100+ scenario questions and answers",
-          "Hiring risk, submit yes or no, and probability of advancing",
-        ],
-        excluded:[
-          "No fabricated or inferred experience beyond your CV",
-          "No guaranteed job offer or interview outcome",
-          "No legal, immigration or contractual advice",
-          "Not a substitute for your own final judgment",
-        ],
-        expect:[
-          "A full war-room report in DOCX and PDF",
-          "Three iterations stated, references dated, no em dashes",
-          "Turnaround confirmed by email after you submit a run",
-        ],
-      },
-      briefing:{
-        docx:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.docx",
-        pdf:"AJAIE/users/default_user/library/APEX_Capabilities_Briefing.pdf",
-      },
-      capabilities:[
-        "JD discipline scan: detects bidding, engineering, architecture, business and management content in the role, then assembles matching war-room environments",
-        "Multi-vendor ATS scoring (11 engines), recruiter and hiring manager 6 second scan simulation",
-        "Company intelligence with regional market context, SWOT and radar; employer answer library, the Why this company set, 10 versions",
-        "Interview war room: 100+ question bank with JD-driven scenario slices, interview scorecards, stakeholder maps",
-        "Bidding and proposal war room built inside APEX when the JD calls for it: proposal strategy, fee-proposal questions, win themes, risk matrices, decision trees, as role preparation",
-        "Engineering, architecture and business environments: constructability, CCDC, RFI, rehabilitation, value engineering, utilization, profitability, change orders, all tailored to the JD",
-        "Strategic advisory with 30 / 60 / 90 day success plan, hiring probability model, salary and negotiation intelligence",
-        "Outputs: DOCX cover letter (1 A4), DOCX CV, XLSX scorecard, unified war-room PDF and DOCX report",
-      ],
-      phases:[
-        {n:1, name:"JD Discipline Scan", get:"Reads resume + JD, classifies disciplines, activates matching war-room environments"},
-        {n:2, name:"ATS Intelligence", get:"Score / 100 across 11 ATS engines + 5 angle consensus"},
-        {n:3, name:"Recruiter and HM Simulation", get:"6 second scan, hiring psychology, stakeholder map, AI detection"},
-        {n:4, name:"Company Intelligence", get:"Mission, vision, values, leadership, sentiment, regional market context, SWOT, radar"},
-        {n:5, name:"Interview War Room", get:"100+ question bank, JD-driven scenario slices, scorecards, Why this company library"},
-        {n:6, name:"Discipline Environments", get:"Bidding, engineering, architecture, business environments built per the JD"},
-        {n:7, name:"Strategic Advisory", get:"Apply decision, probability, salary, 30 / 60 / 90 day success plan"},
-        {n:8, name:"Report Exports", get:"DOCX cover letter, DOCX CV, XLSX scorecard, unified war-room PDF and DOCX"},
-        {n:9, name:"Automation", get:"Save, reuse, batch, schedule, log"},
-        {n:10, name:"AI Optimization", get:"Continuous improvement, gap closure"},
-      ],
-      environments:[
-        {id:"core", name:"ATS and Screening", trigger:"Always on", what:"11-engine ATS, 5-angle consensus, format safety"},
-        {id:"recruiter", name:"Recruiter and HM Simulation", trigger:"Always on", what:"6 second scan, hiring psychology, stakeholder map"},
-        {id:"company", name:"Company Intelligence", trigger:"Always on", what:"Mission, vision, values, leadership, sentiment, regional market, SWOT, radar"},
-        {id:"interview", name:"Interview War Room", trigger:"Always on", what:"100+ question bank, JD-driven scenario slices, scorecards"},
-        {id:"bidding", name:"Bidding and Proposal War Room", trigger:"JD mentions bidding, proposals, BD, fee strategy", what:"Proposal strategy, fee-proposal questions, win themes, risk matrices, decision trees, as interview and role prep"},
-        {id:"engineering", name:"Engineering Environment", trigger:"JD is engineering", what:"Constructability, CCDC, RFI, existing structures, rehabilitation, FEED, value engineering, site scenarios"},
-        {id:"architecture", name:"Architecture Environment", trigger:"JD is architecture", what:"Design-stage coordination, heritage, adaptive reuse, multidisciplinary conflicts"},
-        {id:"business", name:"Business and Commercial Environment", trigger:"JD is business or management", what:"Utilization, billability, profitability, change orders, scope creep, market intelligence"},
-        {id:"advisory", name:"Strategic Advisory", trigger:"Always on", what:"Apply decision, probability, salary, 30 / 60 / 90 day plan"},
-        {id:"profiling", name:"Interviewer Profiling", trigger:"You name your interviewers", what:"Profiles each interviewer from public professional activity: background, achievements, recent interests, likely questions and the answers they listen for"},
-      ],
-      profiling:{
-        label:"Interviewer Profiling",
-        intro:"If you know who will interview you, name them. APEX profiles each person from public professional activity only and tunes your prep to them.",
-        roleLabel:"Their interview role (HR, technical, hiring manager, final panel)",
-      },
-      preRun:{
-        have:[
-          {id:"cv", label:"I have my CV or resume"},
-          {id:"coverLetter", label:"I already have a cover letter"},
-          {id:"jd", label:"I have the job description"},
-          {id:"interviewers", label:"I know who will interview me"},
-          {id:"interviewStage", label:"I have an interview scheduled (HR, technical or final)"},
-        ],
-        want:[
-          {id:"assessment", label:"Full assessment and war-room report", locked:true},
-          {id:"newCover", label:"A new tailored cover letter"},
-          {id:"cvOpt", label:"CV optimization"},
-          {id:"interviewPrep", label:"Interview war room and 100+ question bank"},
-          {id:"profiling", label:"Interviewer profiling"},
-          {id:"plan", label:"30 / 60 / 90 day success plan"},
-          {id:"salary", label:"Salary and negotiation intelligence"},
-        ],
-      },
-      shortcuts:[
-        {k:"A", a:"Full APEX war-room run, all environments", t:"green"},
-        {k:"A scan", a:"JD discipline scan only", t:"blue"},
-        {k:"A quick", a:"ATS + apply decision only", t:"blue"},
-        {k:"A cover", a:"Cover letter only", t:"blue"},
-        {k:"A cv", a:"CV optimization only", t:"blue"},
-        {k:"A interview", a:"Interview war room only", t:"blue"},
-        {k:"A mock", a:"Mock interview simulator", t:"blue"},
-        {k:"A company", a:"Company intelligence only", t:"blue"},
-        {k:"A bid", a:"Bidding and proposal war room only", t:"blue"},
-        {k:"A plan", a:"30 / 60 / 90 day success plan only", t:"blue"},
-        {k:"A batch", a:"Multi JD batch", t:"yellow"},
-        {k:"A reuse", a:"Reuse last saved CV + cover letter", t:"green"},
-        {k:"A help", a:"Show the capabilities briefing", t:"green"},
-        {k:"A report", a:"Regenerate full report from last run", t:"green"},
-      ],
-      outputs:[
-        {file:"Cover Letter", fmt:"DOCX, 1 A4 page", what:"Executive tone, JD tailored, target company only"},
-        {file:"CV", fmt:"DOCX, ATS optimized", what:"Single column, no images, no tables"},
-        {file:"ATS Scorecard", fmt:"XLSX, multi worksheet", what:"Per vendor scores, keyword heatmap, gaps, Q and A bank"},
-        {file:"Why This Company Library", fmt:"DOCX", what:"10 tailored answer versions for the target employer"},
-        {file:"30 / 60 / 90 Day Plan", fmt:"DOCX", what:"Success plan written against the actual role"},
-        {file:"War-Room Report", fmt:"PDF", what:"All active environments, charts, SWOT, radar, references with dates"},
-        {file:"War-Room Report (editable)", fmt:"DOCX", what:"Same content in Word for editing or sharing"},
-        {file:"Day of Brief", fmt:"DOCX, 1 page", what:"Generated after the interview is scheduled"},
-      ],
-      tips:[
-        {tip:"Upload your latest CV verbatim, do not pre filter", why:"The engine needs raw signal"},
-        {tip:"Upload at least one reference cover letter", why:"Style anchor improves the final letter"},
-        {tip:"Use real numbers (team size, budget, scope) in your CV", why:"Hiring manager lens rewards specificity"},
-        {tip:"Give the full JD, not a summary", why:"The discipline scan needs the complete text to activate the right environments"},
-        {tip:"Run A batch for multiple JDs", why:"Compare in one consolidated XLSX"},
-        {tip:"Run A mock 48 hours before an interview", why:"Mock simulator with rubric scoring"},
-        {tip:"Re run A after any CV edit", why:"Track ATS score delta in optimization log"},
-      ],
-      boundaries:[
-        {will:"Invent experience you do not have", why:"Hard anti hallucination rule"},
-        {will:"Copy past employer or client names into new cover letters", why:"Sanitization on ingest"},
-        {will:"Promise an interview or an offer", why:"Probability is a model, not a guarantee"},
-        {will:"Provide legal or immigration advice", why:"Out of scope"},
-        {will:"Share your data outside this project", why:"Confidentiality enforced"},
-      ],
-      bars:[
-        {label:"Pass ATS screen", pct:80},
-        {label:"Recruiter screen pass", pct:75},
-        {label:"HM interview pass", pct:65},
-        {label:"Final round pass", pct:50},
-        {label:"Offer received", pct:40},
-      ],
-      intakeFields:[
-        {key:"cv",label:"Your CV / Resume",type:"textarea",required:true,placeholder:"Paste the full text of your CV here. The engine needs raw signal, do not pre filter."},
-        {key:"coverLetter",label:"Your Cover Letter, if you already have one (optional)",type:"textarea",required:false,placeholder:"Optional. If provided, APEX assesses it against the JD. It is not overwritten unless you ask for a new one."},
-        {key:"refLetter",label:"Reference Cover Letter for style anchors only (optional)",type:"textarea",required:false,placeholder:"Optional. Company names will be stripped on ingest."},
-        {key:"jd",label:"Target Job Description",type:"textarea",required:true,placeholder:"Paste the job description text or a URL."},
-        // NOTE: no "want" field here. What the user wants is already captured
-        // by the Yes-No "What I want delivered" toggles in the PreRunPanel,
-        // which writes the selection into intake.want. Asking again would be
-        // a duplicate question at the form stage.
-      ],
-    },
-    {
-      id:"bid",
-      name:"ARGO",
-      tagline:"Adaptive Risk and Go Orchestrator",
-      category:"Business & Strategy",
-      shortDesc:"Convert any RFP, scope note, or project description into a structured GO / CONDITIONAL GO / NO-GO decision with delivery model ranking, commercial strategy, risk math, and win probability. Chart the bid. Decide the journey.",
-      iconColor:P.s1,
-      iconLetter:"A",
-      icon:"compass",
-      requiresKey:true,
-      requiresEntitlement:"bid",
-      plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
-      keyDeliverables:["GO / NO-GO decision","Win probability score","Risk math across 8 categories","Commercial model ranking"],
-      scope:{
-        upload:[
-          "The RFP, tender or scope document (PDF or Word)",
-          "Project description or a link to the opportunity",
-          "Names of the selection panel or evaluators, if known (optional)",
-          "Your delivery and commercial constraints, if any (optional)",
-        ],
-        included:[
-          "Eight phase GO / CONDITIONAL GO / NO-GO decision pipeline",
-          "Delivery model ranking: DBB, DB, CMAR, EPC, Progressive DB, Alliance",
-          "Commercial model evaluation and risk math (P x I x D)",
-          "Win probability estimate with assumptions stated",
-          "Executive decision dashboard with gauges",
-        ],
-        excluded:[
-          "No guaranteed bid win or award",
-          "No binding price or estimate, this is decision support",
-          "No legal or contractual advice",
-          "Not a replacement for your formal bid governance",
-        ],
-        expect:[
-          "A full decision dashboard in DOCX and PDF",
-          "Three iterations stated, references dated, no em dashes",
-          "Turnaround confirmed by email after you submit a run",
-        ],
-      },
-      profiling:{
-        label:"Client and Evaluator Profiling",
-        intro:"If you know who sits on the selection panel or who evaluates the bid, name them. ARGO profiles each from public professional activity and tells you what they reward.",
-        roleLabel:"Their role (procurement, technical evaluator, decision maker)",
-      },
-      capabilities:[
-        "Technical analysis, constructability, interface dependencies",
-        "Delivery model ranking: DBB / DB / CMAR / EPC / Progressive DB / Alliance",
-        "Commercial model evaluation: Lump Sum / Hourly / Hybrid / Retainer",
-        "Risk math (Probability x Impact x Detectability) across 8 categories",
-        "Historical analogy + procurement psychology + win probability",
-        "Outputs: 4 page Executive Decision Dashboard, GO/NO-GO with justification",
-      ],
-      phases:[
-        {n:1, name:"Project Intake", get:"Scope, sector, delivery context, constraints"},
-        {n:2, name:"Technical Analysis", get:"Constructability, interface dependencies, complexity"},
-        {n:3, name:"Delivery Model Ranking", get:"DBB / DB / CMAR / EPC / Progressive DB / Alliance"},
-        {n:4, name:"Commercial Model Evaluation", get:"Lump Sum / Hourly / Hybrid / Retainer"},
-        {n:5, name:"Risk Math", get:"P x I x D across 8 categories"},
-        {n:6, name:"Procurement Psychology", get:"Owner posture, scoring lens, incumbent advantage"},
-        {n:7, name:"Win Probability", get:"Historical analogy + capability fit + competitive density"},
-        {n:8, name:"Decision Dashboard", get:"GO / CONDITIONAL GO / NO-GO with justification"},
-      ],
-      shortcuts:[
-        {k:"R", a:"Full ARGO run, all 8 phases", t:"green"},
-        {k:"R quick", a:"GO / NO-GO call only", t:"blue"},
-        {k:"R risk", a:"Risk math only (Phase 5)", t:"blue"},
-        {k:"R commercial", a:"Commercial model evaluation (Phase 4)", t:"blue"},
-        {k:"R delivery", a:"Delivery model ranking (Phase 3)", t:"blue"},
-        {k:"R win", a:"Win probability only (Phase 7)", t:"blue"},
-        {k:"R compare", a:"Multi opportunity batch comparison", t:"yellow"},
-        {k:"R reuse", a:"Reuse last project context", t:"green"},
-      ],
-      outputs:[
-        {file:"Executive Decision Dashboard", fmt:"PDF, 4 pages", what:"GO / CONDITIONAL GO / NO-GO with full justification"},
-        {file:"Risk Register", fmt:"XLSX", what:"8 risk categories with P x I x D scoring"},
-        {file:"Delivery + Commercial Memo", fmt:"DOCX", what:"Model ranking and commercial strategy rationale"},
-        {file:"Win Probability Note", fmt:"DOCX, 1 page", what:"Probability, competitive density, historical analogy"},
-      ],
-      tips:[
-        {tip:"Paste the full RFP if available, not a summary", why:"Scoring criteria and clauses drive the model rankings"},
-        {tip:"List known competitors if you can", why:"Competitive density tightens win probability"},
-        {tip:"State your firm's relevant past projects briefly", why:"Historical analogy improves the call"},
-        {tip:"Flag any non-negotiable constraints", why:"Avoids CONDITIONAL GO with false confidence"},
-      ],
-      boundaries:[
-        {will:"Promise a contract award", why:"Probability is a model, not a guarantee"},
-        {will:"Estimate fixed bid pricing", why:"Pricing requires firm-specific cost data"},
-        {will:"Provide legal opinion on contract terms", why:"Out of scope, route to counsel"},
-        {will:"Share your project data outside this project", why:"Confidentiality enforced"},
-      ],
-      bars:[
-        {label:"Technical fit", pct:75},
-        {label:"Commercial fit", pct:65},
-        {label:"Risk acceptable", pct:60},
-        {label:"Win probability", pct:45},
-      ],
-      preRun:{
-        have:[
-          {id:"rfp", label:"I have the RFP or tender documents"},
-          {id:"scope", label:"I have a project scope or description"},
-          {id:"constraints", label:"I know the key constraints"},
-          {id:"panel", label:"I know who evaluates the bid"},
-          {id:"competitors", label:"I know the likely competitors"},
-        ],
-        want:[
-          {id:"decision", label:"GO / CONDITIONAL GO / NO-GO decision and report", locked:true},
-          {id:"delivery", label:"Delivery model ranking"},
-          {id:"commercial", label:"Commercial model evaluation"},
-          {id:"risk", label:"Risk math across 8 categories"},
-          {id:"win", label:"Win probability"},
-          {id:"profiling", label:"Client and evaluator profiling"},
-        ],
-      },
-      intakeFields:[
-        {key:"projectDesc",label:"Project Description / Scope",type:"textarea",required:true,placeholder:"Describe the project: sector, scale, delivery context, known constraints."},
-        {key:"rfp",label:"RFP Text / Email Exchange (optional)",type:"textarea",required:false,placeholder:"Paste relevant procurement signals, deadlines, scoring criteria."},
-        {key:"constraints",label:"Known Constraints",type:"textarea",required:false,placeholder:"Budget, timeline, regulatory, stakeholder, geographic."},
-        // NOTE: no "want" field here. What the user wants is already captured
-        // by the Yes-No "What I want delivered" toggles in the PreRunPanel,
-        // which writes the selection into intake.want. Asking again would be
-        // a duplicate question at the form stage.
-      ],
-    },
-    {
       id:"capgrid",
-      name:"CapacityGrid",
+      name:"Capacity Grid",
       tagline:"See what your workforce can really do",
-      category:"Business & Strategy",
+      category:"Management Services - Resources Management",
+      seal:"advisory", // Tier 2: deterministic core, Hybrid RAG advisory layer (descriptor only, not deployed)
       shortDesc:"A workforce capability intelligence platform. Map every office, department and service. Place each person under a title and job description. Assess their real task-level capability, then generate capability cards that show any decision maker exactly what skills and experience the organisation holds.",
       iconColor:P.s2,
       iconLetter:"C",
@@ -2301,93 +1996,6 @@ export default function App(){
         ],
       },
     },
-    {
-      id:"meet",
-      name:"MEET",
-      tagline:"Profile the room before you walk in",
-      category:"Career & Hiring",
-      shortDesc:"Meeting preparation for interviews, client pitches, negotiations and board meetings. MEET profiles the people on the other side of the table from public professional activity, reads the agenda and shared documents, and builds a room strategy.",
-      iconColor:P.s1,
-      iconLetter:"M",
-      icon:"compass",
-      requiresKey:true,
-      requiresEntitlement:"meet",
-      plan:{tier:"Pro",priceHint:"Pro plan or per-run credits",status:"coming"}, // dormant: commercialization, shown faded
-      keyDeliverables:["Counterparty profile per attendee","Agenda strategy notes","Likely-question and prep map","Stakeholder positioning chart"],
-      scope:{
-        upload:[
-          "Names and roles of the people you will meet",
-          "The meeting agenda or purpose",
-          "Any shared documents or pre-read, if available (optional)",
-          "Your goal for the meeting and any known sensitivities (optional)",
-        ],
-        included:[
-          "Profile of each named participant from public professional activity",
-          "Agenda intelligence: talking points, risks and likely questions",
-          "Room strategy: who cares about what, alignment and friction points",
-          "Predicted questions and answers tuned to each participant",
-          "A one page room brief",
-        ],
-        excluded:[
-          "Public professional information only, no private or personal data",
-          "No facial recognition or image gathering",
-          "No guarantee of meeting outcome",
-          "Profiles are indicative, confirm anything decision critical",
-        ],
-        expect:[
-          "A room strategy brief in DOCX and PDF",
-          "Every profile claim labelled by public source, dated, with a confidence percentage",
-          "Turnaround confirmed by email after you submit a run",
-        ],
-      },
-      capabilities:[
-        "Counterparty profiling: background, achievements, recent public interests, likely questions",
-        "Agenda intelligence: parses the meeting agenda and shared documents into talking points and risks",
-        "Room strategy: who cares about what, where alignment is, where friction is",
-        "Question and answer prediction tuned to each named participant",
-        "Works for interviews, client pitches, negotiations, board and review meetings",
-        "Every profile claim labelled by public source with a date and a confidence percentage",
-      ],
-      phases:[
-        {n:1, name:"Meeting Intake", get:"Meeting type, participants, agenda, shared documents, your goal"},
-        {n:2, name:"Counterparty Profiling", get:"Profiles each participant from public professional activity"},
-        {n:3, name:"Agenda Intelligence", get:"Agenda and documents parsed into talking points and risks"},
-        {n:4, name:"Question Prediction", get:"Likely questions per person and the answers they listen for"},
-        {n:5, name:"Room Strategy", get:"Combined map of interests, alignment and friction"},
-        {n:6, name:"Brief Export", get:"Meeting prep brief in DOCX and PDF"},
-      ],
-      profiling:{
-        label:"Meeting Participant Profiling",
-        intro:"Name the people you will meet. MEET profiles each from public professional activity only and predicts what they will care about.",
-        roleLabel:"Their role in the meeting",
-      },
-      preRun:{
-        have:[
-          {id:"participants", label:"I know who will be in the meeting"},
-          {id:"agenda", label:"I have the meeting agenda"},
-          {id:"docs", label:"I have documents shared for the meeting"},
-          {id:"goal", label:"I know my goal for this meeting"},
-        ],
-        want:[
-          {id:"brief", label:"Full meeting prep brief", locked:true},
-          {id:"profiles", label:"Participant profiles"},
-          {id:"questions", label:"Predicted questions and answers"},
-          {id:"strategy", label:"Room strategy map"},
-        ],
-      },
-      boundaries:[
-        {will:"Analyze photographs or gather facial data", why:"Public professional text activity only"},
-        {will:"Use private or non-public personal data", why:"Public sources only, cited with dates"},
-        {will:"Promise a meeting outcome", why:"Profiling is preparation, not a guarantee"},
-        {will:"Share your data outside this project", why:"Confidentiality enforced"},
-      ],
-      intakeFields:[
-        {key:"meetingType",label:"Meeting type",type:"textarea",required:true,placeholder:"For example: final-round interview, client pitch, fee negotiation, board review."},
-        {key:"agenda",label:"Meeting agenda (optional)",type:"textarea",required:false,placeholder:"Paste the agenda or the key topics to be discussed."},
-        {key:"docs",label:"Shared documents (optional)",type:"textarea",required:false,placeholder:"Paste text from any documents shared for the meeting."},
-        {key:"goal",label:"Your goal for this meeting",type:"textarea",required:true,placeholder:"What outcome do you want from this meeting?"},
-      ],
-    },
   ];
 
   // ── LEARN  module catalog (33 modules: PEO live, 32 named Coming later) ──
@@ -2421,7 +2029,7 @@ export default function App(){
      points:["Monthly credit allowance for light use","Full app access for light use","Email support"]},
     {id:"pro", name:"Pro", price:"TBD", cadence:"per month", featured:true,
      blurb:"For job seekers, consultants and regular users.",
-     points:["Larger monthly credit allowance","All apps: APEX, ARGO, MEET, CapacityGrid","Counterparty profiling included","Overage credits available"]},
+     points:["Larger monthly credit allowance","Capacity Grid included","Counterparty profiling included","Overage credits available"]},
     {id:"firm", name:"Firm", price:"TBD", cadence:"per month",
      blurb:"For engineering firms running bids and hiring.",
      points:["Team seats and shared allowance","Priority run queue","Large credit pool, volume pricing"]},
@@ -2430,8 +2038,6 @@ export default function App(){
      points:["Use your own AI key","No platform run limits","Predictable, you control the model cost"]},
   ];
 
-  // Owner passphrase. When entered, ownerMode unlocks unlimited access on every app, no 60 min cap.
-  const OWNER_PHRASE = "ISG-OWNER";
   // Session validity. SCROLL-FIX: computed WITHOUT a per-second tick. It is
   // evaluated once per real render (modal open/close, key grant, onExpire).
   // The live mm:ss countdown is rendered by <LiveSandTimer/> which ticks on
@@ -2677,13 +2283,10 @@ export default function App(){
   };
   //
   // TeaserStrip: scrollable horizontal collage of snapshots, blurred. Used on
-  // each app card on the Tools Box page. Owner mode removes the blur. Each app
+  // each app card on the Resources Management page. Owner mode removes the blur. Each app
   // gets its own distinctive collage so the cards are recognisable even blurred.
   const COLLAGE_BY_APP = {
     capgrid: ["radar","gauge","chart","card","chart"],         // workforce intelligence visuals
-    bid:     ["gauge","gauge","chart","card","gauge"],          // ARGO: decision gauges
-    ecios:   ["chart","gauge","chart","card","chart"],          // APEX: scoring bars + hiring gauge
-    meet:    ["card","radar","card","chart","card"],            // MEET: attendee cards + room radar
   };
   const TeaserStrip = ({color,deliverables,appId})=>{
     const kinds = (appId && COLLAGE_BY_APP[appId]) || ["chart","gauge","radar","card","chart"];
@@ -2727,10 +2330,10 @@ export default function App(){
             </div>
             <div style={{fontSize:T.h3,fontWeight:800,fontFamily:"'Fraunces',serif",color:P.charcoal,marginTop:4}}>{app?app.name:"This app"} is not yet open to the public</div>
             <div style={{fontSize:T.small,color:P.slate,marginTop:8,lineHeight:1.6}}>
-              The full app preview is hidden during this transition stage. You can still see the teaser on the Tools Box card to get a sense of what {app?app.name:"the app"} produces. For a private briefing or early access, scroll to the bottom of the Tools Box page and submit a request, or email <a href="mailto:info@istructgroup.com" style={{color:P.s2,fontWeight:700}}>info@istructgroup.com</a>.
+              The full app preview is hidden during this transition stage. You can still see the teaser on the Resources Management card to get a sense of what {app?app.name:"the app"} produces. For a private briefing or early access, scroll to the bottom of the Resources Management page and submit a request, or email <a href="mailto:info@istructgroup.com" style={{color:P.s2,fontWeight:700}}>info@istructgroup.com</a>.
             </div>
             <div style={{marginTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
-              <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural Tools Box - early access request - "+(app?app.name:""))}`}
+              <a href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural Resources Management - early access request - "+(app?app.name:""))}`}
                  onClick={()=>trackEvent("preview_request_access",{app:app?app.id:null,name:app?app.name:null})}
                  style={{display:"inline-block",fontSize:T.small,fontWeight:800,padding:"9px 16px",borderRadius:8,background:P.s2,color:P.white,textDecoration:"none"}}>Request early access</a>
               <button onClick={(e)=>{ e.stopPropagation(); trackEvent("preview_goto_briefing",{app:app?app.id:null,name:app?app.name:null}); closeFromGate(); setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}),60); }}
@@ -2745,11 +2348,11 @@ export default function App(){
 
   const ToolsPage = () => (
     <div>
-      {/* HERO: Tools Box */}
+      {/* HERO: Resources Management */}
       <HeroBg color1={P.navy} color2={P.navyM}><div style={{padding:"44px 28px 36px"}}>
-        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Modular Apps · Secure Sessions · Free Preview</div>
-        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Tools Box</h2>
-        <p style={{fontSize:T.lead,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>A growing collection of iStructural apps for engineering, strategy, careers, and business decisions. Each app runs inside this site with a time-limited access key issued by request. Subscriptions and payment options coming later.</p>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Resources Management · Powered by AI · Free Preview</div>
+        <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Resources Management</h2>
+        <p style={{fontSize:T.lead,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>Capacity Grid, the workforce capability intelligence tool under Management Services. Map every office and person, see each office forte, and route projects to the right office from evidence. Runs inside this site with a time-limited access key issued by request. Built on a deterministic core; Hybrid RAG architecture sits beside it as an advisory layer (deploys with the data).</p>
         <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap",alignItems:"center"}}>
           {ownerMode ? (
             <div style={{padding:"6px 12px",borderRadius:7,background:P.s2+"30",border:`1px solid ${P.s2L}`,fontSize:T.body,fontWeight:800,color:"#E9D6F0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -2775,7 +2378,7 @@ export default function App(){
               Buy all-apps pass{SITE_PASS.priceLabel?` · ${SITE_PASS.priceLabel}`:""}
             </a>
           )}
-          {!ownerMode && !ownerSignInOpen && (
+          {!ownerMode && (
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
               <button onClick={signInWithGoogle} disabled={!fbLoaded}
                 aria-label="Sign in with Google"
@@ -2788,30 +2391,6 @@ export default function App(){
                 </svg>
                 {fbLoaded?"Sign in with Google":"Loading..."}
               </button>
-              <button onClick={()=>{ setOwnerSignInOpen(true); setOwnerSignInError(""); }}
-                aria-label="Use passphrase fallback"
-                style={{padding:"6px 10px",borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}40`,fontSize:T.micro,fontWeight:700,color:P.tealL,cursor:"pointer",fontFamily:"inherit"}}>Use passphrase</button>
-              {ownerSignInError && <span style={{fontSize:T.small,fontWeight:700,color:"#FFD1C9"}}>{ownerSignInError}</span>}
-            </div>
-          )}
-          {!ownerMode && ownerSignInOpen && (
-            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-              <input
-                type="password"
-                value={ownerSignInInput}
-                onChange={(e)=>setOwnerSignInInput(e.target.value)}
-                onKeyDown={(e)=>{ if(e.key==="Enter"){ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerEmail("passphrase-fallback"); setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } } }}
-                placeholder="Owner passphrase"
-                aria-label="Owner passphrase"
-                autoFocus
-                style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${P.tealL}50`,background:P.navyM,color:P.white,fontSize:T.body,fontFamily:"inherit",width:150}} />
-              <button
-                onClick={()=>{ if(ownerSignInInput.trim().toUpperCase()===OWNER_PHRASE){ setOwnerEmail("passphrase-fallback"); setOwnerMode(true); setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); } else { setOwnerSignInError("Not recognized"); } }}
-                style={{padding:"6px 12px",borderRadius:7,background:P.teal,color:P.white,fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Unlock</button>
-              <button
-                onClick={()=>{ setOwnerSignInOpen(false); setOwnerSignInInput(""); setOwnerSignInError(""); }}
-                aria-label="Cancel owner sign in"
-                style={{padding:"6px 9px",borderRadius:7,background:"transparent",color:"#9BBCD6",fontSize:T.small,fontWeight:700,border:`1px solid ${P.tealL}30`,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
               {ownerSignInError && <span style={{fontSize:T.small,fontWeight:700,color:"#FFD1C9"}}>{ownerSignInError}</span>}
             </div>
           )}
@@ -2831,7 +2410,7 @@ export default function App(){
         </div>
         {toolsDisclaimerOpen && (
           <div style={{maxWidth:1100,margin:"10px auto 4px",padding:"12px 14px",borderRadius:8,background:P.navyM,border:`1px solid ${P.tealL}30`,fontSize:T.body,color:"#E2EBF5",lineHeight:1.7}}>
-            <strong style={{color:P.tealL}}>Important disclaimer covering this page and every app on it, current and future.</strong> The Tools Box, and every app inside it, is provided by iStructural Group Inc. as an informational and decision-support resource only. Outputs are produced by software models and do not replace licensed professional advice (engineering, legal, financial, medical, immigration, or otherwise). iStructural Group Inc. makes no warranty of accuracy, fitness, or outcome. Apps may evolve, change, or be withdrawn at any time without notice. You remain solely responsible for any decisions made on the basis of any output. Confidentiality is enforced: inputs you submit are used only to deliver the requested output and to follow up. We do not share your data with third parties. By using any app, or by submitting any input or request through this page, you accept these terms.
+            <strong style={{color:P.tealL}}>Important disclaimer covering this page and every app on it, current and future.</strong> The Resources Management, and every app inside it, is provided by iStructural Group Inc. as an informational and decision-support resource only. Outputs are produced by software models and do not replace licensed professional advice (engineering, legal, financial, medical, immigration, or otherwise). iStructural Group Inc. makes no warranty of accuracy, fitness, or outcome. Apps may evolve, change, or be withdrawn at any time without notice. You remain solely responsible for any decisions made on the basis of any output. Confidentiality is enforced: inputs you submit are used only to deliver the requested output and to follow up. We do not share your data with third parties. By using any app, or by submitting any input or request through this page, you accept these terms.
           </div>
         )}
       </div>
@@ -2923,6 +2502,7 @@ export default function App(){
                       <div style={{fontSize:T.lead,fontWeight:800,color:P.charcoal}}>{app.name}</div>
                       <div style={{fontSize:T.small,color:P.slate,marginTop:1}}>{app.tagline}</div>
                     </div>
+                    {app.seal==="advisory" && (<div title="Deterministic core with a Hybrid RAG advisory layer. Architecture descriptor; deploys with the data." style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,padding:"3px 8px",borderRadius:5,background:P.navy,border:`1px solid ${P.tealL}55`}}><span style={{fontSize:9,fontWeight:800,letterSpacing:0.6,color:P.tealL,textTransform:"uppercase"}}>Hybrid RAG Inside</span><span style={{fontSize:9,fontWeight:700,color:"#9BBCD6"}}>· Advisory</span></div>)}
                   </div>
                   {app.keyDeliverables && app.keyDeliverables.length>0 && (
                     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:2}}>
@@ -3020,7 +2600,7 @@ export default function App(){
             <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 8px",borderRadius:4,background:P.s4,color:P.navy,letterSpacing:1,textTransform:"uppercase"}}>Coming later</span>
             <h3 style={{fontFamily:"'Fraunces',serif",fontSize:T.h2,fontWeight:800,color:P.white,margin:0}}>Plans and Pricing</h3>
           </div>
-          <p style={{fontSize:T.body,color:"#9BBCD6",lineHeight:1.6,margin:"4px 0 16px",maxWidth:680}}>A preview of how the Tools Box will be offered. During this transition stage every app is free with a 60 minute access key. Pricing is not yet active. Subscriptions include a monthly credit allowance; heavier use adds overage credits. A bring-your-own-key option lets you connect your own AI account.</p>
+          <p style={{fontSize:T.body,color:"#9BBCD6",lineHeight:1.6,margin:"4px 0 16px",maxWidth:680}}>A preview of how the Resources Management will be offered. During this transition stage every app is free with a 60 minute access key. Pricing is not yet active. Subscriptions include a monthly credit allowance; heavier use adds overage credits. A bring-your-own-key option lets you connect your own AI account.</p>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:10,opacity:0.92}}>
             {commercialTiers.map(t=>(
               <div key={t.id} style={{background:t.featured?P.white:P.navyM,borderRadius:11,border:`1px solid ${t.featured?P.tealL:"#2E4763"}`,padding:"14px 14px",position:"relative"}}>
@@ -3045,7 +2625,7 @@ export default function App(){
         </div>
       </div>
 
-      {/* ═══ BRIEFING REQUEST FORM (bottom of Tools Box page) ═══ */}
+      {/* ═══ BRIEFING REQUEST FORM (bottom of Resources Management page) ═══ */}
       <BriefingRequestForm apps={toolsApps} accepted={toolsDisclaimerAccepted} setAccepted={setToolsDisclaimerAccepted} />
 
       {/* ═══ APP DETAIL MODAL ═══ */}
@@ -3054,11 +2634,6 @@ export default function App(){
       {activeApp && activeApp.customModal==="capgrid" && (
         <PreviewGate app={activeApp}>
           <CapacityGridModal app={activeApp} ownerMode={ownerMode} onClose={()=>setActiveApp(null)} />
-        </PreviewGate>
-      )}
-      {activeApp && !activeApp.customModal && (
-        <PreviewGate app={activeApp}>
-          <AppDetailModal app={activeApp} onClose={()=>setActiveApp(null)} />
         </PreviewGate>
       )}
 
@@ -3077,7 +2652,7 @@ export default function App(){
   );
 
   // ══════════════════════ BRIEFING REQUEST FORM ══════════════════════
-  // Sits at the bottom of the Tools Box page. User picks any app from the
+  // Sits at the bottom of the Resources Management page. User picks any app from the
   // dropdown (sourced dynamically from toolsApps) and submits a request.
   // Routed through info@istructgroup.com via the existing FormSubmit pipeline
   // shared with all Start a Project forms. No briefing files are auto served;
@@ -3087,7 +2662,7 @@ export default function App(){
   // their hand. Keeps the early sales signal, far less friction.
   const BriefingRequestForm = ({apps, accepted, setAccepted}) => {
     const {values, set, status, submit, captcha} = useForm({
-      _subject:"iStructural | Tools Box  Access / Notify Request",
+      _subject:"iStructural | Resources Management  Access / Notify Request",
       app:"", contact:"", email:"", notes:""
     });
     return (
@@ -3124,7 +2699,7 @@ export default function App(){
             <CaptchaBlock captcha={captcha} status={status} />
             <label style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:12,cursor:"pointer"}}>
               <input type="checkbox" checked={!!accepted} onChange={(e)=>setAccepted(e.target.checked)} aria-label="Accept terms" style={{marginTop:3,flexShrink:0}} />
-              <span style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>The Tools Box apps are informational and decision-support tools only, no professional advice, no guarantee of outcome. My details are used only to follow up on this request and are not sold or used for advertising. *</span>
+              <span style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.55}}>The Resources Management apps are informational and decision-support tools only, no professional advice, no guarantee of outcome. My details are used only to follow up on this request and are not sold or used for advertising. *</span>
             </label>
             <div style={{fontSize:T.micro,color:P.slate,lineHeight:1.5,marginTop:8}}>Privacy: this form is delivered through a third-party form processor (Formspree / FormSubmit) so we receive your message by email. Please do not include confidential CV, RFP, or personal data you would not normally email.</div>
             <button type="submit" disabled={status==="sending"||status==="success"||!accepted} style={{...submitStyle(P.teal), opacity:(!accepted ? 0.55 : 1), cursor:(!accepted ? "not-allowed" : "pointer")}}>
@@ -3665,15 +3240,15 @@ export default function App(){
 
     if (busy || !state) {
       return (
-        <div role="dialog" aria-modal="true" aria-label="CapacityGrid"
+        <div role="dialog" aria-modal="true" aria-label="Capacity Grid"
              style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{color:P.tealL,fontSize:T.body}}>Loading CapacityGrid&hellip;</div>
+          <div style={{color:P.tealL,fontSize:T.body}}>Loading Capacity Grid&hellip;</div>
         </div>
       );
     }
 
     return (
-      <div role="dialog" aria-modal="true" aria-label="CapacityGrid"
+      <div role="dialog" aria-modal="true" aria-label="Capacity Grid"
            onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
            style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"24px 12px",boxSizing:"border-box"}}>
         <div style={{maxWidth:980,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
@@ -3684,7 +3259,7 @@ export default function App(){
               <AppIcon id="grid" size={26} color={P.white} accent={P.tealL}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>CapacityGrid</div>
+              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>Capacity Grid</div>
               <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>{app.tagline}</div>
             </div>
             {ownerMode && <span style={{marginRight:6,fontSize:T.micro,fontWeight:800,padding:"3px 8px",borderRadius:5,background:P.s2,color:P.white,letterSpacing:1}}>OWNER  UNLIMITED</span>}
@@ -3881,11 +3456,11 @@ export default function App(){
       return (
         <div>
           <div style={{...card,background:P.s2L,border:`1px solid ${P.s2}25`}}>
-            <div style={sectionTitle}>Start CapacityGrid setup</div>
+            <div style={sectionTitle}>Start Capacity Grid setup</div>
             <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
               Set how many offices you are mapping and name each. After setup you pick the departments office by office
               from the consultancy list (Architectural, Structural, Mechanical, Electrical, Civil) and set each
-              department's own team size. CapacityGrid then fetches that department's tasks for you to approve.
+              department's own team size. Capacity Grid then fetches that department's tasks for you to approve.
             </div>
           </div>
           <div style={card}>
@@ -3917,7 +3492,7 @@ export default function App(){
               <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5,marginBottom:8}}>
                 Load a worked demo: two offices (Toronto strong in High-rise Towers, New York strong in Bridges and
                 Infrastructure), ten people, and full Knowledge assessments. Use it to walk through the platform end to
-                end. This overwrites any current CapacityGrid data in this browser.
+                end. This overwrites any current Capacity Grid data in this browser.
               </div>
               <button style={{...btn,background:P.gold,color:"#4A3800"}}
                 onClick={()=>{ if(window.confirm("Load demo data? This replaces the current CapacityGrid data in this browser.")) loadDemo(); }}>
@@ -5546,14 +5121,14 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     const inp={width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
     const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,letterSpacing:0.4,textTransform:"uppercase",marginBottom:3};
     const btn={padding:"7px 13px",borderRadius:7,background:P.gold,color:"#3A2C00",fontSize:T.small,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit"};
-    const APPS = ["APEX","ARGO","MEET","CapacityGrid","Knowledge Hub","Whole site"];
+    const APPS = ["Capacity Grid","Knowledge Hub","Whole site"];
     const RUBRIC = [
       "Depth of output","Defensibility (citations, no fabrication)","Interactivity","Tone fit","Actionability",
       "Scenario coverage","Visual quality","Speed of insight","Cost / effort","Edge over competitors"
     ];
 
     // ---- Compare tab state ----
-    const [cmpApp,setCmpApp]=useState("APEX");
+    const [cmpApp,setCmpApp]=useState("Capacity Grid");
     const [cmpCompetitor,setCmpCompetitor]=useState("");
     const [cmpYourText,setCmpYourText]=useState("");
     const [cmpRivalText,setCmpRivalText]=useState("");
@@ -5584,10 +5159,10 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
 
     // ---- Research & Intelligence tab state ----
     // The whole point of this tab: ask Claude to act as a professional cowork
-    // researcher, scoped to the iStructural site (Knowledge Hub + Tools Box first),
+    // researcher, scoped to the iStructural site (Knowledge Hub + Resources Management first),
     // with named sources, a defensible assessment, and proposed actions that
     // become entries in the Propose tab.
-    const RESEARCH_AREAS = ["Whole site","Knowledge Hub","Tools Box","APEX","ARGO","MEET","CapacityGrid"];
+    const RESEARCH_AREAS = ["Whole site","Knowledge Hub","Capacity Grid"];
     const [rsTopic,setRsTopic]=useState("");
     const [rsArea,setRsArea]=useState("Knowledge Hub");
     const [rsSources,setRsSources]=useState("");  // newline-separated URLs
@@ -5652,7 +5227,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
     const setSource_ = setFSource; // alias
 
     // ---- Propose tab state ----
-    const [pApp,setPApp]=useState("APEX");
+    const [pApp,setPApp]=useState("Capacity Grid");
     const [pTitle,setPTitle]=useState("");
     const [pImpact,setPImpact]=useState("Medium");
     const [pEffort,setPEffort]=useState("Medium");
@@ -5721,7 +5296,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                 <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
                   <div style={sectionTitle}>Head-to-head comparison</div>
                   <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
-                    Pick an iStructural app (or the whole site). Paste a sample iStructural output (optional, leave blank for the default APEX strengths) and the competitor's output on the same brief. EDGE Lab scores both on 10 rubrics and shows the lead, then records the run for the Track tab.
+                    Pick an iStructural tool (or the whole site). Paste a sample iStructural output (optional, leave blank for the default Capacity Grid strengths) and the competitor's output on the same brief. EDGE Lab scores both on 10 rubrics and shows the lead, then records the run for the Track tab.
                   </div>
                 </div>
                 <div style={card}>
@@ -5804,7 +5379,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                   <div style={{...card,background:P.gold+"12",border:`1px solid ${P.gold}45`}}>
                     <div style={sectionTitle}>Research & Intelligence  the cowork research desk</div>
                     <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
-                      The owner's standing research desk. Brief a topic; point Claude at named sources (news outlets, vendor blogs, competitor pages, standards bodies, RSS feeds); receive a defensible assessment with citations. Findings convert directly into Propose backlog items. Scope is the whole iStructural site, with emphasis on the Knowledge Hub and the Tools Box. Note: X / Twitter access via Claude is not available yet; use direct URLs and public web for now.
+                      The owner's standing research desk. Brief a topic; point Claude at named sources (news outlets, vendor blogs, competitor pages, standards bodies, RSS feeds); receive a defensible assessment with citations. Findings convert directly into Propose backlog items. Scope is the whole iStructural site, with emphasis on the Knowledge Hub and the Resources Management. Note: X / Twitter access via Claude is not available yet; use direct URLs and public web for now.
                     </div>
                   </div>
                   {/* KPI strip */}
@@ -5883,7 +5458,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                         <div style={{marginTop:8}}>
                           <label style={lbl}>Proposed actions (one per line; each becomes a Propose item)</label>
                           <textarea style={{...inp,minHeight:70,resize:"vertical"}} value={rsActions} onChange={e=>setRsActions(e.target.value)}
-                            placeholder={"Add an IStructE digital-twin reference page to the Knowledge Hub\nUpgrade APEX with NCEES-aligned ATS rubric\n..."}/>
+                            placeholder={"Add an IStructE digital-twin reference page to the Knowledge Hub\nAdd a region tier to Capacity Grid office rollups\n..."}/>
                         </div>
                         <div style={{marginTop:10}}>
                           <button style={btn} onClick={()=>{ const sel=document.getElementById("rs-attach"); if(sel && sel.value) recordFindings(sel.value); }}>Save findings & push actions to Propose</button>
@@ -6013,7 +5588,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
                   </div>
                   <div style={{marginTop:8}}>
                     <label style={lbl}>Title</label>
-                    <input style={inp} value={pTitle} onChange={e=>setPTitle(e.target.value)} placeholder="e.g. ARGO  add Monte Carlo on the 3-point estimate" />
+                    <input style={inp} value={pTitle} onChange={e=>setPTitle(e.target.value)} placeholder="e.g. Capacity Grid  add a seismic capability area" />
                   </div>
                   <div style={{marginTop:8}}>
                     <label style={lbl}>Notes</label>
@@ -6165,8 +5740,8 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
 
   // ══════════════════════ COUNTERPARTY PROFILING PANEL ══════════════════════
   // Shared module. Profiles the people on the other side of the table from public
-  // professional activity only. Surfaces in APEX as Interviewer Profiling and in
-  // ARGO as Client Profiling. Public, professional data only. No private data,
+  // professional activity only. Surfaces as profiling context where applicable and in
+  // client profiling. Public, professional data only. No private data,
   // no facial data. Every inference is an estimate with a source and a date.
   const ProfilingPanel = ({app}) => {
     const cfg = app.profiling;
@@ -6203,923 +5778,6 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
   // Opens when a user clicks an app card on ToolsPage. Renders full capabilities depth,
   // intake form bound to FormSubmit (same pattern as S1Form), access-key gate, and
   // download links to the saved capabilities briefing files.
-  const AppDetailModal = ({app, onClose}) => {
-    const [keyInput, setKeyInput] = useState("");
-    const [keyError, setKeyError] = useState("");
-    const [intake, setIntake] = useState({});
-    const [submitStatus, setSubmitStatus] = useState("idle");
-    const [demoOpen, setDemoOpen] = useState(false);   // owner-only sample run preview
-    // ----- APEX v3: file upload (CV + JD) + head-to-head comparison -----
-    const [apexCv, setApexCv] = useState(null);           // {name,size,type,text}
-    const [apexJd, setApexJd] = useState(null);
-    const [apexRivalReport, setApexRivalReport] = useState(""); // pasted competitor report
-    const [apexRivalFile, setApexRivalFile] = useState(null);
-    const [apexCompareOpen, setApexCompareOpen] = useState(false);
-    const [apexScorecard, setApexScorecard] = useState(null);
-    const readFileLite = (file, cb)=>{
-      const r=new FileReader();
-      r.onload=()=>cb({name:file.name,size:file.size,type:file.type, text:String(r.result||"").slice(0,200000)});
-      r.onerror=()=>cb(null);
-      // PDFs and DOCX won't yield readable text via readAsText; that's fine for the intake stub.
-      // Plain-text uploads are read in full.
-      r.readAsText(file);
-    };
-    const apexRunScorecard = ()=>{
-      // 10-rubric weighted scorecard. APEX scores high on its strengths; the rival's
-      // score is taken from the presence of certain markers in the rival report.
-      // This is intentionally a transparent heuristic; real scoring comes later via API.
-      const rivalText = (apexRivalReport || (apexRivalFile?apexRivalFile.text:"") || "").toLowerCase();
-      const rubrics = [
-        {k:"ATS optimisation depth",          weight:12, apex:92, rivalSignal:["ats","keyword"]},
-        {k:"No-fabrication discipline",       weight:12, apex:96, rivalSignal:["verbatim","no inferred"]},
-        {k:"Hiring-manager simulation",       weight:10, apex:90, rivalSignal:["hiring manager","recruiter"]},
-        {k:"Interview war room",              weight:10, apex:94, rivalSignal:["question bank","100 questions","interview prep"]},
-        {k:"Discipline detection",            weight:10, apex:88, rivalSignal:["bidding","engineering environment","architecture environment"]},
-        {k:"Scenario coverage",               weight:10, apex:90, rivalSignal:["scenario","worst case","best case"]},
-        {k:"Company intelligence",            weight: 8, apex:86, rivalSignal:["mission","values","sentiment","swot"]},
-        {k:"Strategic edge",                  weight: 8, apex:88, rivalSignal:["differentiator","strategic edge"]},
-        {k:"Tone fit",                        weight:10, apex:92, rivalSignal:["tone","voice"]},
-        {k:"Actionability",                   weight:10, apex:94, rivalSignal:["ready-to-send","ready to send","ready-to-use"]},
-      ].map(r=>{
-        const present = r.rivalSignal.some(s=>rivalText.indexOf(s)>=0);
-        // baseline 45 if present, 25 if not; +/- jitter by length
-        const lenBoost = Math.min(15, Math.floor(rivalText.length/1500));
-        const rival = Math.max(10, Math.min(80, (present?55:35) + lenBoost - (r.apex>=92?5:0)));
-        return {...r, rival};
-      });
-      const apexTotal = Math.round(rubrics.reduce((s,r)=>s+r.apex*r.weight,0)/100);
-      const rivalTotal = Math.round(rubrics.reduce((s,r)=>s+r.rival*r.weight,0)/100);
-      const deltaPct = rivalTotal>0 ? Math.round(((apexTotal-rivalTotal)/rivalTotal)*100) : 999;
-      setApexScorecard({ rubrics, apexTotal, rivalTotal, deltaPct, when:new Date().toISOString().slice(0,16).replace("T"," ") });
-    };
-    // ----- MEET v3: interactive intake (user, hierarchy, meeting type, goals) + opponent scenarios + EI playbook -----
-    const [meet, setMeet] = useState({
-      userName:"", userRole:"", userLevel:"Senior",
-      companyName:"", industry:"", size:"", marketPos:"",
-      sponsor:"", reports:"",
-      meetingType:"Bid negotiation", meetingDate:"", meetingMode:"In-person",
-      primaryGoal:"", secondaryGoal:"", walkAway:"",
-      constraints:"", documents:"",
-      attendees:[{name:"",role:"",hierarchy:"Peer",authority:"Decision-maker",likelyPos:""}],
-    });
-    const setMeetField = (k)=>(e)=>setMeet(prev=>({...prev,[k]:e.target.value}));
-    const setMeetAttendee = (idx, k)=>(e)=>{
-      setMeet(prev=>{ const a=[...prev.attendees]; a[idx]={...a[idx],[k]:e.target.value}; return {...prev,attendees:a}; });
-    };
-    const addMeetAttendee = ()=> setMeet(prev=>({...prev, attendees:[...prev.attendees,{name:"",role:"",hierarchy:"Peer",authority:"Decision-maker",likelyPos:""}]}));
-    const delMeetAttendee = (idx)=> setMeet(prev=>({...prev, attendees:prev.attendees.filter((_,i)=>i!==idx)}));
-    // ----- ARGO v3: 20-point critical-decisions checklist + SWOT/SMART/RACI/payment/pricing -----
-    const ARGO_20 = [
-      {id:"scope",label:"Scope (clearly bounded)",where:"RFP scope section",bp:"Take the RFP scope verbatim; add a bounded one-line restatement plus inclusions/exclusions."},
-      {id:"estimate",label:"Estimation approach",where:"User's choice or RFP guidance",bp:"Default to three-point estimate; switch to analogous if there are 2+ similar past projects; bottom-up only when WBS is mature."},
-      {id:"planning",label:"Planning type",where:"Programme document",bp:"Milestone-led for most engineering bids; hybrid where design iterations are expected."},
-      {id:"resources",label:"Resources",where:"Resource plan or assumed",bp:"Map roles to phases; flag any single point of failure (one person on a critical role)."},
-      {id:"milestones",label:"Milestones",where:"RFP schedule or proposal section",bp:"Use SMART milestones tied to payment; 5-8 is the sweet spot for an engineering bid."},
-      {id:"r_tech",label:"Risks  technical",where:"Risk register or new",bp:"Score 1-5 likelihood and impact; mitigate top 3 in the body of the proposal."},
-      {id:"r_comm",label:"Risks  commercial",where:"Same",bp:"Currency, payment terms, escalation, change orders. State the firm's position on each."},
-      {id:"r_sched",label:"Risks  schedule",where:"Same",bp:"Critical path dependencies. Buffer 10-15% on the headline date."},
-      {id:"r_contract",label:"Risks  contractual",where:"T&Cs in RFP",bp:"Liability cap, indemnity, IP. If non-negotiable items are present, flag for counsel."},
-      {id:"r_client",label:"Risks  client / political",where:"Reading between the lines",bp:"Stakeholder map; identify the silent veto. Document the strategy to neutralise it."},
-      {id:"r_fin",label:"Risks  financial",where:"Payment terms",bp:"Cash flow forecast; bank guarantee or retention impact on working capital."},
-      {id:"r_reg",label:"Risks  regulatory",where:"Jurisdiction clauses",bp:"Permits, approvals, design code compliance. Name the codes (CSA, ACI, Eurocode, AASHTO)."},
-      {id:"r_rep",label:"Risks  reputational",where:"Industry awareness",bp:"Politically sensitive site, public health impact. Decide if iStructural can be associated."},
-      {id:"raci",label:"RACI (Responsible, Accountable, Consulted, Informed)",where:"Often missing",bp:"Build a RACI for each workstream. One Accountable per row, no more."},
-      {id:"incl",label:"Inclusions",where:"Scope statement",bp:"List explicitly. Anything not listed is excluded by default."},
-      {id:"excl",label:"Exclusions",where:"Often missing, very high-value to specify",bp:"List in the proposal. Prevents scope creep; protects the fee."},
-      {id:"codes",label:"Design codes (ACI, CSA, Eurocode, AASHTO, etc.)",where:"RFP technical spec",bp:"Name every code that governs. Default to the latest published edition."},
-      {id:"lod",label:"Level of detail (LOD 100-500)",where:"BIM execution plan",bp:"LOD 300 for design intent; LOD 350+ for construction. State per discipline."},
-      {id:"phases",label:"Phases (concept, schematic, DD, CD, CA)",where:"Architectural standard",bp:"AIA five-phase standard; state deliverables and milestone payments per phase."},
-      {id:"stages",label:"Stages (mobilisation, design, procurement, construction, commissioning, close-out)",where:"Project lifecycle",bp:"Use stages for construction projects; phases for design-only engagements."},
-    ];
-    const [argoDocs, setArgoDocs] = useState(""); // pasted/uploaded RFP text
-    const [argoDocFiles, setArgoDocFiles] = useState([]); // names of uploaded files
-    const [argoState, setArgoState] = useState(()=>{
-      const init={};
-      ARGO_20.forEach(d=>{ init[d.id]={ status:"missing", source:"", include:true }; });
-      return init;
-    });
-    const [argoSwot, setArgoSwot] = useState({s:"",w:"",o:"",t:""});
-    const [argoSmart, setArgoSmart] = useState({specific:"",measurable:"",achievable:"",relevant:"",timeBound:""});
-    const [argoPayment, setArgoPayment] = useState("Milestone-linked % of work done");
-    const [argoPricing, setArgoPricing] = useState("Three-point estimate (PERT)");
-    const [argoOpt, setArgoOpt] = useState(""); const [argoML, setArgoML] = useState(""); const [argoPess, setArgoPess] = useState("");
-    // Heuristic: scan pasted text for the 20 decision keywords; mark "found" with a generic reference
-    const scanArgoDocs = ()=>{
-      const text = (argoDocs || "").toLowerCase();
-      const map={ scope:["scope","sow"], estimate:["estimate","price","fee","cost basis"], planning:["schedule","programme","program","gantt"],
-        resources:["team","resource","staffing"], milestones:["milestone","deliverable"], r_tech:["technical risk","tech risk"],
-        r_comm:["commercial","payment terms","currency"], r_sched:["schedule risk","critical path"], r_contract:["liability","indemnity","contract"],
-        r_client:["stakeholder","client","approver"], r_fin:["cash flow","bank guarantee","retention"], r_reg:["permit","approval","jurisdiction","regulatory"],
-        r_rep:["reputation","press","public"], raci:["raci","responsible","accountable"], incl:["inclusion","included"],
-        excl:["exclusion","excluded"], codes:["aci","csa","eurocode","aashto","code"], lod:["lod","level of detail","bim"],
-        phases:["concept","schematic","cd","dd"], stages:["mobilisation","procurement","commissioning"] };
-      setArgoState(prev=>{
-        const next={...prev};
-        ARGO_20.forEach(d=>{
-          const present=(map[d.id]||[]).some(k=>text.indexOf(k)>=0);
-          next[d.id]={...prev[d.id], status: present?"found":"missing", source: present?(argoDocFiles.length?argoDocFiles[0]:"shared text"):""};
-        });
-        return next;
-      });
-    };
-    const meetPlaybook = (m)=>{
-      // Framework anchor: Fisher and Ury for negotiation/conflict, Cialdini for pitch/persuasion
-      const fisherTilt = ["Bid negotiation","Conflict resolution","Debate","Internal escalation"].includes(m.meetingType);
-      const cialdiniTilt = ["Client pitch","Board update","Facilitation"].includes(m.meetingType);
-      const sayDo = [
-        "Open by naming the shared interest, not your position",
-        "Anchor with the strongest, defensible reference number first",
-        "Acknowledge the other side's constraint before pressing yours",
-        "Use silence after a counter-offer; let them fill it",
-        "Name the emotion in the room when it shifts (frustration, urgency)",
-        fisherTilt ? "Bring your BATNA forward only when the room is ready" : "Use authority and social proof early in your case",
-        cialdiniTilt ? "Lead with reciprocity: one concrete value-add before any ask" : "Bring objective criteria to break a deadlock (precedent, code, third party)",
-      ];
-      const dontSay = [
-        "Anything you cannot back up with a referenced source",
-        "Numbers that contradict your sponsor's prior public position",
-        "Concessions outside your walk-away conditions",
-        "Personal characterisations of the other side, ever",
-        "Anything that puts your team into a defensive corner without a way out",
-      ];
-      // Scenarios
-      const scenarios = [
-        { name:"Best case", play:"The other side opens close to your anchor. Convert into commitment fast with a structured close." },
-        { name:"Base case", play:"The other side counters mid-band. Trade variables (scope, schedule, payment terms) rather than price. Document each trade." },
-        { name:"Worst case", play:"The other side rejects your anchor and resets to their position. Re-establish shared interest, table objective criteria, agree to break and reconvene." },
-      ];
-      // Attendee profiles synthesised from intake
-      const profiles = m.attendees.filter(a=>a.name.trim()).map(a=>({
-        name: a.name, role: a.role||"Attendee", hierarchy:a.hierarchy, authority:a.authority,
-        likelyPosition:a.likelyPos||"Likely position not stated; probe early.",
-        pressurePoint:
-          a.authority==="Decision-maker" ? "Wants a defensible decision; prefers structured options over open exploration." :
-          a.authority==="Influencer" ? "Wants to look right next to the decision-maker; respond to their framing first." :
-          a.authority==="Observer" ? "Wants to be informed; keep them visible in the room." :
-          "Wants the loop closed; address their action items explicitly.",
-      }));
-      // Weak-point hints based on missing inputs
-      const weakPoints = [];
-      if (!m.primaryGoal.trim()) weakPoints.push("Primary goal is unstated. The room will set it for you. Define it before the meeting.");
-      if (!m.walkAway.trim()) weakPoints.push("Walk-away condition is unstated. Without it, every concession becomes possible.");
-      if (m.attendees.filter(a=>a.name.trim()).length===0) weakPoints.push("No attendees mapped. Profile every named participant before walking in.");
-      if (!m.documents.trim()) weakPoints.push("No shared documents listed. MEET cannot anchor its read in the actual material without them.");
-      return { framework: fisherTilt?"Fisher and Ury (interests, BATNA, objective criteria)":cialdiniTilt?"Cialdini (reciprocity, authority, social proof)":"Blended", sayDo, dontSay, scenarios, profiles, weakPoints };
-    };
-    const setIntakeField = (k) => (e) => setIntake(prev => ({...prev, [k]: e.target.value}));
-
-    const chipColor = (t) => t==="green" ? P.greenD : t==="yellow" ? P.s4 : t==="blue" ? P.s2 : P.slate;
-    const chipFill  = (t) => (chipColor(t))+"15";
-
-    const tryUnlock = () => {
-      if (validateAccessKey(keyInput)) { grantSession(keyInput.trim(), PASS_DURATION_MINUTES, app.id); setKeyError(""); }
-      else { setKeyError("Access key invalid. Request a key from info@istructgroup.com"); }
-    };
-
-    const submitIntake = async (e) => {
-      e.preventDefault();
-      const required = app.intakeFields.filter(f=>f.required);
-      const missing = required.filter(f => !(intake[f.key]||"").trim());
-      if (missing.length) { setSubmitStatus("error"); return; }
-      setSubmitStatus("sending");
-      try {
-        const body = new FormData();
-        body.append("_subject", `iStructural | ${app.name} run request`);
-        body.append("app", app.name);
-        body.append("tagline", app.tagline);
-        Object.keys(intake).forEach(k => body.append(k, intake[k]));
-        // The "What do you want" free-text field was removed; scope now comes
-        // from the PreRunPanel toggles. If the user skipped that panel, fall
-        // back to the default so a run is never sent with no stated scope.
-        if (app.preRun && !(intake.want||"").trim()) {
-          body.append("want_default", "Full assessment and report (user did not adjust the pre-run scope toggles)");
-        }
-        body.append("session_key", toolsSession.accessKey || "");
-        const res = await fetch("https://formsubmit.co/ajax/info@istructgroup.com", { method:"POST", body });
-        if (res.ok) setSubmitStatus("success"); else setSubmitStatus("error");
-      } catch (err) { setSubmitStatus("error"); }
-    };
-
-    return (
-      <div role="dialog" aria-modal="true" aria-label={`${app.name} detail`}
-           onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}
-           style={{position:"fixed",inset:0,zIndex:1200,background:"rgba(8,20,38,0.92)",overflowY:"scroll",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"24px 12px",boxSizing:"border-box"}}>
-        <div style={{maxWidth:920,width:"100%",margin:"0 auto",marginBottom:24,background:P.white,borderRadius:14,boxShadow:"0 24px 60px rgba(0,0,0,0.45)",overflow:"hidden"}}>
-          {/* Modal header */}
-          <div style={{padding:"18px 22px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,color:P.white,display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:48,height:48,borderRadius:11,background:`linear-gradient(135deg, ${app.iconColor} 0%, ${app.iconColor}CC 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:P.white,fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800}}>
-              {app.icon ? <AppIcon id={app.icon} size={28} color={P.white} accent={P.tealL}/> : app.iconLetter}
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:T.h2,fontWeight:800,fontFamily:"'Fraunces',serif"}}>{app.name}</div>
-              <div style={{fontSize:T.body,color:P.tealL,marginTop:2}}>{app.tagline}</div>
-            </div>
-            <button onClick={onClose} aria-label="Close" style={{width:32,height:32,borderRadius:8,background:"transparent",border:`1px solid ${P.tealL}40`,color:P.white,fontSize:T.h3,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>×</button>
-          </div>
-
-          {/* Sub banner */}
-          <div style={{padding:"10px 22px",background:P.teal,color:P.white,fontSize:T.body,fontWeight:700,letterSpacing:0.3}}>
-            From a job description to an executive grade application package in one run. No inferred experience. References dated. No em dashes. Three iterations stated.
-          </div>
-
-          {/* Per-modal disclaimer chip (covers current and future apps) */}
-          <div style={{padding:"8px 22px",background:P.coral+"12",borderBottom:`1px solid ${P.coral}30`,display:"flex",alignItems:"flex-start",gap:8}}>
-            <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.coral+"30",color:P.coral,border:`1px solid ${P.coral}60`,letterSpacing:1.4,textTransform:"uppercase",whiteSpace:"nowrap"}}>Disclaimer</span>
-            <div style={{flex:1,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
-              Informational use only. No professional advice. No guarantee of outcome. App content and behavior may change at any time. You remain solely responsible for any decisions made on the basis of any output. Confidentiality enforced. By submitting any input you accept the full terms shown at the top of the Tools Box page.
-            </div>
-          </div>
-
-          <div style={{padding:"18px 22px",background:P.sand}}>
-
-            {/* SCOPE CARD — Yes-No inclusion / exclusion shown FIRST so the user
-                knows up front what to upload, what is included, what is
-                excluded, and what to expect back. Driven by app.scope. */}
-            {app.scope && (
-              <div style={{background:P.white,borderRadius:10,border:`2px solid ${app.iconColor}55`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                  <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:app.iconColor,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>Start here</span>
-                  <span style={{fontSize:T.lead,fontWeight:800,color:P.navy,fontFamily:"'Fraunces',serif"}}>What {app.name} Needs, Includes and Delivers</span>
-                </div>
-                <div style={{fontSize:T.small,color:P.slate,marginBottom:10,lineHeight:1.55}}>Read this before you run. It tells you what to upload, what is included, what is not, and what you receive.</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:8}}>
-                  {[
-                    {t:"What to upload", k:"upload", c:P.s2, mark:"↑"},
-                    {t:"Included", k:"included", c:P.greenD, mark:"✓"},
-                    {t:"Not included", k:"excluded", c:P.coral, mark:"✗"},
-                    {t:"What to expect", k:"expect", c:P.s4, mark:"★"},
-                  ].map(col=>(
-                    <div key={col.k} style={{background:col.c+"0C",borderRadius:8,border:`1px solid ${col.c}35`,padding:"9px 10px"}}>
-                      <div style={{fontSize:T.small,fontWeight:800,color:col.c,textTransform:"uppercase",letterSpacing:0.8,marginBottom:5}}>{col.t}</div>
-                      {(app.scope[col.k]||[]).map((line,i)=>(
-                        <div key={i} style={{display:"flex",gap:5,marginBottom:4,fontSize:T.small,color:P.charcoal,lineHeight:1.5}}>
-                          <span style={{color:col.c,fontWeight:800,flexShrink:0}}>{col.mark}</span>
-                          <span>{line}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* A. 8 Phase capability map */}
-            {app.phases && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>A. {app.id==="ecios" ? `${app.phases.length} Phase War-Room Pipeline (APEX)` : "8 Phase Decision Pipeline (ARGO)"}</div>
-                <div style={{display:"grid",gridTemplateColumns:"40px 1fr 2fr 60px",gap:6,fontSize:T.body}}>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>#</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Phase</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What You Get</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4,textAlign:"center"}}>Status</div>
-                  {app.phases.map((ph,i)=>(
-                    <Fragment key={ph.n}>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{ph.n}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{ph.name}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{ph.get}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,textAlign:"center"}}>
-                        <span style={{fontSize:T.small,fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.greenD+"20",color:P.greenD,border:`1px solid ${P.greenD}40`}}>READY</span>
-                      </div>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* A2. War-room environments (APEX) */}
-            {app.environments && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:4,fontFamily:"'Fraunces',serif"}}>A2. War-Room Environments</div>
-                <div style={{fontSize:T.small,color:P.slate,marginBottom:8,lineHeight:1.55}}>APEX reads your resume and the job description, then activates the environments the role calls for. Bidding, engineering, architecture and business depth are all built inside APEX. Nothing is offloaded.</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.3fr 1.1fr 2fr",gap:5,fontSize:T.small}}>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Environment</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Activates</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What It Builds</div>
-                  {app.environments.map((e,i)=>{
-                    const always = e.trigger==="Always on";
-                    return (
-                      <Fragment key={e.id}>
-                        <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{e.name}</div>
-                        <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white}}>
-                          <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 6px",borderRadius:4,background:always?P.greenD+"20":P.s4+"20",color:always?P.greenD:P.s4,border:`1px solid ${always?P.greenD:P.s4}45`}}>{always?"ALWAYS ON":"JD-DRIVEN"}</span>
-                          {!always && <div style={{fontSize:T.micro,color:P.slate,marginTop:2}}>{e.trigger}</div>}
-                        </div>
-                        <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{e.what}</div>
-                      </Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* B. Capabilities bullets (always shown) */}
-            <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-              <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>B. Core Capabilities</div>
-              <ul style={{margin:0,paddingLeft:18,fontSize:T.body,color:P.charcoal,lineHeight:1.65}}>
-                {app.capabilities.map((c,i)=>(<li key={i} style={{marginBottom:3}}>{c}</li>))}
-              </ul>
-            </div>
-
-            {/* B2. Run modes (APEX): assessment-only cases */}
-            {app.id==="ecios" && (
-              <div style={{background:P.s3+"0C",borderRadius:10,border:`1px solid ${P.s3}35`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.s3,marginBottom:6,fontFamily:"'Fraunces',serif"}}>B2. Run Modes  the Report Is Always the Goal</div>
-                <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.6,marginBottom:8}}>APEX adapts to what you already have. You do not need to want a cover letter. The assessment and the unified war-room report are the ultimate deliverable in every mode.</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.2fr 2fr",gap:5,fontSize:T.small}}>
-                  <div style={{fontWeight:800,color:P.white,background:P.s3,padding:"5px 7px",borderRadius:4}}>You provide</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.s3,padding:"5px 7px",borderRadius:4}}>APEX delivers</div>
-                  {[
-                    {h:"Resume + JD", d:"Full assessment and war-room report. Cover letter optional, generated only if you ask"},
-                    {h:"Resume + cover letter + JD", d:"Assessment of all three against the JD, plus the full report. No new cover letter unless requested"},
-                    {h:"Resume + JD, cover letter not wanted", d:"Assessment and analysis report only. APEX skips cover letter generation"},
-                    {h:"Cover letter + JD", d:"Cover letter and JD assessment, gap analysis, full report"},
-                  ].map((r,i)=>(
-                    <Fragment key={i}>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s3+"10":P.white,fontWeight:700,color:P.charcoal}}>{r.h}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s3+"10":P.white,color:P.charcoal}}>{r.d}</div>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* C. Shortcuts */}
-            {app.shortcuts && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>C. Trigger Shortcuts</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {app.shortcuts.map((s,i)=>(
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 9px",borderRadius:7,background:chipFill(s.t),border:`1px solid ${chipColor(s.t)}40`}}>
-                      <span style={{fontFamily:"'SF Mono','Menlo',monospace",fontSize:T.body,fontWeight:800,color:chipColor(s.t)}}>{s.k}</span>
-                      <span style={{fontSize:T.small,color:P.charcoal}}>{s.a}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* D. Expected outputs */}
-            {app.outputs && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>D. Expected Outputs Per Run</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1.2fr 2.4fr",gap:5,fontSize:T.body}}>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>File</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Format</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>What It Contains</div>
-                  {app.outputs.map((o,i)=>(
-                    <Fragment key={i}>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,fontWeight:700,color:P.charcoal}}>{o.file}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{o.fmt}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{o.what}</div>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* E. Probability funnel */}
-            {app.bars && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>E. {app.id==="ecios" ? "APEX Hiring Outcome Probability (illustrative)" : "ARGO Decision Probability (illustrative)"}</div>
-                {app.bars.map((b,i)=>(
-                  <div key={i} style={{display:"grid",gridTemplateColumns:"160px 1fr 50px",gap:8,alignItems:"center",marginBottom:5}}>
-                    <div style={{fontSize:T.body,color:P.charcoal,fontWeight:600}}>{b.label}</div>
-                    <div style={{height:12,borderRadius:6,background:P.charcoal+"10",overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${b.pct}%`,background:`linear-gradient(90deg, ${P.teal} 0%, ${P.tealL} 100%)`,borderRadius:6}}></div>
-                    </div>
-                    <div style={{fontSize:T.body,color:P.charcoal,fontWeight:700,textAlign:"right"}}>{b.pct}%</div>
-                  </div>
-                ))}
-                <div style={{fontSize:T.small,color:P.slate,marginTop:6,fontStyle:"italic"}}>Illustrative ranges. Each run produces user specific values from the engine.</div>
-              </div>
-            )}
-
-            {/* F. Tips */}
-            {app.tips && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.charcoal}15`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.navy,marginBottom:8,fontFamily:"'Fraunces',serif"}}>F. Tips to Get the Most Out of {app.name}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:5,fontSize:T.body}}>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Tip</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.navy,padding:"5px 7px",borderRadius:4}}>Why It Matters</div>
-                  {app.tips.map((t,i)=>(
-                    <Fragment key={i}>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{t.tip}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.s2L:P.white,color:P.charcoal}}>{t.why}</div>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* G. Boundaries */}
-            {app.boundaries && (
-              <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.coral}40`,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.coral,marginBottom:8,fontFamily:"'Fraunces',serif"}}>G. Boundaries: What {app.name} Will Not Do</div>
-                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:5,fontSize:T.body}}>
-                  <div style={{fontWeight:800,color:P.white,background:P.coral,padding:"5px 7px",borderRadius:4}}>Will Not Do</div>
-                  <div style={{fontWeight:800,color:P.white,background:P.coral,padding:"5px 7px",borderRadius:4}}>Why</div>
-                  {app.boundaries.map((b,i)=>(
-                    <Fragment key={i}>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.coral+"12":P.white,color:P.charcoal}}>{b.will}</div>
-                      <div style={{padding:"5px 7px",background:i%2===0?P.coral+"12":P.white,color:P.charcoal}}>{b.why}</div>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* H. Briefing request hint (no in-modal download; request form lives at the bottom of the page) */}
-            <div style={{background:P.s2L,borderRadius:10,border:`1px dashed ${P.s2}40`,padding:"10px 14px",marginBottom:14,color:P.charcoal,fontSize:T.body}}>
-              Want a printed capabilities briefing for <strong>{app.name}</strong>? Briefings are issued on request. Scroll to the bottom of the Tools Box page and submit the Briefing Request form. Our team replies from <strong>info@istructgroup.com</strong>.
-            </div>
-
-            {/* H2. Pre-run Yes-No panel (shared front door). It is the SINGLE
-                source for "what the user wants" — the duplicate free-text
-                "want" intake field was removed. onRun always overwrites
-                intake.want with the current toggle selection (human-readable
-                labels) so changing the toggles and re-applying stays in sync. */}
-            {app.preRun && appUnlocked(app.id) && (
-              <PreRunPanel app={app} onRun={(sel)=>{
-                const labelFor = (id)=>{
-                  const item = (app.preRun.want||[]).find(w=>w.id===id);
-                  return item ? item.label : id;
-                };
-                const wantLabels = Object.entries(sel.want).filter(([k,v])=>v).map(([k])=>labelFor(k));
-                const haveLabels = Object.entries(sel.have).filter(([k,v])=>v).map(([k])=>{
-                  const item = (app.preRun.have||[]).find(h=>h.id===k);
-                  return item ? item.label : k;
-                });
-                setIntake(prev=>({
-                  ...prev,
-                  want: wantLabels.length ? wantLabels.join("; ") : "Full assessment and report",
-                  have: haveLabels.length ? haveLabels.join("; ") : "",
-                }));
-              }} />
-            )}
-
-            {/* H3. Counterparty profiling panel (shared module) */}
-            {app.profiling && appUnlocked(app.id) && <ProfilingPanel app={app} />}
-
-            {/* I. Access key gate + intake */}
-            <div style={{background:P.white,borderRadius:10,border:`1px solid ${P.teal}40`,padding:"14px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                <div style={{fontSize:T.lead,fontWeight:800,color:P.teal,fontFamily:"'Fraunces',serif"}}>Start a {app.name} Run</div>
-                {ownerMode ? (
-                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.s2+"15",border:`1px solid ${P.s2}40`}}>
-                    <span style={{fontSize:T.micro,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.8}}>Owner  Unlimited</span>
-                  </div>
-                ) : appUnlocked(app.id) && (
-                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 10px",borderRadius:7,background:P.greenD+"12",border:`1px solid ${P.greenD}35`}}>
-                    <span style={{fontSize:T.micro,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:0.8}}>Session</span>
-                    <SandTimer endMs={sessionEndMs} size={28} dark={false} onExpire={()=>setSessionExpired(true)}/>
-                  </div>
-                )}
-              </div>
-
-              {!appUnlocked(app.id) && (
-                <div style={{padding:"10px 12px",borderRadius:8,background:P.s4+"15",border:`1px solid ${P.s4}40`,marginBottom:10}}>
-                  <div style={{fontSize:T.body,color:P.charcoal,marginBottom:8}}>This app requires a time limited access key. During this transition stage every key unlocks a free <strong>60 minute</strong> session. Request a key, then paste it here to start the countdown.</div>
-                  <a
-                    href={`mailto:info@istructgroup.com?subject=${encodeURIComponent("iStructural Tools Box  60 minute key request  " + app.name)}&body=${encodeURIComponent("Hello iStructural team,\n\nPlease issue a 60 minute access key for the following app on the Tools Box page.\n\nApp: " + app.name + "\nTagline: " + app.tagline + "\n\nMy details:\nFull name: \nRole / title: \nCompany / organization: \nEmail: \nPhone (optional): \n\nThank you.")}`}
-                    style={{display:"inline-block",padding:"9px 16px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.body,fontWeight:800,textDecoration:"none",marginBottom:10,letterSpacing:0.3}}>
-                    Request 60-min key by email
-                  </a>
-                  <div style={{fontSize:T.small,color:P.slate,marginBottom:8,lineHeight:1.5}}>The request goes to <strong>info@istructgroup.com</strong>. You can also use the Briefing and Access request form at the bottom of the Tools Box page.</div>
-                  <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                    <input value={keyInput} onChange={(e)=>setKeyInput(e.target.value)} placeholder="Paste your key  e.g. ISG-XXXXX-XXXXX" aria-label="Access key" style={{flex:"1 1 220px",padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit"}} />
-                    <button onClick={tryUnlock} style={{padding:"8px 14px",borderRadius:7,background:P.navy,color:P.white,fontSize:T.body,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Start 60-min session</button>
-                  </div>
-                  {keyError && <div style={{marginTop:6,fontSize:T.small,color:P.coral,fontWeight:600}}>{keyError}</div>}
-                </div>
-              )}
-
-              {/* MEET v3: interactive intake + opponent scenarios + EI playbook */}
-              {appUnlocked(app.id) && app.id==="meet" && (()=>{
-                const pb = meetPlaybook(meet);
-                const inp={width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
-                const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:2,textTransform:"uppercase",letterSpacing:0.4};
-                const card2={padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:8};
-                return (
-                  <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
-                    <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:8}}>MEET interactive intake</div>
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>You and your role</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:6}}>
-                        <div><label style={lbl}>Your name</label><input style={inp} value={meet.userName} onChange={setMeetField("userName")} placeholder="e.g. T. Younes" /></div>
-                        <div><label style={lbl}>Your role</label><input style={inp} value={meet.userRole} onChange={setMeetField("userRole")} placeholder="e.g. Principal" /></div>
-                        <div><label style={lbl}>Your level</label>
-                          <select style={inp} value={meet.userLevel} onChange={setMeetField("userLevel")}>
-                            <option>Junior</option><option>Senior</option><option>Principal</option><option>Executive</option>
-                          </select></div>
-                      </div>
-                    </div>
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Your company and hierarchy</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:6}}>
-                        <div><label style={lbl}>Company</label><input style={inp} value={meet.companyName} onChange={setMeetField("companyName")} /></div>
-                        <div><label style={lbl}>Industry</label><input style={inp} value={meet.industry} onChange={setMeetField("industry")} /></div>
-                        <div><label style={lbl}>Size</label><input style={inp} value={meet.size} onChange={setMeetField("size")} placeholder="e.g. 200 staff" /></div>
-                        <div><label style={lbl}>Market position</label><input style={inp} value={meet.marketPos} onChange={setMeetField("marketPos")} placeholder="e.g. top 5 in MENA" /></div>
-                        <div><label style={lbl}>Sponsor / manager above you</label><input style={inp} value={meet.sponsor} onChange={setMeetField("sponsor")} /></div>
-                        <div><label style={lbl}>Reports relevant to this meeting</label><input style={inp} value={meet.reports} onChange={setMeetField("reports")} /></div>
-                      </div>
-                    </div>
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>The meeting</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:6}}>
-                        <div><label style={lbl}>Type</label>
-                          <select style={inp} value={meet.meetingType} onChange={setMeetField("meetingType")}>
-                            <option>Bid negotiation</option><option>Debate</option><option>Conflict resolution</option>
-                            <option>Facilitation</option><option>Board update</option><option>Client pitch</option><option>Internal escalation</option>
-                          </select></div>
-                        <div><label style={lbl}>Date / time</label><input style={inp} value={meet.meetingDate} onChange={setMeetField("meetingDate")} /></div>
-                        <div><label style={lbl}>Mode</label>
-                          <select style={inp} value={meet.meetingMode} onChange={setMeetField("meetingMode")}>
-                            <option>In-person</option><option>Virtual</option><option>Hybrid</option>
-                          </select></div>
-                      </div>
-                    </div>
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Your goals</div>
-                      <label style={lbl}>Primary goal</label><input style={inp} value={meet.primaryGoal} onChange={setMeetField("primaryGoal")} placeholder="What is a win for you?" />
-                      <div style={{height:6}}/>
-                      <label style={lbl}>Secondary goal</label><input style={inp} value={meet.secondaryGoal} onChange={setMeetField("secondaryGoal")} />
-                      <div style={{height:6}}/>
-                      <label style={lbl}>Walk-away condition</label><input style={inp} value={meet.walkAway} onChange={setMeetField("walkAway")} placeholder="At what point do you stop?" />
-                      <div style={{height:6}}/>
-                      <label style={lbl}>Hard constraints (cannot say, cannot concede)</label>
-                      <textarea style={{...inp,minHeight:50,resize:"vertical"}} value={meet.constraints} onChange={setMeetField("constraints")} />
-                      <div style={{height:6}}/>
-                      <label style={lbl}>Documents in play (agenda, prior emails, RFP, drawings)</label>
-                      <textarea style={{...inp,minHeight:50,resize:"vertical"}} value={meet.documents} onChange={setMeetField("documents")} placeholder="Name each document briefly; paste key extracts in the form below." />
-                    </div>
-                    <div style={card2}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                        <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5}}>Attendees on the other side</div>
-                        <button type="button" onClick={addMeetAttendee} style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit"}}>+ Add</button>
-                      </div>
-                      {meet.attendees.map((a,i)=>(
-                        <div key={i} style={{display:"grid",gridTemplateColumns:"1.2fr 1.2fr 1fr 1fr 1.5fr auto",gap:5,marginBottom:5,alignItems:"center"}}>
-                          <input style={inp} placeholder="Name" value={a.name} onChange={setMeetAttendee(i,"name")} />
-                          <input style={inp} placeholder="Role" value={a.role} onChange={setMeetAttendee(i,"role")} />
-                          <select style={inp} value={a.hierarchy} onChange={setMeetAttendee(i,"hierarchy")}>
-                            <option>Senior to user</option><option>Peer</option><option>Junior to user</option>
-                          </select>
-                          <select style={inp} value={a.authority} onChange={setMeetAttendee(i,"authority")}>
-                            <option>Decision-maker</option><option>Influencer</option><option>Observer</option><option>Note-taker</option>
-                          </select>
-                          <input style={inp} placeholder="Likely position" value={a.likelyPos} onChange={setMeetAttendee(i,"likelyPos")} />
-                          <button type="button" onClick={()=>delMeetAttendee(i)} style={{fontSize:T.micro,fontWeight:800,color:P.coral,background:"transparent",border:`1px solid ${P.coral}55`,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontFamily:"inherit"}}>×</button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Generated playbook */}
-                    <div style={{...card2,background:P.s2L,border:`1px solid ${P.s2}30`}}>
-                      <div style={{fontSize:T.body,fontWeight:800,color:P.s2,fontFamily:"'Fraunces',serif",marginBottom:4}}>Room strategy</div>
-                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:8}}>Framework: <strong>{pb.framework}</strong></div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                        <div>
-                          <div style={{fontSize:T.micro,fontWeight:800,color:P.s3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>What to say / do</div>
-                          {pb.sayDo.map((s,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",lineHeight:1.5}}>• {s}</div>))}
-                        </div>
-                        <div>
-                          <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>What NOT to say</div>
-                          {pb.dontSay.map((s,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",lineHeight:1.5}}>× {s}</div>))}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Opponent scenarios</div>
-                      {pb.scenarios.map((s,i)=>(
-                        <div key={i} style={{padding:"7px 9px",background:P.sand,borderRadius:7,marginBottom:5}}>
-                          <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{s.name}</div>
-                          <div style={{fontSize:T.small,color:P.slate,marginTop:2,lineHeight:1.5}}>{s.play}</div>
-                        </div>
-                      ))}
-                    </div>
-                    {pb.profiles.length>0 && (
-                      <div style={card2}>
-                        <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Attendee profiles</div>
-                        {pb.profiles.map((p,i)=>(
-                          <div key={i} style={{padding:"7px 9px",background:P.sand,borderRadius:7,marginBottom:5}}>
-                            <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{p.name} <span style={{fontWeight:600,color:P.slate}}>· {p.role} · {p.hierarchy} · {p.authority}</span></div>
-                            <div style={{fontSize:T.micro,color:P.slate,marginTop:2}}><strong>Likely:</strong> {p.likelyPosition}</div>
-                            <div style={{fontSize:T.micro,color:P.slate}}><strong>Pressure point:</strong> {p.pressurePoint}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {pb.weakPoints.length>0 && (
-                      <div style={{...card2,background:P.coral+"0E",border:`1px solid ${P.coral}45`}}>
-                        <div style={{fontSize:T.micro,fontWeight:800,color:P.coral,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Weak points to fix before the meeting</div>
-                        {pb.weakPoints.map((s,i)=>(<div key={i} style={{fontSize:T.small,color:P.charcoal,padding:"3px 0",lineHeight:1.5}}>! {s}</div>))}
-                      </div>
-                    )}
-                    <div style={{fontSize:T.micro,color:P.slate,marginTop:6,fontStyle:"italic"}}>
-                      Three iterations of cross-checking applied. Frameworks: Fisher and Ury 2011; Cialdini 2007. Outputs ride along on the Run MEET button below.
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ARGO v3: 20-point critical-decisions interactive checklist + SWOT/SMART/RACI/payment/pricing */}
-              {appUnlocked(app.id) && app.id==="bid" && (()=>{
-                const inp={width:"100%",padding:"6px 9px",borderRadius:6,border:`1px solid ${P.charcoal}25`,fontSize:T.small,fontFamily:"inherit",boxSizing:"border-box"};
-                const lbl={display:"block",fontSize:T.micro,fontWeight:800,color:P.slate,marginBottom:2,textTransform:"uppercase",letterSpacing:0.4};
-                const card2={padding:"10px 12px",borderRadius:8,background:P.white,border:`1px solid ${P.charcoal}15`,marginBottom:8};
-                const found = Object.values(argoState).filter(x=>x.status==="found").length;
-                const missing = ARGO_20.length - found;
-                return (
-                  <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
-                    <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:8}}>ARGO interactive intake</div>
-
-                    {/* Shared / received documents */}
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Shared / received documents</div>
-                      <label style={lbl}>Paste the RFP, scope notes, drawings legends, key emails (the more context the better)</label>
-                      <textarea style={{...inp,minHeight:90,resize:"vertical"}} value={argoDocs} onChange={e=>setArgoDocs(e.target.value)}
-                        placeholder="Paste extracts here. ARGO will scan for the 20 critical decisions and mark each as Found (with a reference back to where it was derived) or Missing (with a Yes/No and a best-practice recommendation)." />
-                      <div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                        <label style={{fontSize:T.micro,color:P.slate}}>or upload a file: <input type="file" accept=".pdf,.docx,.txt,.md"
-                          onChange={e=>{ const f=e.target.files&&e.target.files[0]; if(f) { readFileLite(f,(o)=>{ setArgoDocFiles([f.name]); if(o&&o.text) setArgoDocs(prev=>(prev?prev+"\n\n":"")+o.text); }); } }} />
-                          {argoDocFiles.length>0 && <span style={{color:P.s3,fontWeight:700,marginLeft:6}}>{argoDocFiles.join(", ")}</span>}
-                        </label>
-                        <button onClick={scanArgoDocs} style={{marginLeft:"auto",fontSize:T.small,fontWeight:800,padding:"6px 11px",borderRadius:7,background:app.iconColor,color:P.white,border:"none",cursor:"pointer",fontFamily:"inherit"}}>Scan the 20 critical decisions</button>
-                      </div>
-                      <div style={{fontSize:T.micro,color:P.slate,marginTop:6}}>Status: <strong style={{color:P.s3}}>{found} found</strong> &middot; <strong style={{color:P.coral}}>{missing} missing</strong></div>
-                    </div>
-
-                    {/* The 20 critical decisions */}
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>20 critical bid decisions</div>
-                      {ARGO_20.map((d,i)=>{
-                        const st = argoState[d.id] || { status:"missing", source:"", include:true };
-                        const isFound = st.status==="found";
-                        return (
-                          <div key={d.id} style={{padding:"8px 10px",background:P.sand,borderRadius:7,marginBottom:5,borderLeft:`4px solid ${isFound?P.s3:P.coral}`}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
-                              <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal}}>{i+1}. {d.label}</div>
-                              <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:5,
-                                background:isFound?P.s3+"22":P.coral+"22",color:isFound?P.s3:P.coral,
-                                border:`1px solid ${isFound?P.s3:P.coral}55`}}>{isFound?"FOUND":"MISSING"}</span>
-                            </div>
-                            {isFound ? (
-                              <div style={{fontSize:T.micro,color:P.slate,marginTop:3}}>
-                                Reference: <em>{st.source||d.where}</em>. Include verbatim in the proposal with citation.
-                              </div>
-                            ) : (
-                              <div style={{marginTop:5}}>
-                                <div style={{fontSize:T.micro,color:P.charcoal,marginBottom:5}}><strong>Best practice:</strong> {d.bp}</div>
-                                <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
-                                  <span style={{fontSize:T.micro,fontWeight:800,color:P.slate}}>Apply this default?</span>
-                                  <button onClick={()=>setArgoState(prev=>({...prev,[d.id]:{...prev[d.id],include:true}}))}
-                                    style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,
-                                      background:st.include?P.s3:"transparent", color:st.include?P.white:P.s3,
-                                      border:`1px solid ${P.s3}55`,cursor:"pointer",fontFamily:"inherit"}}>Yes</button>
-                                  <button onClick={()=>setArgoState(prev=>({...prev,[d.id]:{...prev[d.id],include:false}}))}
-                                    style={{fontSize:T.micro,fontWeight:800,padding:"3px 9px",borderRadius:5,
-                                      background:!st.include?P.coral:"transparent", color:!st.include?P.white:P.coral,
-                                      border:`1px solid ${P.coral}55`,cursor:"pointer",fontFamily:"inherit"}}>No</button>
-                                  <span style={{fontSize:T.micro,color:P.slate,marginLeft:"auto"}}>Source field, often: {d.where}</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* SWOT 2x2 */}
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>SWOT  high level</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                        <div><label style={lbl}>Strengths</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.s} onChange={e=>setArgoSwot({...argoSwot,s:e.target.value})}/></div>
-                        <div><label style={lbl}>Weaknesses</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.w} onChange={e=>setArgoSwot({...argoSwot,w:e.target.value})}/></div>
-                        <div><label style={lbl}>Opportunities</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.o} onChange={e=>setArgoSwot({...argoSwot,o:e.target.value})}/></div>
-                        <div><label style={lbl}>Threats</label><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={argoSwot.t} onChange={e=>setArgoSwot({...argoSwot,t:e.target.value})}/></div>
-                      </div>
-                    </div>
-
-                    {/* SMART objectives */}
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>SMART objective for this bid</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:6}}>
-                        <div><label style={lbl}>Specific</label><input style={inp} value={argoSmart.specific} onChange={e=>setArgoSmart({...argoSmart,specific:e.target.value})}/></div>
-                        <div><label style={lbl}>Measurable</label><input style={inp} value={argoSmart.measurable} onChange={e=>setArgoSmart({...argoSmart,measurable:e.target.value})}/></div>
-                        <div><label style={lbl}>Achievable</label><input style={inp} value={argoSmart.achievable} onChange={e=>setArgoSmart({...argoSmart,achievable:e.target.value})}/></div>
-                        <div><label style={lbl}>Relevant</label><input style={inp} value={argoSmart.relevant} onChange={e=>setArgoSmart({...argoSmart,relevant:e.target.value})}/></div>
-                        <div><label style={lbl}>Time-bound</label><input style={inp} value={argoSmart.timeBound} onChange={e=>setArgoSmart({...argoSmart,timeBound:e.target.value})} placeholder="e.g. award by 2026-09-30"/></div>
-                      </div>
-                    </div>
-
-                    {/* Payment and pricing */}
-                    <div style={card2}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:app.iconColor,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Payment model and pricing approach</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:6}}>
-                        <div><label style={lbl}>Payment model</label>
-                          <select style={inp} value={argoPayment} onChange={e=>setArgoPayment(e.target.value)}>
-                            <option>Milestone-linked % of work done</option>
-                            <option>Monthly with retainer</option>
-                            <option>Lump-sum</option>
-                            <option>Time and materials</option>
-                            <option>Target price</option>
-                            <option>GMP (Guaranteed Maximum Price)</option>
-                          </select></div>
-                        <div><label style={lbl}>Pricing approach</label>
-                          <select style={inp} value={argoPricing} onChange={e=>setArgoPricing(e.target.value)}>
-                            <option>Three-point estimate (PERT)</option>
-                            <option>Analogous (similar past projects)</option>
-                            <option>Bottom-up (WBS-summed)</option>
-                          </select></div>
-                      </div>
-                      {argoPricing==="Three-point estimate (PERT)" && (
-                        <div style={{marginTop:8,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
-                          <div><label style={lbl}>Optimistic</label><input style={inp} value={argoOpt} onChange={e=>setArgoOpt(e.target.value)} placeholder="e.g. 80,000" /></div>
-                          <div><label style={lbl}>Most likely</label><input style={inp} value={argoML} onChange={e=>setArgoML(e.target.value)} placeholder="e.g. 110,000" /></div>
-                          <div><label style={lbl}>Pessimistic</label><input style={inp} value={argoPess} onChange={e=>setArgoPess(e.target.value)} placeholder="e.g. 160,000" /></div>
-                        </div>
-                      )}
-                      {argoPricing==="Three-point estimate (PERT)" && argoOpt && argoML && argoPess && (()=>{
-                        const o=parseFloat(argoOpt.replace(/[, ]/g,""))||0, m=parseFloat(argoML.replace(/[, ]/g,""))||0, p=parseFloat(argoPess.replace(/[, ]/g,""))||0;
-                        const pert = (o+4*m+p)/6; const sigma = (p-o)/6;
-                        return (
-                          <div style={{marginTop:8,padding:"7px 9px",background:P.sand,borderRadius:7,fontSize:T.micro,color:P.charcoal}}>
-                            <strong>PERT mean:</strong> {pert.toLocaleString(undefined,{maximumFractionDigits:0})} &middot; <strong>1 sigma:</strong> {sigma.toLocaleString(undefined,{maximumFractionDigits:0})}
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Proposal reply skeleton */}
-                    <div style={{...card2,background:P.s2L,border:`1px solid ${P.s2}30`}}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:P.s2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Proposal reply skeleton</div>
-                      <div style={{fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>
-                        On Run, ARGO assembles a structured proposal reply with these sections: Executive Summary, Understanding (citing shared docs), Approach, Team and RACI, Risk Strategy (referencing the 8 risk types above), Schedule (milestones), Commercial (payment model + pricing approach), Assumptions, Exclusions. Each section back-cites its source either to the RFP or to the best-practice default applied here.
-                      </div>
-                    </div>
-
-                    <div style={{fontSize:T.micro,color:P.slate,marginTop:6,fontStyle:"italic"}}>
-                      Three iterations of cross-checking applied. Frameworks: PMI PMBOK 7th edition, ISO 31000:2018, AIA G202 LOD. Outputs ride along on the Run ARGO button below.
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* APEX v3: file uploads (CV and JD) + head-to-head comparison panel */}
-              {appUnlocked(app.id) && app.id==="ecios" && (
-                <div style={{marginBottom:12,padding:"12px 14px",borderRadius:9,background:app.iconColor+"08",border:`1px solid ${app.iconColor}25`}}>
-                  <div style={{fontSize:T.body,fontWeight:800,color:app.iconColor,marginBottom:6}}>APEX intake  upload your CV and the JD</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:8}}>
-                    <label style={{display:"block",padding:"8px 10px",borderRadius:7,background:P.white,border:`1px dashed ${app.iconColor}55`,cursor:"pointer",fontSize:T.small}}>
-                      <div style={{fontWeight:800,color:P.charcoal,marginBottom:3}}>CV / Resume</div>
-                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:5}}>.pdf, .docx, .txt, .md accepted. Text is read for the run; PDFs and DOCX are kept as the source.</div>
-                      <input type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
-                        onChange={e=>{ const f=e.target.files&&e.target.files[0]; if(f) readFileLite(f, setApexCv); }} style={{display:"block",marginTop:3}} />
-                      {apexCv && <div style={{fontSize:T.micro,color:P.s3,marginTop:5,fontWeight:700}}>Uploaded: {apexCv.name} ({Math.round(apexCv.size/1024)} KB)</div>}
-                    </label>
-                    <label style={{display:"block",padding:"8px 10px",borderRadius:7,background:P.white,border:`1px dashed ${app.iconColor}55`,cursor:"pointer",fontSize:T.small}}>
-                      <div style={{fontWeight:800,color:P.charcoal,marginBottom:3}}>Job description</div>
-                      <div style={{fontSize:T.micro,color:P.slate,marginBottom:5}}>Same formats. You can also paste the JD into the field below.</div>
-                      <input type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
-                        onChange={e=>{ const f=e.target.files&&e.target.files[0]; if(f) readFileLite(f, setApexJd); }} style={{display:"block",marginTop:3}} />
-                      {apexJd && <div style={{fontSize:T.micro,color:P.s3,marginTop:5,fontWeight:700}}>Uploaded: {apexJd.name} ({Math.round(apexJd.size/1024)} KB)</div>}
-                    </label>
-                  </div>
-                  <div style={{fontSize:T.micro,color:P.slate,marginTop:8,lineHeight:1.5}}>
-                    The Run APEX button below uses these uploads along with anything you paste in the form. Uploads do not leave the browser until you press Run; then they ride along on the run request.
-                  </div>
-
-                  {ownerMode && (
-                    <div style={{marginTop:10,padding:"8px 10px",borderRadius:7,background:P.gold+"22",border:`1px solid ${P.gold}55`,fontSize:T.micro,color:"#7A5A00",lineHeight:1.5}}>
-                      Compare APEX vs a competing AI? Open <strong>EDGE Lab</strong> (floating button, bottom right) and pick APEX. EDGE Lab is the single place to run head-to-head comparisons across every app.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {appUnlocked(app.id) && (
-                <form onSubmit={submitIntake}>
-                  {app.intakeFields.map(f=>(
-                    <div key={f.key} style={{marginBottom:8}}>
-                      <label style={{display:"block",fontSize:T.body,fontWeight:700,color:P.charcoal,marginBottom:3}}>{f.label}{f.required?" *":""}</label>
-                      <textarea value={intake[f.key]||""} onChange={setIntakeField(f.key)} placeholder={f.placeholder} required={f.required} aria-label={f.label} style={{width:"100%",minHeight:80,padding:"8px 10px",borderRadius:7,border:`1px solid ${P.charcoal}30`,fontSize:T.body,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} />
-                    </div>
-                  ))}
-                  <div style={{marginTop:8,padding:"8px 10px",borderRadius:7,background:app.iconColor+"10",border:`1px dashed ${app.iconColor}45`,fontSize:T.small,color:P.slate,lineHeight:1.5,textAlign:"center"}}>
-                    This is the run button. Pressing it sends your {app.name} run request to info@istructgroup.com. Our team replies with your output package.
-                  </div>
-                  <button type="submit" disabled={submitStatus==="sending"||submitStatus==="success"} style={{marginTop:8,width:"100%",padding:"14px 18px",borderRadius:9,background:submitStatus==="success"?P.greenD:app.iconColor,color:P.white,fontSize:T.lead,fontWeight:800,border:"none",cursor:submitStatus==="success"?"default":"pointer",fontFamily:"inherit",letterSpacing:0.6,textTransform:"uppercase"}}>
-                    {submitStatus==="sending" ? "Sending your run..." : submitStatus==="success" ? "Run received ✓  we will be in touch" : `▶  Run ${app.name}`}
-                  </button>
-                  {submitStatus==="error" && <div style={{marginTop:6,fontSize:T.body,color:P.coral,fontWeight:600}}>Please complete the required fields and try again.</div>}
-                  {submitStatus==="success" && <div style={{marginTop:6,fontSize:T.body,color:P.greenD,fontWeight:600}}>Run request received. Our team will follow up by email with your output package.</div>}
-                </form>
-              )}
-            </div>
-
-            {/* ═══ REPORT PREVIEW  TIERED DEPTH ═══ */}
-            {/* Output depth is gated by tier so the real value cannot be copied
-                by a free user:
-                  Owner          full report, every section in full detail
-                  Free 60-min    verdict + a short summary of every section,
-                                 full detail locked
-                  No session     not shown (minimum shared info)
-                HONEST NOTE: this gates what is GENERATED and shown. Ironclad
-                server-side enforcement (the server never sends locked detail)
-                is the Phase 2 backend. The rule now: never render full detail
-                to a tier that has not earned it. */}
-            {(ownerMode || appUnlocked(app.id)) && (() => {
-              const tierFull = ownerMode;                       // owner sees everything
-              const sections = app.id==="ecios" ? [
-                {n:"01 Fit summary", s:"Candidate-to-JD alignment, scored across required and preferred criteria, with strengths and gaps.", d:"Full criterion-by-criterion scoring table, every requirement matched or flagged, ranked gap list, and the one-line fit verdict with its reasoning."},
-                {n:"02 ATS score", s:"Multi-vendor ATS pass simulation with an overall score out of 100.", d:"Per-vendor ATS scores, the complete keyword coverage table with matched and missing terms, formatting flags, and the exact edits to raise the score."},
-                {n:"03 Cover letter", s:"A tailored one A4 page cover letter, executive tone, no inferred experience.", d:"The complete ready-to-send cover letter, three iterations stated, references dated, plus the rationale for each paragraph."},
-                {n:"04 Hiring risk", s:"Risk factors and the probability of advancing through each stage.", d:"Full risk register, stage-by-stage probability, and the complete bank of 100+ scenario interview questions with model answers."},
-                {n:"05 Submit verdict", s:"A yes or no recommendation on whether to apply.", d:"The full verdict with reasoning, the single highest-leverage improvement, and the 30 / 60 / 90 day success plan."},
-              ] : app.id==="bid" ? [
-                {n:"01 Go / No-go", s:"The eight-phase decision pipeline result and headline verdict.", d:"Every phase scored and explained, the binding conditions for a conditional go, and the full decision rationale."},
-                {n:"02 Risk math", s:"Probability times Impact times Detectability scoring with a composite risk index.", d:"The complete ranked risk register, every category scored, top risks flagged, and the mitigation actions."},
-                {n:"03 Commercial ranking", s:"Delivery and commercial models ranked with a win probability estimate.", d:"Full ranking of every delivery model, the commercial strategy, win probability with all assumptions stated."},
-                {n:"04 Dashboard", s:"An executive decision dashboard with the recommendation.", d:"The complete dashboard with gauges, the full recommendation summary, exportable to DOCX and PDF."},
-              ] : [
-                {n:"01 Participant profiles", s:"Each named attendee profiled from public professional activity.", d:"The full profile of every participant, source labels, dates, confidence percentages, and what each one rewards."},
-                {n:"02 Agenda map", s:"The meeting agenda broken into objectives and likely positions.", d:"The complete agenda map, every topic, the questions to expect, and the risks per item."},
-                {n:"03 Prep brief", s:"A one-page room strategy brief.", d:"The full brief: what to say, what to avoid, the outcome to push for, and the per-person talking points."},
-              ];
-              const verdict = app.id==="ecios" ? "Sample ATS score 94 / 100, recommendation: apply"
-                : app.id==="bid" ? "Sample verdict: conditional go"
-                : "Sample: room strategy ready, 3 participants profiled";
-              return (
-              <div style={{marginTop:14,background:P.white,borderRadius:10,border:`1px solid ${(tierFull?P.s2:P.s4)}40`,overflow:"hidden"}}>
-                <div style={{padding:"10px 14px",background:(tierFull?P.s2:P.s4)+"14",borderBottom:`1px solid ${(tierFull?P.s2:P.s4)}30`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:T.micro,fontWeight:800,padding:"2px 7px",borderRadius:4,background:tierFull?P.s2:P.s4,color:P.white,letterSpacing:1,textTransform:"uppercase"}}>{tierFull?"Owner · Full":"Free · Limited"}</span>
-                    <span style={{fontSize:T.body,fontWeight:800,color:tierFull?P.s2:P.charcoal,fontFamily:"'Fraunces',serif"}}>{tierFull?"Full report preview":"Limited report preview"}</span>
-                  </div>
-                  <button onClick={()=>setDemoOpen(o=>!o)} style={{padding:"6px 12px",borderRadius:7,background:demoOpen?"transparent":(tierFull?P.s2:P.s4),color:demoOpen?(tierFull?P.s2:P.charcoal):P.white,border:`1px solid ${tierFull?P.s2:P.s4}`,fontSize:T.small,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-                    {demoOpen ? "Hide" : "Preview a sample run"}
-                  </button>
-                </div>
-                {demoOpen && (
-                  <div style={{padding:"14px 16px"}}>
-                    <div style={{padding:"8px 10px",borderRadius:7,background:P.charcoal+"08",border:`1px dashed ${P.charcoal}25`,fontSize:T.small,color:P.charcoal,lineHeight:1.55,marginBottom:12}}>
-                      <strong>Sample preview.</strong> A static illustration of a completed {app.name} run. No AI has run yet, the live engine arrives with the Phase 2 backend. {tierFull ? "As owner you see the full report, every section in detail." : "On the free 60-minute tier you see the verdict and a short summary of each section. Full detail is part of a paid plan."}
-                    </div>
-                    {/* Headline verdict, shown to every tier */}
-                    <div style={{padding:"10px 12px",borderRadius:8,background:P.greenD+"10",border:`1px solid ${P.greenD}35`,marginBottom:12}}>
-                      <div style={{fontSize:T.micro,fontWeight:800,color:P.greenD,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>Headline verdict</div>
-                      <div style={{fontSize:T.body,fontWeight:700,color:P.charcoal}}>{verdict}</div>
-                    </div>
-                    {sections.map((sec,i)=>(
-                      <div key={i} style={{marginBottom:8,padding:"9px 11px",borderRadius:7,background:P.sand,border:`1px solid ${P.charcoal}12`}}>
-                        <div style={{fontSize:T.body,fontWeight:800,color:P.charcoal,marginBottom:2}}>{sec.n}</div>
-                        <div style={{fontSize:T.small,color:P.slate,lineHeight:1.55}}>{sec.s}</div>
-                        {tierFull ? (
-                          <div style={{marginTop:5,paddingTop:5,borderTop:`1px solid ${P.charcoal}12`,fontSize:T.small,color:P.charcoal,lineHeight:1.55}}>{sec.d}</div>
-                        ) : (
-                          <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6,fontSize:T.micro,fontWeight:700,color:P.s4}}>
-                            <span style={{fontSize:T.small}}>🔒</span> Full detail in a paid plan
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {tierFull ? (
-                      <>
-                        <div style={{marginTop:10,padding:"12px",borderRadius:8,background:P.navy,display:"flex",alignItems:"flex-end",gap:8,height:96}}>
-                          {[62,88,45,94,71].map((h,i)=>(
-                            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                              <div style={{width:"100%",height:`${h*0.6}px`,background:i===3?P.tealL:P.teal,borderRadius:"4px 4px 0 0"}}></div>
-                              <span style={{fontSize:T.micro,color:"#9BBCD6",fontWeight:700}}>{h}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{fontSize:T.micro,color:P.slate,marginTop:5,textAlign:"center",fontStyle:"italic"}}>Sample chart. Final runs render scored metrics from the Phase 2 engine.</div>
-                      </>
-                    ) : (
-                      <div style={{marginTop:10,padding:"12px 14px",borderRadius:8,background:P.s4+"12",border:`1px solid ${P.s4}40`,textAlign:"center"}}>
-                        <div style={{fontSize:T.small,fontWeight:800,color:P.charcoal,marginBottom:3}}>This is the limited preview</div>
-                        <div style={{fontSize:T.micro,color:P.slate,lineHeight:1.55}}>The full {app.name} report, every section in detail, scored charts, and the exportable DOCX and PDF are part of a paid plan. Pricing arrives in the next stage.</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              );
-            })()}
-
-            {/* Footer banner */}
-            <div style={{marginTop:14,padding:"10px 14px",borderRadius:8,background:P.teal,color:P.white,fontSize:T.small,fontWeight:700,letterSpacing:0.3}}>
-              {app.id==="ecios"
-                ? "APEX. Three iterations stated. References dated. No em dashes. One A4 cover letter. Multi vendor ATS. Mission vision values. Twelve interview scenarios. Full report in DOCX and PDF."
-                : "ARGO. Three iterations stated. References dated. No em dashes. Eight phase decision pipeline. Risk math P x I x D. Delivery and commercial ranking. Win probability. Full dashboard in DOCX and PDF."}
-            </div>
-
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ══════════════════════ PROJECTS ══════════════════════
   const ProjectsPage=()=>(
@@ -7710,7 +6368,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
               <div style={{fontSize:T.body,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
               <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:T.h3,fontWeight:700,fontFamily:"inherit"}}>×</button>
             </div>
-            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Tools Box"},{id:"contact",l:"Contact"}].map(n=>(
+            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Resources Management"},{id:"contact",l:"Contact"}].map(n=>(
               <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:T.lead,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
             ))}
             <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:T.lead,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
@@ -7730,7 +6388,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
           {id:"projects",l:"Projects",d:"Selected portfolio across MENA, Europe and beyond"},
           {id:"training",l:"Training Programs",d:"CSi licensed training, MENA and North America"},
           {id:"hub",l:"Knowledge Hub",d:"Free documents, calculators, standards, training links"},
-          {id:"tools",l:"Tools Box",d:"Modular apps: APEX career intelligence, ARGO bid decision system, more coming"},
+          {id:"tools",l:"Resources Management",d:"Capacity Grid, workforce capability intelligence (Resources Management)"},
           {id:"contact",l:"Contact",d:"Reach iStructural Group Inc."},
         ];
         const pageHits = q ? pages.filter(p=>p.l.toLowerCase().includes(q)||p.d.toLowerCase().includes(q)) : pages;
@@ -7822,7 +6480,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
         </div>
       )}
 
-      {/* ═══ PROJECT INQUIRY MODAL ═══ */}
+      {/* PROJECT INQUIRY MODAL */}
       {inquiryProj && <ProjectInquiryModal project={inquiryProj} onClose={()=>setInquiryProj(null)} />}
     </div>
   );

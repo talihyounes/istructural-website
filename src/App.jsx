@@ -734,10 +734,11 @@ export default function App(){
   const APP_PASSES = {
     capgrid: { stripeUrl: "", priceLabel: "CAD 29 / 24h" }, // Capacity Grid
   };
-  // All-apps bundle (the upsell). Empty = no bundle button.
+  // All-apps bundle RETIRED 2026-06-07: single tool now (Capacity Grid), no bundle.
+  // Kept as an empty disabled stub so existing references render nothing.
   const SITE_PASS = {
     stripeUrl: "",
-    priceLabel: "CAD 49 / 24h all-apps",
+    priceLabel: "",
     durationMinutes: PASS_DURATION_MINUTES,
   };
 
@@ -1036,7 +1037,7 @@ export default function App(){
           </div>
           {servicesOpen && (
             <div role="menu" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:P.navyM,borderRadius:8,border:`1px solid ${P.tealL}30`,boxShadow:"0 10px 30px rgba(0,0,0,0.5)",padding:5,minWidth:170,zIndex:20}}>
-              {[{id:"s1",l:"Management"},{id:"tools",l:"Resources Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"}].map(n=>(
+              {[{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"}].map(n=>(
                 <div key={n.id} role="menuitem" onClick={()=>{setPage(n.id);setServicesOpen(false);}} {...kbd(()=>{setPage(n.id);setServicesOpen(false);})} aria-current={page===n.id?"page":undefined}
                   style={{padding:"7px 10px",borderRadius:6,fontSize:T.small,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent"}}>{n.l}</div>
               ))}
@@ -1155,7 +1156,7 @@ export default function App(){
       </div>
 
       {/* TOOLS BOX teaser  introduces the modular app launcher */}
-      <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management" style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
+      <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management, Resources Management" style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
           {/* Apps-grid motif, matches the Resources Management page */}
           <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
@@ -1193,7 +1194,7 @@ export default function App(){
   // Projects and Training pages so the Resources Management is reachable everywhere, the
   // same way the Knowledge Hub strip is surfaced across the site.
   const ToolsBoxStrip=()=>(
-    <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management"
+    <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management, Resources Management"
       style={{padding:"16px 24px",background:`linear-gradient(135deg, ${P.navy} 0%, ${P.navyM} 100%)`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,cursor:"pointer"}}>
       <div style={{display:"flex",alignItems:"center",gap:14}}>
         <svg width="40" height="40" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink:0}}>
@@ -1228,9 +1229,10 @@ export default function App(){
           {n:"Business Strategy & Growth",d:"Market entry analysis, organizational structuring, partnership frameworks. Single collaborative environment for architects, engineers, builders, clients, owners."},
           {n:"Risk & Financial Management",d:"Quantitative risk modeling, cost-benefit analysis, insurance and bonding advisory. Data-driven resilient financial strategies."},
           {n:"Value Engineering (V.E.)",d:"Systematic function analysis. Creative V.E. solutions with remarkable ROI. Applied to high-rise, bridges, irregular structures."},
-          {n:"ROI & Investment Analysis",d:"Lifecycle cost analysis, capital allocation. LEED certification pathway support."}
+          {n:"ROI & Investment Analysis",d:"Lifecycle cost analysis, capital allocation. LEED certification pathway support."},
+          {n:"Resources Management",d:"Workforce capability intelligence. Map every office and person, see each office forte, and route projects to the right office from evidence. Delivered through Capacity Grid, our in-site app. Built on a deterministic core with a Hybrid RAG advisory layer.",app:true}
         ].map((o,i)=><div key={i} style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:14,padding:"12px 14px",borderRadius:8,background:i%2===0?P.s1L:"transparent",border:`1px solid ${P.s1}10`,marginBottom:5}}>
-          <div style={{fontSize:T.body,fontWeight:700,color:P.s1}}>{o.n}</div><div style={{fontSize:T.body,color:P.slate,lineHeight:1.6}}>{o.d}</div></div>)}
+          <div style={{fontSize:T.body,fontWeight:700,color:P.s1}}>{o.n}</div><div style={{fontSize:T.body,color:P.slate,lineHeight:1.6}}>{o.d}{o.app && <span onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management app" style={{display:"inline-block",marginLeft:8,color:P.s1,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>Open the app &#8594;</span>}</div></div>)}
         <div onClick={()=>{setPage("start");setSTab("s1");}} {...kbd(()=>{setPage("start");setSTab("s1");})} aria-label="Start a Management Inquiry" style={{marginTop:14,background:P.s1,color:P.white,padding:"9px 20px",borderRadius:8,fontSize:T.body,fontWeight:700,cursor:"pointer",display:"inline-block"}}>Start a Management Inquiry &#8594;</div>
       </div>
       <ToolsBoxStrip/>
@@ -1519,7 +1521,7 @@ export default function App(){
                   </a>
                 ))}
               </div>
-              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s3L,border:`1px dashed ${P.s3}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management, Resources Management" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s3L,border:`1px dashed ${P.s3}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
                 <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Want this turned into a stamped assessment? The Resources Management apps take a photo or report and triage damage for you.</div>
                 <span style={{color:P.s3,fontWeight:800,whiteSpace:"nowrap"}}>Open Resources Management &#8594;</span>
               </div>
@@ -1588,7 +1590,7 @@ export default function App(){
                   </a>
                 ))}
               </div>
-              <div onClick={()=>setPage("tools")} {...kbd(()=>setPage("tools"))} aria-label="Open Resources Management" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div onClick={()=>setPage("s1")} {...kbd(()=>setPage("s1"))} aria-label="Open Management, Resources Management" style={{marginTop:16,padding:"12px 16px",borderRadius:10,background:P.s2L,border:`1px dashed ${P.s2}40`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
                 <div style={{fontSize:T.small,color:P.charcoal,fontWeight:600,lineHeight:1.5}}>Turn capability data into decisions: Capacity Grid shows which office and which people fit a project.</div>
                 <span style={{color:P.s2,fontWeight:800,whiteSpace:"nowrap"}}>Open Resources Management &#8594;</span>
               </div>
@@ -2350,7 +2352,7 @@ export default function App(){
     <div>
       {/* HERO: Resources Management */}
       <HeroBg color1={P.navy} color2={P.navyM}><div style={{padding:"44px 28px 36px"}}>
-        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Resources Management · Powered by AI · Free Preview</div>
+        <div style={{fontSize:T.small,fontWeight:700,letterSpacing:3,color:P.tealL,textTransform:"uppercase",marginBottom:10}}>Management · Resources Management · Powered by AI · Free Preview</div>
         <h2 style={{fontFamily:"'Fraunces',serif",fontSize:T.h1,fontWeight:800,color:P.white,margin:0,lineHeight:1.1}}>Resources Management</h2>
         <p style={{fontSize:T.lead,color:"#9BBCD6",lineHeight:1.65,marginTop:10,maxWidth:680}}>Capacity Grid, the workforce capability intelligence tool under Management Services. Map every office and person, see each office forte, and route projects to the right office from evidence. Runs inside this site with a time-limited access key issued by request. Built on a deterministic core; Hybrid RAG architecture sits beside it as an advisory layer (deploys with the data).</p>
         <div style={{display:"flex",gap:8,marginTop:18,flexWrap:"wrap",alignItems:"center"}}>
@@ -2370,13 +2372,11 @@ export default function App(){
           ) : (
             <div style={{padding:"6px 12px",borderRadius:7,background:P.coral+"20",color:"#FFD1C9",border:`1px solid ${P.coral}40`,fontSize:T.body,fontWeight:700}}>No active session · {SITE_PASS.stripeUrl ? "Buy the all-apps pass below, or request a 60 minute key on any app card" : "Request a 60 minute key on any app card"}</div>
           )}
-          {!ownerMode && !sessionStillValid && SITE_PASS.stripeUrl && (
-            <a href={SITE_PASS.stripeUrl} target="_blank" rel="noopener noreferrer"
-              onClick={()=>trackEvent("buy_access_click",{pass:"all_apps_day",from:"tools_hero",price:SITE_PASS.priceLabel})}
-              aria-label="Buy the all-apps day pass"
-              style={{padding:"7px 14px",borderRadius:8,background:P.gold,color:"#3A2C00",fontSize:T.body,fontWeight:800,textDecoration:"none",letterSpacing:0.3}}>
-              Buy all-apps pass{SITE_PASS.priceLabel?` · ${SITE_PASS.priceLabel}`:""}
-            </a>
+          {!ownerMode && (
+            <div style={{padding:"6px 12px",borderRadius:7,background:P.navy,border:`1px solid ${P.tealL}33`,fontSize:T.small,fontWeight:700,color:"#9BBCD6",display:"inline-flex",alignItems:"center",gap:7}}>
+              <span style={{fontSize:9,fontWeight:800,letterSpacing:0.6,color:P.tealL,textTransform:"uppercase",padding:"2px 6px",borderRadius:4,background:P.tealL+"18"}}>Coming soon</span>
+              Hybrid RAG advisory service, deploys on your own data
+            </div>
           )}
           {!ownerMode && (
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
@@ -6368,7 +6368,7 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
               <div style={{fontSize:T.body,fontWeight:800,color:P.tealL,letterSpacing:2,textTransform:"uppercase"}}>iStructural</div>
               <button onClick={()=>setMobileNavOpen(false)} aria-label="Close menu" style={{width:30,height:30,borderRadius:7,background:"transparent",border:`1px solid ${P.tealL}30`,cursor:"pointer",color:P.white,fontSize:T.h3,fontWeight:700,fontFamily:"inherit"}}>×</button>
             </div>
-            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"tools",l:"Resources Management"},{id:"contact",l:"Contact"}].map(n=>(
+            {[{id:"home",l:"Home"},{id:"s1",l:"Management"},{id:"s2",l:"Design"},{id:"s3",l:"AI & Technology"},{id:"projects",l:"Projects"},{id:"training",l:"Training"},{id:"hub",l:"Knowledge Hub"},{id:"contact",l:"Contact"}].map(n=>(
               <div key={n.id} onClick={()=>{setPage(n.id);setMobileNavOpen(false);}} {...kbd(()=>{setPage(n.id);setMobileNavOpen(false);})} aria-current={page===n.id?"page":undefined} style={{padding:"11px 14px",borderRadius:8,fontSize:T.lead,fontWeight:600,cursor:"pointer",color:page===n.id?P.tealL:"#B5C8DD",background:page===n.id?P.teal+"20":"transparent",border:`1px solid ${page===n.id?P.tealL+"40":"transparent"}`}}>{n.l}</div>
             ))}
             <div onClick={()=>{setPage("start");setMobileNavOpen(false);}} {...kbd(()=>{setPage("start");setMobileNavOpen(false);})} aria-label="Start a Project" style={{marginTop:10,background:P.teal,color:P.white,padding:"12px 16px",borderRadius:8,fontSize:T.lead,fontWeight:700,cursor:"pointer",textAlign:"center"}}>Start a Project →</div>
@@ -6388,7 +6388,6 @@ ${v?`<span class="conf">CONFIRMED  by ${esc(v.by)} on ${esc(v.date)}${v.note?"  
           {id:"projects",l:"Projects",d:"Selected portfolio across MENA, Europe and beyond"},
           {id:"training",l:"Training Programs",d:"CSi licensed training, MENA and North America"},
           {id:"hub",l:"Knowledge Hub",d:"Free documents, calculators, standards, training links"},
-          {id:"tools",l:"Resources Management",d:"Capacity Grid, workforce capability intelligence (Resources Management)"},
           {id:"contact",l:"Contact",d:"Reach iStructural Group Inc."},
         ];
         const pageHits = q ? pages.filter(p=>p.l.toLowerCase().includes(q)||p.d.toLowerCase().includes(q)) : pages;

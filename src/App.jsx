@@ -605,23 +605,29 @@ export default function App() {
   const [opacity, setOpacity] = useState(0.12);
   const [drawer, setDrawer] = useState(false);
   const [owner, setOwner] = useState(false);
-  const OWNER_EMAIL = "info@istructgroup.com";
+  // Owner sign-in: passwordless 6-digit code emailed to info@istructgroup.com (challenge-response, matches /api/*-owner-code).
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpErr, setOtpErr] = useState("");
+  const [otpChallenge, setOtpChallenge] = useState("");
   const requestCode = async () => {
     setOtpErr("");
-    try { await fetch("/api/request_owner_code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: OWNER_EMAIL }) }); } catch (e) {}
-    setOtpSent(true);
+    try {
+      const r = await fetch("/api/request-owner-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.challenge) { setOtpChallenge(d.challenge); setOtpSent(true); return; }
+    } catch (e) {}
+    setOtpSent(true); // preview/offline: allow DEMO code
   };
   const verifyCode = async () => {
     setOtpErr("");
-    if (!otpCode.trim()) { setOtpErr("Enter the code from the email."); return; }
-    try {
-      const res = await fetch("/api/verify_owner_code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: OWNER_EMAIL, code: otpCode.trim() }) });
-      if (res.ok) { setOwner(true); return; }
-    } catch (e) {}
+    if (!otpCode.trim()) { setOtpErr("Enter the 6-digit code from the email."); return; }
     if (otpCode.trim().toUpperCase() === "DEMO") { setOwner(true); return; }
+    try {
+      const r = await fetch("/api/verify-owner-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challenge: otpChallenge, code: otpCode.trim() }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ok) { setOwner(true); return; }
+    } catch (e) {}
     setOtpErr("Invalid or expired code. Try again (use DEMO in preview).");
   };
   const [pCat, setPCat] = useState("All");
@@ -844,13 +850,13 @@ export default function App() {
               <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
                 <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
                 <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Grid</h3>
-                <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>No password. A one-time code is emailed to <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>; enter it here to unlock the owner tools.</p>
+                <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>No password. A one-time 6-digit code is emailed to <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>; enter it here to unlock the owner tools.</p>
                 {!otpSent ? (
                   <button className="btn" style={{background:P.teal}} onClick={requestCode}>Email me a one-time code</button>
                 ) : (
                   <div style={{display:"flex",flexDirection:"column",gap:10}}>
                     <div style={{fontSize:".8rem",color:"#7fe3a0"}}>Code sent to info@istructgroup.com. Enter it below.</div>
-                    <input value={otpCode} onChange={e=>setOtpCode(e.target.value)} placeholder="Enter code" style={{padding:"10px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(7,16,30,.45)",color:"#fff",fontSize:".95rem",fontFamily:"inherit",outline:"none",letterSpacing:".15em"}} />
+                    <input value={otpCode} onChange={e=>setOtpCode(e.target.value)} placeholder="6-digit code" style={{padding:"10px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(7,16,30,.45)",color:"#fff",fontSize:".95rem",fontFamily:"inherit",outline:"none",letterSpacing:".15em"}} />
                     <div style={{display:"flex",gap:8}}>
                       <button className="btn" style={{background:P.teal}} onClick={verifyCode}>Verify and enter</button>
                       <button className="lk" onClick={requestCode}>Resend</button>

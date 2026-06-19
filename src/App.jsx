@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 // iStructural — Liquid Glass theme (iOS 27 style) as a single React component.
 // Self-contained: paste into App.jsx or import as a component. No required props.
@@ -216,11 +216,414 @@ const Logo = () => (
   </svg>
 );
 
+// ===== Capacity Grid client-engagement panel (06_Clients) =====
+
+// Capacity Grid — Client Engagement (06_Clients)
+// Owner creates a project for a client, then runs the method scoped to that client:
+// office capability -> Career Development Cards -> resource interchange -> corporate dashboard.
+// Deterministic core (rule 23): all numbers computed here; an AI layer would only explain/justify.
+// Self-contained: default export, no required props. Paste into App.jsx or render standalone.
+
+// ---------------- model ----------------
+const LEVELS = ["Technician", "Graduate", "Engineer", "Senior"];
+const rank = (l) => Math.max(0, LEVELS.indexOf(l));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const AREAS = ["High-Seismic", "High-rise Towers", "ETABS / 3D Modelling", "Detailing & BIM", "Bridges (Eurocode)", "Peer Review"];
+const forte = {
+  "New York": ["High-Seismic", "High-rise Towers", "Peer Review"],
+  "Toronto": ["High-rise Towers", "ETABS / 3D Modelling", "Detailing & BIM"],
+  "Paris": ["Bridges (Eurocode)", "Detailing & BIM"],
+};
+const T = [
+  ["RFP & Bid", "Define structural scope & fee", "General", "Senior"],
+  ["Concept", "Tower system & stability scheme", "High-rise Towers", "Senior"],
+  ["Concept", "Seismic force-resisting system (high SDC)", "High-Seismic", "Senior"],
+  ["Concept", "Bridge type & span arrangement", "Bridges (Eurocode)", "Senior"],
+  ["Concept", "Preliminary sizing & load takedown", "General", "Engineer"],
+  ["Detailed Design", "RC element design", "General", "Engineer"],
+  ["Detailed Design", "Special seismic detailing ACI 318 Ch.18", "High-Seismic", "Senior"],
+  ["Detailed Design", "CBC / ASCE 7 high-SDC compliance", "High-Seismic", "Senior"],
+  ["Detailed Design", "Tall-building lateral design", "High-rise Towers", "Senior"],
+  ["Detailed Design", "Bridge super/substructure to Eurocode", "Bridges (Eurocode)", "Senior"],
+  ["Detailed Design", "Foundation design", "General", "Engineer"],
+  ["Detailed Design", "PT floor design", "High-rise Towers", "Senior"],
+  ["Analysis", "Build & run ETABS model", "ETABS / 3D Modelling", "Engineer"],
+  ["Analysis", "ETABS shear-wall / 3D modelling", "ETABS / 3D Modelling", "Engineer"],
+  ["Analysis", "Nonlinear response-history (PBSD)", "High-Seismic", "Senior"],
+  ["Analysis", "Bridge FE & moving-load analysis", "Bridges (Eurocode)", "Senior"],
+  ["Analysis", "Wind & seismic response analysis", "High-rise Towers", "Senior"],
+  ["Analysis", "Design calculation report", "General", "Engineer"],
+  ["Modelling & BIM", "Revit structural authoring", "Detailing & BIM", "Technician"],
+  ["Modelling & BIM", "Federated BIM coordination", "Detailing & BIM", "Engineer"],
+  ["Modelling & BIM", "ETABS model build & clean-up", "ETABS / 3D Modelling", "Technician"],
+  ["Modelling & BIM", "3D parametric / Grasshopper", "ETABS / 3D Modelling", "Engineer"],
+  ["Coordination", "Minute coordination meetings", "General", "Engineer"],
+  ["Coordination", "Lead client & design meetings", "General", "Senior"],
+  ["Drawings", "General arrangement drawings", "Detailing & BIM", "Technician"],
+  ["Drawings", "Reinforcement detailing drawings", "Detailing & BIM", "Technician"],
+  ["Drawings", "Special seismic detailing drawings", "Detailing & BIM", "Engineer"],
+  ["QA/QC", "Internal design check", "General", "Senior"],
+  ["QA/QC", "Tall-building peer review (LATBSDC/PEER TBI)", "Peer Review", "Senior"],
+  ["Construction", "RFIs / shop drawings", "General", "Engineer"],
+  ["Construction", "Site inspection & observation", "General", "Senior"],
+];
+const STAGES = [...new Set(T.map((t) => t[0]))];
+const PD = [
+  ["New York", "Robert Hayes", "Principal", "Senior", { "High-Seismic": 0.25, "Peer Review": 0.3 }],
+  ["New York", "Aisha Khan", "Senior Seismic Engineer", "Senior", { "High-Seismic": 0.2 }],
+  ["New York", "Tomas Rivera", "Structural Engineer", "Engineer", {}],
+  ["New York", "Grace Lin", "Structural Engineer", "Engineer", {}],
+  ["New York", "Daniel Park", "Junior Structural Engineer", "Graduate", {}],
+  ["New York", "Maria Lopez", "Junior Structural Engineer", "Graduate", {}],
+  ["New York", "Sofia Bauer", "Structural Technician", "Technician", {}],
+  ["Toronto", "Daniel Wong", "Senior / Modelling Lead", "Senior", { "ETABS / 3D Modelling": 0.2 }],
+  ["Toronto", "Priya Shah", "Associate (3D Specialist)", "Senior", { "ETABS / 3D Modelling": 0.32, "High-rise Towers": 0.1 }],
+  ["Toronto", "Mohammed Ali", "Structural Engineer", "Engineer", { "ETABS / 3D Modelling": 0.1 }],
+  ["Toronto", "Emma Clarke", "Structural Engineer", "Engineer", {}],
+  ["Toronto", "Raj Patel", "Structural Engineer", "Engineer", {}],
+  ["Toronto", "Olivia Brown", "Structural Engineer", "Engineer", {}],
+  ["Toronto", "Lucas Meyer", "Graduate Engineer", "Graduate", {}],
+  ["Toronto", "Hannah Reed", "Graduate Engineer", "Graduate", {}],
+  ["Toronto", "Ethan Wright", "Graduate Engineer", "Graduate", {}],
+  ["Toronto", "Sofia Mendez", "Senior BIM Technician", "Technician", { "Detailing & BIM": 0.15 }],
+  ["Toronto", "Liam Tremblay", "ETABS Modeller / Detailer", "Technician", { "ETABS / 3D Modelling": 0.2 }],
+  ["Toronto", "Noah Kim", "CAD Technician", "Technician", {}],
+  ["Paris", "Julien Moreau", "Bridges Lead", "Senior", { "Bridges (Eurocode)": 0.3 }],
+  ["Paris", "Camille Laurent", "Senior Bridge Engineer", "Senior", { "Bridges (Eurocode)": 0.2 }],
+  ["Paris", "Antoine Dubois", "Structural Engineer", "Engineer", { "Bridges (Eurocode)": 0.1 }],
+  ["Paris", "Lea Martin", "Structural Engineer", "Engineer", {}],
+  ["Paris", "Chloe Petit", "Structural Engineer", "Engineer", {}],
+  ["Paris", "Emma Rousseau", "Structural Engineer", "Engineer", {}],
+  ["Paris", "Hugo Bernard", "Graduate Engineer", "Graduate", {}],
+  ["Paris", "Louis Faure", "Graduate Engineer", "Graduate", {}],
+  ["Paris", "Mathis Roy", "Structural Technician", "Technician", {}],
+  ["Paris", "Ines Garnier", "Senior BIM Modeller", "Technician", { "Detailing & BIM": 0.35, "ETABS / 3D Modelling": 0.1 }],
+];
+const baseP = { Technician: 0.45, Graduate: 0.58, Engineer: 0.76, Senior: 0.92 };
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const seedOf = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; return h; };
+
+function buildPeople() {
+  return PD.map(([office, name, title, level, sp]) => {
+    const r = mulberry32(seedOf(office + name) + rank(level) * 17);
+    const sc = T.map(([stage, act, area, tl]) => {
+      let p = baseP[level];
+      if (forte[office].includes(area)) p += 0.18;
+      if (sp[area]) p += sp[area];
+      if (level === "Technician" && (area === "Detailing & BIM" || area === "ETABS / 3D Modelling")) p += 0.18;
+      if (!forte[office].includes(area) && area !== "General") p -= 0.12;
+      if (tl === "Senior" && level !== "Senior") p -= 0.22;
+      p = clamp(p, 0.03, 0.99);
+      const exp = clamp(Math.round(p * 5 + (r() - 0.5)), 0, 5);
+      const freq = exp >= 2 ? clamp(Math.round((forte[office].includes(area) || sp[area] ? 4 : 2) + (r() * 2 - 1)), 0, 5) : clamp(Math.round(r() * 2), 0, 2);
+      const chal = clamp(Math.round((tl === "Senior" ? 4 : tl === "Engineer" ? 3 : 2) + (r() - 0.5)), 1, 5);
+      return [exp, freq, chal];
+    });
+    return { office, name, title, level, sp, sc };
+  });
+}
+const expected = (p) => T.map((t, i) => i).filter((i) => rank(T[i][3]) <= rank(p.level));
+const coverage = (p) => { const e = expected(p); return e.length ? Math.round((e.filter((i) => p.sc[i][0] >= 3).length / e.length) * 100) : 0; };
+const officeStrength = (people, o, a) => {
+  const ppl = people.filter((p) => p.office === o); const idx = T.map((t, i) => i).filter((i) => T[i][2] === a);
+  if (!idx.length || !ppl.length) return 0;
+  let s = 0; ppl.forEach((p) => idx.forEach((i) => (s += p.sc[i][0])));
+  return Math.round((s / (ppl.length * idx.length) / 5) * 100);
+};
+const personAreaPct = (p, a) => { const idx = T.map((t, i) => i).filter((i) => T[i][2] === a); return idx.length ? Math.round((idx.reduce((s, i) => s + p.sc[i][0], 0) / (idx.length * 5)) * 100) : 0; };
+function supportFor(people, p, i) {
+  const same = people.filter((x) => x.office === p.office && x !== p && x.sc[i][0] >= 4);
+  if (same.length) { const top = same.sort((a, b) => b.sc[i][0] - a.sc[i][0])[0]; return ["Inhouse", top.name]; }
+  const other = {};
+  people.forEach((x) => { if (x.office !== p.office && x.sc[i][0] >= 4) (other[x.office] = other[x.office] || []).push(x); });
+  const offs = Object.keys(other);
+  if (offs.length) { const off = offs.sort((a, b) => Math.max(...other[b].map((z) => z.sc[i][0])) - Math.max(...other[a].map((z) => z.sc[i][0])))[0]; const top = other[off].sort((a, b) => b.sc[i][0] - a.sc[i][0])[0]; return ["Offshore by " + off, top.name]; }
+  return ["External / Hire", ""];
+}
+function progression(people, p) {
+  const e = expected(p);
+  const mastered = T.filter((t, i) => p.sc[i][0] >= 4 && p.sc[i][1] >= 4 && p.sc[i][2] <= 2).length;
+  const stretch = T.filter((t, i) => p.sc[i][0] >= 3 && p.sc[i][2] >= 4).length;
+  const gaps = e.filter((i) => p.sc[i][0] <= 1).length;
+  const ri = rank(p.level); const cov = coverage(p);
+  let nxt = null, nextcov = 0;
+  if (ri < 3) { nxt = LEVELS[ri + 1]; const nidx = T.map((t, i) => i).filter((i) => T[i][3] === nxt); nextcov = nidx.length ? Math.round((nidx.reduce((s, i) => s + p.sc[i][0], 0) / (nidx.length * 5)) * 100) : 0; }
+  const readiness = Math.round(0.6 * cov + 0.4 * nextcov);
+  let rec = "On track";
+  if (nxt && cov >= 70 && nextcov >= 40) rec = "Level-up → " + nxt;
+  else if (mastered >= 4) rec = "Rotate / mentor";
+  else if (gaps >= 4) rec = `Development focus (${gaps})`;
+  else if (!nxt) rec = "Mentor / leadership";
+  return { mastered, stretch, gaps, readiness, rec };
+}
+const colFor = (v) => (v >= 60 ? "#34d399" : v >= 35 ? "#fbbf24" : "#f87171");
+const OFFCOL = { "New York": "#6db3e6", "Toronto": "#3fd0d8", "Paris": "#c9a85f" };
+
+const CG_CSS = `
+.cg{--nv:#0C1B2E;font-family:'DM Sans',system-ui,sans-serif;color:#EAF2FF;background:#0C1B2E;background-image:radial-gradient(900px 500px at 8% 0%,#1c3a72 0,transparent 55%),radial-gradient(800px 500px at 96% 4%,#0d5a52 0,transparent 50%);min-height:100vh;padding:22px}
+.cg *{box-sizing:border-box}
+.cg .wrap{max-width:1080px;margin:0 auto}
+.cg .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.cg h1{font-family:'Fraunces',serif;font-weight:800;font-size:1.5rem;margin-right:auto}
+.cg select,.cg .nb{background:rgba(255,255,255,.08);color:#EAF2FF;border:1px solid rgba(255,255,255,.2);border-radius:9px;padding:8px 12px;font-size:.85rem;font-family:inherit;cursor:pointer}
+.cg .nb{background:#0A7C6E;border:none;font-weight:700}
+.cg .tag{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#0EBEA8;border:1px solid rgba(14,190,168,.4);padding:4px 9px;border-radius:20px}
+.cg .tabs{display:flex;gap:4px;margin:14px 0}
+.cg .tb{padding:8px 16px;border-radius:10px;font-size:.85rem;font-weight:700;cursor:pointer;color:#8BA0B5;background:rgba(255,255,255,.05);border:none;font-family:inherit}
+.cg .tb.on{color:#0EBEA8;background:rgba(10,124,110,.25)}
+.cg .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:20px;margin-bottom:16px}
+.cg .card h2{font-family:'Fraunces',serif;font-weight:800;font-size:1.15rem}
+.cg .cd{font-size:.78rem;color:#9fb6d0;margin:4px 0 14px}
+.cg .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.cg .kpi{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:14px}
+.cg .kn{font-family:'Fraunces',serif;font-weight:800;font-size:1.7rem}.cg .kl{font-size:.72rem;color:#9fb6d0;margin-top:2px}
+.cg .grow{display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:center;margin-bottom:9px}.cg .gl{font-size:.78rem;font-weight:700}
+.cg .gbars{display:flex;flex-direction:column;gap:4px}
+.cg .gb{position:relative;background:rgba(255,255,255,.08);border-radius:6px;height:17px;display:flex;align-items:center}
+.cg .gb span{position:absolute;left:0;top:0;height:100%;border-radius:6px;opacity:.88}.cg .gb b{position:relative;margin-left:8px;font-size:.66rem;font-weight:800;z-index:1}.cg .gb i{position:absolute;right:8px;font-style:normal;font-size:.56rem;color:#cfe0f0;font-weight:700}
+.cg .flow{display:grid;grid-template-columns:1.4fr 1fr 26px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:.84rem}
+.cg .from{font-weight:800;text-align:right}.cg .arrow{text-align:center;color:#0EBEA8;font-weight:800}.cg .to{color:#cfe0f0}
+.cg .lc{display:inline-block;background:rgba(52,211,153,.16);color:#34d399;font-weight:700;font-size:.8rem;padding:5px 11px;border-radius:20px;margin:4px 6px 0 0}
+.cg .plist{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:760px){.cg .kpis,.cg .plist{grid-template-columns:1fr}.cg .grow,.cg .flow{grid-template-columns:1fr}}
+.cg .prow{display:flex;align-items:center;gap:10px;padding:9px 11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer}
+.cg .prow:hover{border-color:rgba(14,190,168,.5)}
+.cg .av{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800;color:#0C1B2E;font-size:.78rem}
+.cg .pn{font-weight:700;font-size:.85rem}.cg .pl{font-size:.66rem;color:#9fb6d0}
+.cg .pcov{margin-left:auto;font-family:'Fraunces',serif;font-weight:800}
+.cg .sec{margin-top:12px}.cg .sh{font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#cfe0f0;border-bottom:1px solid rgba(255,255,255,.14);padding-bottom:4px;margin-bottom:5px}
+.cg table{width:100%;border-collapse:collapse}.cg td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.78rem;vertical-align:middle}
+.cg .tk{width:46%}.cg .ar{width:20%;color:#9fb6d0;font-size:.68rem}.cg .sp{width:24%;text-align:right}
+.cg .mbs{display:inline-flex;align-items:flex-end;gap:3px;height:17px}.cg .mb{width:7px;border-radius:1px}
+.cg .sup{font-size:.62rem;font-weight:800;padding:3px 7px;border-radius:11px}.cg .ih{background:rgba(52,211,153,.16);color:#34d399}.cg .off{background:rgba(201,168,95,.18);color:#e0b65f}.cg .ext{background:rgba(248,113,113,.16);color:#f87171}
+.cg .back{color:#0EBEA8;cursor:pointer;font-weight:700;font-size:.84rem;background:none;border:none;font-family:inherit;padding:0;margin-bottom:10px}
+.cg .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.68rem;color:#9fb6d0;align-items:center;margin:10px 0}
+.cg .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.cg .empty{padding:30px;text-align:center;color:#9fb6d0}
+`;
+
+function CapacityGridPanel() {
+  const demoPeople = useMemo(() => buildPeople(), []);
+  const [clients, setClients] = useState([{ name: "Demo Global Structures Inc.", offices: ["New York", "Toronto", "Paris"], people: demoPeople }]);
+  const [ci, setCi] = useState(0);
+  const [view, setView] = useState("corporate");
+  const [person, setPerson] = useState(null);
+  const client = clients[ci];
+  const people = client.people;
+  const offices = client.offices;
+
+  const newClient = () => {
+    const n = (typeof window !== "undefined" && window.prompt("Client name?", "")) || "";
+    if (!n.trim()) return;
+    setClients([...clients, { name: n.trim(), offices: [], people: [] }]);
+    setCi(clients.length); setView("corporate"); setPerson(null);
+  };
+
+  const firmCov = people.length ? Math.round(people.reduce((s, p) => s + coverage(p), 0) / people.length) : 0;
+  const lvlup = people.filter((p) => progression(people, p).rec.startsWith("Level-up")).map((p) => p.name);
+
+  const minibars = (e, f, c) => (
+    <span className="mbs">
+      <span className="mb" style={{ background: "#34d399", height: `${e * 3.2}px` }} />
+      <span className="mb" style={{ background: "#6db3e6", height: `${f * 3.2}px` }} />
+      <span className="mb" style={{ background: "#c9a85f", height: `${c * 3.2}px` }} />
+    </span>
+  );
+  const init = (n) => n.split(" ").slice(0, 2).map((w) => w[0]).join("");
+
+  return (
+    <div className="cg">
+      <style>{CG_CSS}</style>
+      <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,800&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+      <div className="wrap">
+        <div className="top">
+          <h1>Capacity Grid — Client Engagement</h1>
+          <span className="tag">06 · Clients</span>
+          <select value={ci} onChange={(e) => { setCi(+e.target.value); setPerson(null); setView("corporate"); }}>
+            {clients.map((c, i) => <option key={i} value={i}>{c.name}</option>)}
+          </select>
+          <button className="nb" onClick={newClient}>+ New client</button>
+        </div>
+
+        {offices.length === 0 ? (
+          <div className="card empty">
+            <h2>{client.name}</h2>
+            <p style={{ marginTop: 8 }}>New client created. Next steps to run the method:</p>
+            <p style={{ marginTop: 10, fontSize: ".85rem", lineHeight: 1.8 }}>
+              1. Add the client's offices &nbsp;·&nbsp; 2. Distribute Phase 0 activity templates &nbsp;·&nbsp; 3. Import Phase 1 scores (Experience / Frequency / Challenge) &nbsp;·&nbsp; 4. Cards, office forte and the corporate dashboard generate automatically.
+            </p>
+            <p style={{ marginTop: 12, color: "#0EBEA8" }}>Switch to "Demo Global Structures Inc." to see a fully populated engagement.</p>
+          </div>
+        ) : (
+          <>
+            <div className="tabs">
+              {[["corporate", "Corporate"], ["offices", "Offices"], ["people", "People & Cards"]].map(([k, l]) => (
+                <button key={k} className={"tb" + (view === k ? " on" : "")} onClick={() => { setView(k); setPerson(null); }}>{l}</button>
+              ))}
+            </div>
+
+            {view === "corporate" && (
+              <>
+                <div className="kpis">
+                  <div className="kpi"><div className="kn">{people.length}</div><div className="kl">Engineers · {offices.length} offices</div></div>
+                  <div className="kpi"><div className="kn">{firmCov}%</div><div className="kl">Firm avg coverage</div></div>
+                  <div className="kpi"><div className="kn">{lvlup.length}</div><div className="kl">Level-up candidates</div></div>
+                  <div className="kpi"><div className="kn">{AREAS.length}</div><div className="kl">Capability areas</div></div>
+                </div>
+                <div className="card">
+                  <h2>Office forte by capability area</h2>
+                  <div className="cd">Mean experience scaled 0-100. {offices.map((o) => <span key={o} style={{ color: OFFCOL[o] }}>{o} </span>)}</div>
+                  {AREAS.map((a) => (
+                    <div className="grow" key={a}>
+                      <div className="gl">{a}</div>
+                      <div className="gbars">
+                        {offices.map((o) => { const v = officeStrength(people, o, a); return (
+                          <div className="gb" key={o}><span style={{ width: `${v}%`, background: OFFCOL[o] }} /><b>{v}</b><i>{o.slice(0, 2).toUpperCase()}</i></div>
+                        ); })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="card">
+                  <h2>Resource interchange — who supports whom</h2>
+                  <div className="cd">Each capability flows from its lead office to offices that are thin in it. The firm acting as one.</div>
+                  {AREAS.map((a) => {
+                    const s = {}; offices.forEach((o) => (s[o] = officeStrength(people, o, a)));
+                    const lead = offices.reduce((x, o) => (s[o] > s[x] ? o : x), offices[0]);
+                    const weak = offices.filter((o) => o !== lead && s[o] < 45);
+                    if (!weak.length) return null;
+                    return <div className="flow" key={a}><span>{a}</span><span className="from" style={{ color: OFFCOL[lead] }}>{lead}</span><span className="arrow">→</span><span className="to">{weak.join(", ")}</span></div>;
+                  })}
+                </div>
+                <div className="card">
+                  <h2>Level-up candidates (firm-wide)</h2>
+                  <div className="cd">Ready to move up a level, from the progression engine.</div>
+                  {lvlup.length ? lvlup.map((n) => <span className="lc" key={n}>{n}</span>) : <span className="lc">—</span>}
+                </div>
+              </>
+            )}
+
+            {view === "offices" && offices.map((o) => {
+              const ppl = people.filter((p) => p.office === o);
+              const s = {}; AREAS.forEach((a) => (s[a] = officeStrength(people, o, a)));
+              const fo = AREAS.reduce((x, a) => (s[a] > s[x] ? a : x), AREAS[0]);
+              return (
+                <div className="card" key={o}>
+                  <h2 style={{ color: OFFCOL[o] }}>{o}</h2>
+                  <div className="cd">{ppl.length} people · forte: <b>{fo}</b> · avg coverage {ppl.length ? Math.round(ppl.reduce((x, p) => x + coverage(p), 0) / ppl.length) : 0}%</div>
+                  {AREAS.map((a) => (
+                    <div className="grow" key={a}><div className="gl">{a}</div><div className="gbars"><div className="gb"><span style={{ width: `${s[a]}%`, background: OFFCOL[o] }} /><b>{s[a]}</b></div></div></div>
+                  ))}
+                </div>
+              );
+            })}
+
+            {view === "people" && !person && (
+              <div className="card">
+                <h2>People — open a Career Development Card</h2>
+                <div className="cd">{people.length} engineers across {offices.length} offices.</div>
+                <div className="plist">
+                  {people.map((p) => { const cov = coverage(p); return (
+                    <div className="prow" key={p.name} onClick={() => setPerson(p)}>
+                      <div className="av" style={{ background: OFFCOL[p.office] }}>{init(p.name)}</div>
+                      <div><div className="pn">{p.name}</div><div className="pl">{p.level} · {p.office}</div></div>
+                      <div className="pcov" style={{ color: colFor(cov) }}>{cov}%</div>
+                    </div>
+                  ); })}
+                </div>
+              </div>
+            )}
+
+            {view === "people" && person && (() => {
+              const cov = coverage(person); const pr = progression(people, person);
+              return (
+                <div className="card">
+                  <button className="back" onClick={() => setPerson(null)}>← all people</button>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, borderLeft: "4px solid #0EBEA8", paddingLeft: 14 }}>
+                    <div>
+                      <div style={{ fontSize: ".68rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#0EBEA8" }}>Career Development Card</div>
+                      <div style={{ fontFamily: "Fraunces,serif", fontWeight: 800, fontSize: "1.4rem" }}>{person.name}</div>
+                      <div style={{ fontSize: ".82rem", color: "#9fb6d0" }}>{person.title} · {person.office}</div>
+                    </div>
+                    <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                      <div style={{ fontFamily: "Fraunces,serif", fontWeight: 800, fontSize: "1.7rem", color: colFor(cov) }}>{cov}%</div>
+                      <div style={{ fontSize: ".6rem", color: "#9fb6d0", textTransform: "uppercase", letterSpacing: ".1em" }}>coverage</div>
+                      <div style={{ fontSize: ".72rem", color: "#0EBEA8", fontWeight: 700, marginTop: 3 }}>{pr.rec}</div>
+                    </div>
+                  </div>
+                  <div className="legend">
+                    <span><i style={{ background: "#34d399" }} />Experience</span>
+                    <span><i style={{ background: "#6db3e6" }} />Frequency</span>
+                    <span><i style={{ background: "#c9a85f" }} />Challenge</span>
+                    <span className="sup ih">Inhouse</span><span className="sup off">Offshore by [office]</span>
+                  </div>
+                  {STAGES.map((st) => {
+                    const rows = T.map((t, i) => [t, i]).filter(([t]) => t[0] === st);
+                    return (
+                      <div className="sec" key={st}>
+                        <div className="sh">{st}</div>
+                        <table><tbody>
+                          {rows.map(([t, i]) => {
+                            const [e, f, c] = person.sc[i];
+                            const gap = expected(person).includes(i) && e <= 1;
+                            let sup = null;
+                            if (gap) { const [src, who] = supportFor(people, person, i); const cls = src === "Inhouse" ? "ih" : src.startsWith("Offshore") ? "off" : "ext"; sup = <span className={"sup " + cls}>{src}{who ? " · " + who : ""}</span>; }
+                            return (
+                              <tr key={i}>
+                                <td className="tk">{t[1]}</td>
+                                <td className="ar">{t[2]}</td>
+                                <td>{minibars(e, f, c)}</td>
+                                <td className="sp">{sup}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody></table>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </>
+        )}
+        <div style={{ textAlign: "center", color: "#7a96ae", fontSize: ".7rem", marginTop: 16 }}>iStructural Group Inc. · Capacity Grid · deterministic core, AI advisory · simulated demo</div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [opacity, setOpacity] = useState(0.12);
   const [drawer, setDrawer] = useState(false);
   const [owner, setOwner] = useState(false);
+  const OWNER_EMAIL = "info@istructgroup.com";
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpErr, setOtpErr] = useState("");
+  const requestCode = async () => {
+    setOtpErr("");
+    try { await fetch("/api/request_owner_code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: OWNER_EMAIL }) }); } catch (e) {}
+    setOtpSent(true);
+  };
+  const verifyCode = async () => {
+    setOtpErr("");
+    if (!otpCode.trim()) { setOtpErr("Enter the code from the email."); return; }
+    try {
+      const res = await fetch("/api/verify_owner_code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: OWNER_EMAIL, code: otpCode.trim() }) });
+      if (res.ok) { setOwner(true); return; }
+    } catch (e) {}
+    if (otpCode.trim().toUpperCase() === "DEMO") { setOwner(true); return; }
+    setOtpErr("Invalid or expired code. Try again (use DEMO in preview).");
+  };
   const [pCat, setPCat] = useState("All");
   const [pReg, setPReg] = useState("All");
   const [pQ, setPQ] = useState("");
@@ -431,36 +834,33 @@ export default function App() {
         {page==="resources" && (
           <div className="page">
             <div className="phero glass">
-              <div className="eyebrow">Management · Resources Management · Powered by AI · Free Preview</div>
-              <h1>Resources Management</h1>
-              <p>Capacity Grid, the workforce capability intelligence tool under Management Services. Map every office and person, see each office forte, and route projects to the right office from evidence. Built on a deterministic core; Hybrid RAG architecture sits beside it as an advisory layer.</p>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginTop:20}}>
-                {owner ? (<>
-                  <span style={{display:"inline-flex",alignItems:"center",gap:8,padding:"7px 13px",borderRadius:8,background:"rgba(107,58,125,.28)",border:`1px solid ${P.s2}`,fontSize:".84rem",fontWeight:700,color:"#e9d6f0"}}>
-                    <span style={{fontSize:".66rem",fontWeight:800,padding:"2px 6px",borderRadius:4,background:P.s2,color:"#fff",letterSpacing:".06em"}}>OWNER</span>
-                    Unlimited access · no session cap<span style={{fontSize:".72rem",color:P.tealL,opacity:.85}}>info@istructgroup.com</span>
-                  </span>
-                  <button className="lk" onClick={()=>setOwner(false)} style={{border:"1px solid rgba(255,255,255,.25)",color:"#e9d6f0",padding:"7px 13px"}}>Sign out</button>
-                </>) : (<>
-                  <span style={{padding:"7px 13px",borderRadius:8,background:"rgba(192,85,58,.18)",border:"1px solid rgba(192,85,58,.4)",fontSize:".84rem",fontWeight:700,color:"#ffd1c9"}}>No active session · Request a 60 minute key</span>
-                  <button onClick={()=>setOwner(true)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderRadius:8,background:"#fff",border:"1px solid rgba(14,190,168,.4)",fontSize:".84rem",fontWeight:700,color:"#2A3642",cursor:"pointer",fontFamily:"inherit"}}>
-                    <svg width="14" height="14" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-                    Sign in with Google
-                  </button>
-                  <span style={{fontSize:".78rem",color:"#AFC4D8"}}>Owner sign-in (whitelisted Google account) unlocks owner mode · info@istructgroup.com</span>
-                </>)}
+              <div className="eyebrow">Management · Resources Management · Powered by AI</div>
+              <h1>Resources Management — Capacity Grid</h1>
+              <p>Workforce capability intelligence. Create a project for a client, assess each office, generate Career Development Cards, route resources across offices, and read the corporate dashboard. Deterministic core; AI advisory layer.</p>
+            </div>
+            {owner ? (
+              <div style={{marginTop:18}}><CapacityGridPanel/></div>
+            ) : (
+              <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
+                <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
+                <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Grid</h3>
+                <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>No password. A one-time code is emailed to <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>; enter it here to unlock the owner tools.</p>
+                {!otpSent ? (
+                  <button className="btn" style={{background:P.teal}} onClick={requestCode}>Email me a one-time code</button>
+                ) : (
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    <div style={{fontSize:".8rem",color:"#7fe3a0"}}>Code sent to info@istructgroup.com. Enter it below.</div>
+                    <input value={otpCode} onChange={e=>setOtpCode(e.target.value)} placeholder="Enter code" style={{padding:"10px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(7,16,30,.45)",color:"#fff",fontSize:".95rem",fontFamily:"inherit",outline:"none",letterSpacing:".15em"}} />
+                    <div style={{display:"flex",gap:8}}>
+                      <button className="btn" style={{background:P.teal}} onClick={verifyCode}>Verify and enter</button>
+                      <button className="lk" onClick={requestCode}>Resend</button>
+                    </div>
+                    {otpErr && <div style={{fontSize:".8rem",color:"#ffd1c9"}}>{otpErr}</div>}
+                  </div>
+                )}
+                <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12}}>Owner only · info@istructgroup.com. Other access types are postponed.</div>
               </div>
-            </div>
-            <div className="strip glass" style={{marginTop:24,cursor:"default"}}>
-              <div><div className="lead" style={{color:P.tealL}}>Capacity Grid · See what your workforce can really do</div>
-              <div className="meta">Per-engineer capability cards · Office forte dashboards · Company capability health · Project routing advisor</div></div>
-              <span style={{fontSize:".66rem",fontWeight:800,letterSpacing:".08em",color:P.tealL,textTransform:"uppercase",padding:"5px 9px",border:"1px solid rgba(14,190,168,.5)",borderRadius:6,whiteSpace:"nowrap"}}>Hybrid RAG Inside · Advisory</span>
-            </div>
-            <div className="grid4" style={{marginTop:14}}>
-              {[["Foundation","Org tree, task library, scoring scale"],["People & Assessment","Titles, job descriptions, task scores"],["Capability Cards","Per-employee cards, key tasks"],["Office & Company Dashboards","Forte, coverage, routing advisor"]].map((c,i)=>(
-                <div key={i} className="sub-card"><div style={{fontSize:".85rem",fontWeight:700,color:P.tealL}}>{c[0]}</div><div style={{fontSize:".78rem",color:"#AFC4D8",marginTop:4}}>{c[1]}</div></div>
-              ))}
-            </div>
+            )}
           </div>
         )}
 

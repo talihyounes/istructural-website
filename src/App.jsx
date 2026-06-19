@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 // iStructural — Liquid Glass theme (iOS 27 style) as a single React component.
 // Self-contained: paste into App.jsx or import as a component. No required props.
@@ -605,31 +605,39 @@ export default function App() {
   const [opacity, setOpacity] = useState(0.12);
   const [drawer, setDrawer] = useState(false);
   const [owner, setOwner] = useState(false);
-  // Owner sign-in: passwordless 6-digit code emailed to info@istructgroup.com (challenge-response, matches /api/*-owner-code).
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpErr, setOtpErr] = useState("");
-  const [otpChallenge, setOtpChallenge] = useState("");
-  const requestCode = async () => {
-    setOtpErr("");
+  // Owner sign-in via Google, restricted to the whitelist. No password is shared with the site. No DNS/email needed.
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [authErr, setAuthErr] = useState("");
+  const OWNER_WHITELIST = ["info@istructgroup.com", "talih.younes@istructgroup.com", "talih.younes@me.com"];
+  const FIREBASE_CONFIG = { apiKey: "AIzaSyASG9l1UDzQAFm0o24cSXi0k9HYtiqQm9w", authDomain: "istructural-edge.firebaseapp.com", projectId: "istructural-edge", storageBucket: "istructural-edge.firebasestorage.app", messagingSenderId: "125762505073", appId: "1:125762505073:web:452800fefee54191b38ed0" };
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.firebase && window.firebase.auth) return;
+    const load = (src) => new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.async = true; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    (async () => {
+      try {
+        await load("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
+        await load("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js");
+        if (!window.firebase.apps || window.firebase.apps.length === 0) window.firebase.initializeApp(FIREBASE_CONFIG);
+      } catch (e) { setAuthErr("Sign-in failed to load."); }
+    })();
+  }, []);
+  const signInGoogle = async () => {
+    setAuthErr("");
+    if (!(window.firebase && window.firebase.auth)) { setAuthErr("Still loading, try again in a moment."); return; }
     try {
-      const r = await fetch("/api/request-owner-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && d.challenge) { setOtpChallenge(d.challenge); setOtpSent(true); return; }
-    } catch (e) {}
-    setOtpSent(true); // preview/offline: allow DEMO code
+      const provider = new window.firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const result = await window.firebase.auth().signInWithPopup(provider);
+      const email = ((result && result.user && result.user.email) || "").toLowerCase();
+      if (OWNER_WHITELIST.map((e) => e.toLowerCase()).includes(email)) { setOwner(true); setOwnerEmail(email); }
+      else { try { await window.firebase.auth().signOut(); } catch (e2) {} setAuthErr("This account is not authorised. Use info@istructgroup.com."); }
+    } catch (e) {
+      const code = (e && e.code) || "";
+      setAuthErr(code.indexOf("popup-closed") >= 0 || code.indexOf("cancelled") >= 0 ? "Sign-in cancelled." : "Sign-in failed: " + (e && e.message || code));
+    }
   };
-  const verifyCode = async () => {
-    setOtpErr("");
-    if (!otpCode.trim()) { setOtpErr("Enter the 6-digit code from the email."); return; }
-    if (otpCode.trim().toUpperCase() === "DEMO") { setOwner(true); return; }
-    try {
-      const r = await fetch("/api/verify-owner-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challenge: otpChallenge, code: otpCode.trim() }) });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && d.ok) { setOwner(true); return; }
-    } catch (e) {}
-    setOtpErr("Invalid or expired code. Try again (use DEMO in preview).");
-  };
+  const signOutOwner = async () => { try { if (window.firebase && window.firebase.auth) await window.firebase.auth().signOut(); } catch (e) {} setOwner(false); setOwnerEmail(""); };
   const [pCat, setPCat] = useState("All");
   const [pReg, setPReg] = useState("All");
   const [pQ, setPQ] = useState("");
@@ -845,26 +853,20 @@ export default function App() {
               <p>Workforce capability intelligence. Create a project for a client, assess each office, generate Career Development Cards, route resources across offices, and read the corporate dashboard. Deterministic core; AI advisory layer.</p>
             </div>
             {owner ? (
-              <div style={{marginTop:18}}><CapacityGridPanel/></div>
+              <div style={{marginTop:18}}>
+                <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+                  <button className="lk" onClick={signOutOwner}>Sign out ({ownerEmail})</button>
+                </div>
+                <CapacityGridPanel/>
+              </div>
             ) : (
               <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
                 <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
                 <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Grid</h3>
-                <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>No password. A one-time 6-digit code is emailed to <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>; enter it here to unlock the owner tools.</p>
-                {!otpSent ? (
-                  <button className="btn" style={{background:P.teal}} onClick={requestCode}>Email me a one-time code</button>
-                ) : (
-                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    <div style={{fontSize:".8rem",color:"#7fe3a0"}}>Code sent to info@istructgroup.com. Enter it below.</div>
-                    <input value={otpCode} onChange={e=>setOtpCode(e.target.value)} placeholder="6-digit code" style={{padding:"10px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(7,16,30,.45)",color:"#fff",fontSize:".95rem",fontFamily:"inherit",outline:"none",letterSpacing:".15em"}} />
-                    <div style={{display:"flex",gap:8}}>
-                      <button className="btn" style={{background:P.teal}} onClick={verifyCode}>Verify and enter</button>
-                      <button className="lk" onClick={requestCode}>Resend</button>
-                    </div>
-                    {otpErr && <div style={{fontSize:".8rem",color:"#ffd1c9"}}>{otpErr}</div>}
-                  </div>
-                )}
-                <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12}}>Owner only · info@istructgroup.com. Other access types are postponed.</div>
+                <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>Owner only. Sign in with the Google account <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>. No password is shared with this site.</p>
+                <button onClick={signInGoogle} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"#fff",color:"#2A3642",border:"none",fontWeight:700,fontSize:".9rem",cursor:"pointer",fontFamily:"inherit"}}><svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
+                {authErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{authErr}</div>}
+                <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
               </div>
             )}
           </div>

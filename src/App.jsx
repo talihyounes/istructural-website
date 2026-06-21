@@ -69,6 +69,44 @@ const START_FIELDS = {
   s4:[["Contact Name"],["Email Address"],["Company / Organization"],["Team Size","1 to 5|6 to 10|11 to 20|21 to 50|50 or more"],["Software","ETABS|SAP2000|CSiBridge|SAFE|RAM Concept|ADAPT PT|Other"],["Training Format","In-person|Online live|Hybrid"],["Additional Notes","ta"]],
 };
 
+// ===== NPPE Study Tutor (Resources app, request-gated) =====
+const NPPE_WHY = [
+  ["Grounded in your own materials","Built on your own course materials, never invented examples. Every answer cites where it came from."],
+  ["The exclusive iStructural Hybrid RAG engine","It retrieves the governing rule before answering, and refuses to guess."],
+  ["Organized to the official blueprint","Mapped to the six official NPPE blueprint areas, heaviest-weighted areas first."],
+  ["A method backed by learning science","Drawn from current academic research: you learn by recalling, not rereading."],
+  ["An honest readiness check","Checked on questions you never see. The light turns green at 75%, a margin above the pass line."],
+  ["Province-aware","Grounds jurisdiction answers in your own province's Act and code of ethics."],
+  ["A phone-first app experience","Progress rings, a pace race, streaks, and a rank you climb. Built to keep you moving."],
+];
+const NPPE_STEPS = [
+  ["1","Request access by email","iStructural sends you the engine and short setup instructions."],
+  ["2","Set it up in your own account","Your own Claude account and Google Drive, with your own course materials. Guided step by step."],
+  ["3","Study","The app paces you to your exam date and tells you, honestly, when you are ready."],
+];
+const NPPE_FAQ = [
+  ["Why not just use Claude directly?","This is tuned to your own materials, with no invented examples. Answers are grounded in what you uploaded and cite their source. It runs on the exclusive iStructural Hybrid RAG engine, organized to the official NPPE blueprint, with a method drawn from current learning-science research."],
+  ["How much will it cost me?","The engine is free. You bring your own Claude account and your own course materials."],
+  ["What about my materials and privacy?","Your materials live in your own Google Drive. Nothing is shared with iStructural, Anthropic, or Claude. Your study data stays yours."],
+  ["Is it hard to set up? What do I need?","A Claude account (Free works; Pro or higher gives the full visual app), your course materials, a Google Drive, and the short setup instructions we send you."],
+  ["Will it actually get me ready?","Your readiness is checked on questions you never see. The light turns green at 75%, above the pass line, so the verdict is honest."],
+  ["How much time per day, and what if my date changes?","You set the pace and can change it anytime. The plan recalculates around your exam date."],
+  ["Is it boring, like flashcards?","No. Short reads then quick recall, progress rings, a pace race, streaks, and a rank you climb."],
+  ["Which province does it cover?","The NPPE is national. The engine grounds jurisdiction answers in your own province's Act and code of ethics, wherever in Canada you are seeking your licence."],
+];
+const NPPE_FIELDS = [
+  {k:"fullName",l:"Full name",t:"text",req:true},
+  {k:"occupation",l:"Occupation / title",t:"text",req:true},
+  {k:"company",l:"Company (optional)",t:"text",req:false},
+  {k:"university",l:"University",t:"text",req:true},
+  {k:"email",l:"Official contact email",t:"email",req:true},
+  {k:"mobile",l:"Mobile number",t:"tel",req:true},
+  {k:"app",l:"App interested in",t:"preset",req:true,v:"NPPE"},
+  {k:"plan",l:"Claude plan",t:"select",req:true,opts:["Free","Pro or higher"]},
+];
+const NPPE_CONSENT = "I agree that iStructural Group Inc. may contact me about my access request and store these details for that purpose.";
+const NPPE_DISCLAIMER = "NPPE Study Tutor is an independent exam study-support aid, powered by the iStructural Hybrid RAG Engine (sole property of iStructural Group Inc.). iStructural Group Inc. is not a regulator, does not offer engineering services, and is not affiliated with, endorsed by, or authorized by any provincial engineering regulator (including PEO, APEGA, EGBC and others), Engineers Canada, or any NPPE administrator. The names \"NPPE\", \"P.Eng\", and \"Professional Engineer\" are used for identification and descriptive reference only; using this tool does not grant, advance, or relate to any licence or title. Output quality depends on the materials you supply; iStructural does not host, verify, or endorse them, gives no legal advice, and does not guarantee any exam outcome. Confirm all current rules and requirements with your provincial regulator. For personal study only.";
+
 const CSS = `
 .lg{--glass-blur:22px;--glass-stroke:rgba(255,255,255,.20);--glass-highlight:rgba(255,255,255,.42);--radius:16px;
   font-family:'DM Sans',system-ui,sans-serif;color:#EAF2FF;position:relative;min-height:100vh;overflow-x:hidden;background:#0C1B2E}
@@ -643,6 +681,19 @@ export default function App() {
   const [pQ, setPQ] = useState("");
   const [pAll, setPAll] = useState(false);
   const [tab, setTab] = useState("s1");
+  const [npf, setNpf] = useState({app:"NPPE"});
+  const [npConsent, setNpConsent] = useState(false);
+  const [npErr, setNpErr] = useState("");
+  const npValid = NPPE_FIELDS.every(f => !f.req || (f.t==="preset") || (npf[f.k] && String(npf[f.k]).trim())) && npConsent;
+  const submitNppe = () => {
+    if (!npValid) { setNpErr("Please complete all required fields and tick the consent box."); return; }
+    setNpErr("");
+    const lines = NPPE_FIELDS.map(f => `${f.l.replace(" (optional)","")}: ${f.t==="preset" ? (f.v||"NPPE") : (npf[f.k]||"")}`);
+    lines.push(`Consent: Yes — ${NPPE_CONSENT}`);
+    const body = encodeURIComponent("NPPE Study Tutor access request\n\n" + lines.join("\n"));
+    const subject = encodeURIComponent("NPPE Study Tutor — access request");
+    window.location.href = `mailto:info@istructgroup.com?subject=${subject}&body=${body}`;
+  };
 
   const go = (id) => { setPage(id); setDrawer(false); window.scrollTo({top:0}); };
   const isSvc = ["s1","s2","s3"].includes(page);
@@ -848,10 +899,25 @@ export default function App() {
         {page==="resources" && (
           <div className="page">
             <div className="phero glass">
-              <div className="eyebrow">Management · Resources Management · Powered by AI</div>
-              <h1>Resources Management — Capacity Grid</h1>
-              <p>Workforce capability intelligence. Create a project for a client, assess each office, generate Career Development Cards, route resources across offices, and read the corporate dashboard. Deterministic core; AI advisory layer.</p>
+              <div className="eyebrow">Resources Management · A growing collection of iStructural apps</div>
+              <h1>Resources Management — iStructural Apps</h1>
+              <p>A growing collection of iStructural tools. Deterministic cores, AI advisory layers. Open Capacity Grid, or request access to the NPPE Study Tutor.</p>
             </div>
+            <div className="grid2" style={{marginTop:18}}>
+              <article className="card glass" style={{borderTop:`4px solid ${P.tealL}`}}>
+                <h3 style={{color:P.tealL}}>Capacity Grid</h3>
+                <div className="tag">Workforce capability intelligence</div>
+                <div style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6}}>Map every office and person, see each office forte, route projects from evidence, read the corporate dashboard. Deterministic core, AI advisory layer.</div>
+                <div className="more" style={{color:P.tealL}}>Owner sign-in below ↓</div>
+              </article>
+              <article className="card glass" style={{borderTop:`4px solid ${P.gold}`,cursor:"pointer"}} onClick={()=>go("nppe")}>
+                <h3 style={{color:"#e0b65f"}}>NPPE Study Tutor</h3>
+                <div className="tag">An AI study engine for the National Professional Practice Exam</div>
+                <div style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6}}>An AI study engine for the NPPE, grounded in your own materials. Free, request-gated access for Canadian P.Eng candidates.</div>
+                <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
+              </article>
+            </div>
+            <h2 className="sec">Capacity Grid</h2>
             {owner ? (
               <div style={{marginTop:18}}>
                 <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
@@ -869,6 +935,82 @@ export default function App() {
                 <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* NPPE STUDY TUTOR */}
+        {page==="nppe" && (
+          <div className="page">
+            <div className="phero glass" style={{borderTop:`4px solid ${P.gold}`}}>
+              <div className="eyebrow" style={{color:"#e0b65f"}}>Resources · NPPE Study Tutor · Free</div>
+              <h1>Pass the NPPE with a tutor built on your own materials.</h1>
+              <p>A free, AI-powered study engine for Canadian P.Eng candidates. Short reads, quick recall, and an honest readiness check that only turns green when you are genuinely ready.</p>
+              <div className="acts">
+                <button className="btn" style={{background:P.gold}} onClick={()=>go("nppereq")}>Request access (free) →</button>
+              </div>
+            </div>
+
+            <h2 className="sec">Why it is different</h2>
+            {NPPE_WHY.map((w,i)=>(
+              <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#e0b65f"}}>{w[0]}</div><div style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6}}>{w[1]}</div></div>
+            ))}
+
+            <h2 className="sec">How it works</h2>
+            <div className="grid3">
+              {NPPE_STEPS.map((s,i)=>(
+                <div key={i} className="card glass">
+                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.6rem",color:"#e0b65f"}}>{s[0]}</div>
+                  <h3 style={{fontSize:"1.05rem",marginTop:6}}>{s[1]}</h3>
+                  <div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.55}}>{s[2]}</div>
+                </div>
+              ))}
+            </div>
+
+            <h2 className="sec">Questions</h2>
+            {NPPE_FAQ.map((q,i)=>(
+              <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#fff"}}>{q[0]}</div><div style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6}}>{q[1]}</div></div>
+            ))}
+
+            <div style={{marginTop:24}}>
+              <button className="btn" style={{background:P.gold}} onClick={()=>go("nppereq")}>Request access (free) →</button>
+            </div>
+
+            <div className="card glass" style={{marginTop:22,padding:"16px 18px"}}>
+              <div style={{fontSize:".7rem",color:"#8FA8BE",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
+            </div>
+          </div>
+        )}
+
+        {/* NPPE REQUEST ACCESS (intake) */}
+        {page==="nppereq" && (
+          <div className="page">
+            <div className="phero glass" style={{borderTop:`4px solid ${P.gold}`}}>
+              <div className="eyebrow" style={{color:"#e0b65f"}}>NPPE Study Tutor · Request access</div>
+              <h1>Request access</h1>
+              <p>Free for Canadian P.Eng candidates. Submit your details and iStructural sends you the engine and short setup instructions by email. We respond within 24 hours.</p>
+            </div>
+            <div className="fbody glass" style={{borderRadius:14,marginTop:18}}>
+              <div className="fgrid">
+                {NPPE_FIELDS.map((f)=>(
+                  <div key={f.k} className="fld">
+                    <label>{f.l}{f.req?" *":""}</label>
+                    {f.t==="preset" ? <input value={f.v||"NPPE"} readOnly style={{opacity:.85,cursor:"not-allowed"}} /> :
+                     f.t==="select" ? <select value={npf[f.k]||""} onChange={e=>setNpf({...npf,[f.k]:e.target.value})}><option value="">Select...</option>{f.opts.map(o=><option key={o}>{o}</option>)}</select> :
+                     <input type={f.t==="email"?"email":f.t==="tel"?"tel":"text"} value={npf[f.k]||""} onChange={e=>setNpf({...npf,[f.k]:e.target.value})} placeholder={f.l.replace(" (optional)","")} />}
+                  </div>
+                ))}
+              </div>
+              <label style={{display:"flex",gap:10,alignItems:"flex-start",marginTop:16,fontSize:".84rem",color:"#cdddef",lineHeight:1.5,cursor:"pointer"}}>
+                <input type="checkbox" checked={npConsent} onChange={e=>setNpConsent(e.target.checked)} style={{marginTop:3,width:16,height:16,flexShrink:0,accentColor:P.gold}} />
+                <span>{NPPE_CONSENT}</span>
+              </label>
+              {npErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{npErr}</div>}
+              <button className="btn" style={{background:P.gold,marginTop:16,width:"100%",opacity:npValid?1:.6}} onClick={submitNppe}>Submit request</button>
+              <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12,lineHeight:1.6}}>Your details are used only to provide the engine and follow up on your setup. They are not shared. Submitting opens an email to info@istructgroup.com with your request.</div>
+            </div>
+            <div className="card glass" style={{marginTop:18,padding:"16px 18px"}}>
+              <div style={{fontSize:".7rem",color:"#8FA8BE",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
+            </div>
           </div>
         )}
 
@@ -914,7 +1056,7 @@ export default function App() {
             <div><h4>Management</h4><a onClick={()=>go("s1")}>Project Management</a><a onClick={()=>go("s1")}>Business Strategy</a><a onClick={()=>go("s1")}>Value Engineering</a></div>
             <div><h4>Design</h4><a onClick={()=>go("s2")}>Structural Design</a><a onClick={()=>go("s2")}>Seismic & Wind</a><a onClick={()=>go("training")}>Training</a></div>
             <div><h4>AI & Technology</h4><a onClick={()=>go("s3")}>AI Literacy & Readiness</a><a onClick={()=>go("start")}>Start a Project</a></div>
-            <div><h4>Resources</h4><a onClick={()=>go("hub")}>Knowledge Hub</a><a onClick={()=>go("projects")}>Projects</a><a onClick={()=>go("contact")}>Contact</a></div>
+            <div><h4>Resources</h4><a onClick={()=>go("hub")}>Knowledge Hub</a><a onClick={()=>go("resources")}>Capacity Grid</a><a onClick={()=>go("nppe")}>NPPE Study Tutor</a><a onClick={()=>go("projects")}>Projects</a></div>
           </div>
           <div className="base"><span>iStructural Group Inc. · istructgroup.com · Canada · info@istructgroup.com</span><span>Copyright 2026 iStructural Group Inc. All rights reserved.</span></div>
         </footer>

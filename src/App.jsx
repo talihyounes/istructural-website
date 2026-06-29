@@ -1037,7 +1037,7 @@ export default function App() {
                 <CapacityMeshPanel/>
               </div>
             ) : (
-              <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
+              <div className="card glass" style={{maxWidth:520,margin:"18px 0 0",padding:24}}>
                 <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
                 <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Mesh</h3>
                 <p style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>Owner only. Sign in with the Google account <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>. No password is shared with this site.</p>

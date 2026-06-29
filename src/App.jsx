@@ -122,7 +122,7 @@ const CSS = `
 .lg .page{max-width:1200px;margin:0 auto;padding:0 24px;animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .lg .phero{position:relative;overflow:hidden;margin-top:24px;padding:40px 34px;border-radius:20px;box-shadow:0 16px 52px rgba(0,0,0,.42),inset 0 1px 0 var(--glass-highlight),inset 0 -10px 30px rgba(0,0,0,.18)}
-.lg .phero:after{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;background:url('https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1400&q=60') center/cover;opacity:.10}
+.lg .phero:after{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;background-image:linear-gradient(rgba(14,190,168,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(14,190,168,.08) 1px,transparent 1px);background-size:34px 34px;opacity:1}
 .lg .phero>*{position:relative;z-index:1}
 .lg .eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.2em;color:#0EBEA8;text-transform:uppercase;margin-bottom:12px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 .lg h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;letter-spacing:-.5px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
@@ -237,6 +237,13 @@ const CSS = `
 .lg .psearch{background:#fff}
 .lg .psearch input{color:#2A3642}
 .lg .filters{background:#fff}
+.lg h2.sec{position:relative;padding-left:16px}
+.lg h2.sec:before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:4px;border-radius:2px;background:#0A7C6E}
+.lg .eyebrow:before{content:"";display:inline-block;width:22px;height:1px;background:#0EBEA8;vertical-align:middle;margin-right:8px}
+.lg .card{transition:transform .25s,box-shadow .25s}
+.lg .card:hover{box-shadow:0 16px 36px rgba(20,40,64,.15)}
+.lg .svc-row{transition:border-color .2s}
+.lg .svc-row:hover{border-color:rgba(10,124,110,.45)}
 `;
 
 const Logo = () => (
@@ -652,7 +659,7 @@ function CapacityMeshPanel() {
 
 export default function App() {
   const [page, setPage] = useState("home");
-  const [opacity, setOpacity] = useState(0.12);
+  const [opacity] = useState(0.12);
   const [drawer, setDrawer] = useState(false);
   const [hubOpen, setHubOpen] = useState(null);
   const [owner, setOwner] = useState(false);
@@ -1189,13 +1196,6 @@ export default function App() {
           </div>
           <div className="base"><span>iStructural Group Inc. · istructgroup.com · Canada · info@istructgroup.com</span><span>Copyright 2026 iStructural Group Inc. All rights reserved.</span></div>
         </footer>
-      </div>
-      {/* Glass opacity control (iOS 27 style) */}
-      <div className="gc glass">
-        <div className="gt">Liquid Glass</div>
-        <div className="gr"><span>Clear</span><span className="gv">{Math.round(opacity*100)}%</span></div>
-        <input type="range" min="2" max="55" aria-label="Glass opacity" value={Math.round(opacity*100)} onChange={e=>setOpacity(+e.target.value/100)} />
-        <div className="gr"><span>&nbsp;</span><span>Opaque</span></div>
       </div>
       {/* Mobile drawer */}
       {drawer && (

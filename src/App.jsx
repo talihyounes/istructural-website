@@ -95,20 +95,15 @@ const NPPE_CONSENT = "I agree that iStructural Group Inc. may contact me about m
 const NPPE_DISCLAIMER = "NPPE Study Tutor is an independent exam study-support aid, powered by the iStructural Hybrid RAG Engine (sole property of iStructural Group Inc.). iStructural Group Inc. is not a regulator, does not offer engineering services, and is not affiliated with, endorsed by, or authorized by any provincial engineering regulator (including PEO, APEGA, EGBC and others), Engineers Canada, or any NPPE administrator. The names \"NPPE\", \"P.Eng\", and \"Professional Engineer\" are used for identification and descriptive reference only; using this tool does not grant, advance, or relate to any licence or title. Output quality depends on the materials you supply; iStructural does not host, verify, or endorse them, gives no legal advice, and does not guarantee any exam outcome. Confirm all current rules and requirements with your provincial regulator. For personal study only.";
 
 const CSS = `
-.lg{--glass-blur:22px;--glass-stroke:rgba(255,255,255,.20);--glass-highlight:rgba(255,255,255,.42);--radius:16px;
-  font-family:'DM Sans',system-ui,sans-serif;color:#EAF2FF;position:relative;min-height:100vh;overflow-x:hidden;background:#0C1B2E}
+.lg{--glass-blur:22px;--glass-stroke:rgba(20,40,64,.12);--glass-highlight:rgba(255,255,255,.6);--radius:16px;
+  font-family:'DM Sans',system-ui,sans-serif;color:#2A3642;position:relative;min-height:100vh;overflow-x:hidden;background:#EFEAE0}
 .lg *{box-sizing:border-box;margin:0;padding:0}
-.lg .bg{position:fixed;inset:0;z-index:0;background:
-  radial-gradient(1100px 700px at 12% -5%,#1c3a72 0,transparent 55%),
-  radial-gradient(900px 600px at 95% 8%,#0d5a52 0,transparent 50%),
-  radial-gradient(1200px 900px at 50% 120%,#162D4A 0,transparent 60%),#0C1B2E}
-.lg .bg:after{content:"";position:absolute;inset:-20%;background:
-  radial-gradient(420px 420px at 20% 30%,rgba(14,190,168,.45),transparent 60%),
-  radial-gradient(520px 520px at 82% 66%,rgba(30,91,138,.45),transparent 60%);filter:blur(24px);opacity:.5;animation:drift 24s ease-in-out infinite alternate}
+.lg .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 700px at 12% -5%,#eef3f8 0,transparent 55%),radial-gradient(900px 600px at 95% 8%,#eaf5ef 0,transparent 50%),#EFEAE0}
+.lg .bg:after{content:"";position:absolute;inset:-20%;background:radial-gradient(420px 420px at 20% 30%,rgba(14,190,168,.10),transparent 60%),radial-gradient(520px 520px at 82% 66%,rgba(30,91,138,.10),transparent 60%);filter:blur(30px);opacity:.6}
 @keyframes drift{from{transform:translate3d(-3%,-2%,0) scale(1.05)}to{transform:translate3d(4%,3%,0) scale(1.15)}}
 .lg .wrap{position:relative;z-index:1}
-.lg .glass{position:relative;background:rgba(255,255,255,var(--glass-opacity));backdrop-filter:blur(var(--glass-blur)) saturate(180%);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);border:1px solid var(--glass-stroke);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 var(--glass-highlight),inset 0 -8px 24px rgba(0,0,0,.16);isolation:isolate}
-.lg .glass:before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.16),transparent 55%);mix-blend-mode:screen;opacity:.5;z-index:0}
+.lg .glass{position:relative;background:rgba(255,255,255,.85);backdrop-filter:blur(var(--glass-blur)) saturate(140%);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(140%);border:1px solid rgba(20,40,64,.10);border-radius:var(--radius);box-shadow:0 8px 26px rgba(20,40,64,.09);isolation:isolate}
+.lg .glass:before{content:"";display:none}
 .lg .glass>*{position:relative;z-index:1}
 .lg nav{position:sticky;top:12px;z-index:50;margin:12px auto 0;max-width:1200px;width:calc(100% - 24px);display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1px 0 var(--glass-highlight)}
 .lg .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
@@ -131,11 +126,11 @@ const CSS = `
 .lg .phero>*{position:relative;z-index:1}
 .lg .eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.2em;color:#0EBEA8;text-transform:uppercase;margin-bottom:12px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 .lg h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;letter-spacing:-.5px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
-.lg .phero p{color:#AFC4D8;font-size:1rem;line-height:1.7;margin-top:14px;max-width:620px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.lg .phero p{color:#5A6B7A;font-size:1rem;line-height:1.7;margin-top:14px;max-width:620px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 .lg .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
 .lg .btn{padding:11px 22px;border-radius:10px;color:#fff;font-weight:700;font-size:.88rem;cursor:pointer;border:none;font-family:inherit}
 .lg h2.sec{font-family:'Fraunces',serif;font-weight:800;font-size:1.7rem;margin:46px 0 18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
-.lg .kick{font-size:.72rem;font-weight:700;letter-spacing:.16em;color:#AFC4D8;text-transform:uppercase;margin:40px 0 14px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.lg .kick{font-size:.72rem;font-weight:700;letter-spacing:.16em;color:#5A6B7A;text-transform:uppercase;margin:40px 0 14px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 .lg .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .lg .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .lg .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
@@ -145,7 +140,7 @@ const CSS = `
 .lg .card h3{font-family:'Fraunces',serif;font-weight:800;font-size:1.18rem;line-height:1.25;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 .lg .card .tag{font-family:'Fraunces',serif;font-style:italic;font-size:.88rem;color:#B8A68E;margin:6px 0 12px}
 .lg .card ul{list-style:none}
-.lg .card li{display:flex;gap:8px;font-size:.86rem;color:#cdddef;padding:4px 0}
+.lg .card li{display:flex;gap:8px;font-size:.86rem;color:#3a4654;padding:4px 0}
 .lg .card li b{font-weight:800;font-size:.78rem}
 .lg .card .more{font-size:.84rem;font-weight:700;margin-top:14px}
 .lg .subs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -153,12 +148,12 @@ const CSS = `
 .lg .sub-card{padding:18px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--glass-stroke)}
 .lg .strip{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;margin-top:14px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.35)}
 .lg .strip .lead{font-size:.94rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.45)}
-.lg .strip .meta{font-size:.82rem;color:#AFC4D8;margin-top:3px}
+.lg .strip .meta{font-size:.82rem;color:#5A6B7A;margin-top:3px}
 .lg .go{background:#0A7C6E;color:#fff;padding:8px 15px;border-radius:9px;font-size:.82rem;font-weight:700;white-space:nowrap;border:none;cursor:pointer;font-family:inherit}
 .lg .svc-row{display:grid;grid-template-columns:200px 1fr;gap:16px;padding:14px 18px;border-radius:12px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-stroke)}
 @media(max-width:680px){.lg .svc-row{grid-template-columns:1fr}}
 .lg .filters{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:14px 18px;margin-top:12px}
-.lg .flbl{font-size:.8rem;color:#AFC4D8;font-weight:600}
+.lg .flbl{font-size:.8rem;color:#5A6B7A;font-weight:600}
 .lg .chip{padding:4px 11px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;color:#8BA0B5;border:1px solid var(--glass-stroke);background:transparent;font-family:inherit}
 .lg .chip.on{background:#0A7C6E;color:#fff;border-color:#0A7C6E}
 .lg .psearch{display:flex;align-items:center;gap:8px;margin:14px 0;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--glass-stroke)}
@@ -169,22 +164,22 @@ const CSS = `
 @media(max-width:680px){.lg .prow{grid-template-columns:1fr auto;row-gap:6px}.lg .pr{text-align:left}.lg .pinq{grid-column:1/-1;justify-self:start}}
 .lg .prow:nth-child(odd){background:rgba(255,255,255,.03)}
 .lg .pc{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;text-align:center}
-.lg .pr{color:#AFC4D8;text-align:right;font-size:.8rem}
+.lg .pr{color:#5A6B7A;text-align:right;font-size:.8rem}
 .lg .bh{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--glass-stroke);border-left:4px solid #1B6B35;margin-bottom:10px}
 .lg .bh .code{font-family:monospace;font-size:.9rem;font-weight:800;letter-spacing:2px;color:#7fe3a0;padding:6px 10px;border:1px solid rgba(127,227,160,.4);border-radius:6px}
 .lg .bh .ttl{font-family:'Fraunces',serif;font-weight:800;font-size:1.1rem;color:#fff}
-.lg .bh .bsub{font-size:.8rem;color:#AFC4D8;margin-top:2px}
+.lg .bh .bsub{font-size:.8rem;color:#5A6B7A;margin-top:2px}
 .lg .tile{padding:14px 16px;border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.25)}
 .lg .tile .tn{font-size:.92rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.45)}
-.lg .tile .td{font-size:.82rem;color:#AFC4D8;margin-top:4px;line-height:1.5}
+.lg .tile .td{font-size:.82rem;color:#5A6B7A;margin-top:4px;line-height:1.5}
 .lg .badge{float:right;font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:8px}
 .lg .ftabs{display:flex;gap:2px;flex-wrap:wrap;margin-top:18px}
-.lg .ft{flex:1;min-width:140px;text-align:center;padding:11px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;font-size:.88rem;color:#AFC4D8;background:rgba(255,255,255,.04);border:none;font-family:inherit}
+.lg .ft{flex:1;min-width:140px;text-align:center;padding:11px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;font-size:.88rem;color:#5A6B7A;background:rgba(255,255,255,.04);border:none;font-family:inherit}
 .lg .ft.on{color:#fff;background:rgba(255,255,255,.1)}
 .lg .fbody{padding:22px;border-radius:0 0 14px 14px}
 .lg .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:640px){.lg .fgrid{grid-template-columns:1fr}}
-.lg .fld label{display:block;font-size:.74rem;font-weight:600;color:#AFC4D8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.lg .fld label{display:block;font-size:.74rem;font-weight:600;color:#5A6B7A;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .lg .fld input,.lg .fld select,.lg .fld textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(7,16,30,.45);color:#fff;font-size:.9rem;font-family:inherit;outline:none}
 .lg .fld input::placeholder,.lg .fld textarea::placeholder{color:rgba(234,242,255,.5)}
 .lg .fld input:focus,.lg .fld select:focus,.lg .fld textarea:focus{border-color:#0EBEA8;box-shadow:0 0 0 2px rgba(14,190,168,.25);background:rgba(7,16,30,.6)}
@@ -193,19 +188,19 @@ const CSS = `
 .lg .full{grid-column:1/-1}
 .lg .founded{text-align:center;margin:40px auto 0;padding:20px;max-width:200px}
 .lg .founded .v{font-family:'Fraunces',serif;font-weight:800;font-size:2rem;color:#0EBEA8}
-.lg .founded .fl{font-size:.7rem;color:#8FA8BE;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.lg .founded .fl{font-size:.7rem;color:#5A6B7A;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .lg .foot{max-width:1200px;margin:46px auto 24px;padding:26px 28px 18px}
 .lg .foot-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr 1fr;gap:18px;margin-bottom:14px}
 @media(max-width:780px){.lg .foot-grid{grid-template-columns:1fr 1fr}}
 .lg .foot .co{font-family:'Fraunces',serif;font-weight:800;font-size:1rem;color:#fff;margin-bottom:6px}
-.lg .foot .blurb{font-size:.76rem;color:#8FA8BE;line-height:1.6}
+.lg .foot .blurb{font-size:.76rem;color:#5A6B7A;line-height:1.6}
 .lg .foot h4{font-size:.78rem;font-weight:700;color:#0EBEA8;margin-bottom:7px}
-.lg .foot a{display:block;font-size:.76rem;color:#8FA8BE;padding:2px 0;text-decoration:none;cursor:pointer}
+.lg .foot a{display:block;font-size:.76rem;color:#5A6B7A;padding:2px 0;text-decoration:none;cursor:pointer}
 .lg .foot a:hover{color:#EAF2FF}
 .lg .foot .base{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:.72rem;color:#7A96AE}
 .lg .gc{position:fixed;right:18px;bottom:18px;z-index:60;padding:13px 15px;border-radius:15px;width:206px;display:flex;flex-direction:column;gap:7px}
 .lg .gc .gt{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:#0EBEA8;font-weight:700}
-.lg .gc .gr{display:flex;justify-content:space-between;font-size:.74rem;color:#AFC4D8;font-weight:600}
+.lg .gc .gr{display:flex;justify-content:space-between;font-size:.74rem;color:#5A6B7A;font-weight:600}
 .lg .gc .gv{font-family:'Fraunces',serif;color:#0EBEA8;font-weight:800}
 .lg .gc input{width:100%;accent-color:#0EBEA8}
 .lg .drawer{position:fixed;inset:0;z-index:120;background:rgba(8,18,32,.6);backdrop-filter:blur(4px)}
@@ -215,6 +210,33 @@ const CSS = `
 .lg :focus-visible{outline:2px solid #0EBEA8;outline-offset:2px;border-radius:6px}
 @media (prefers-reduced-transparency: reduce){.lg .glass{background:#11243c!important;backdrop-filter:none!important}.lg .glass:before{display:none}}
 @media (prefers-reduced-motion: reduce){.lg *{animation:none!important;transition:none!important}}
+.lg nav.glass{background:rgba(12,27,46,.94);border:1px solid rgba(255,255,255,.10)}
+.lg .phero{background:#0C1B2E}
+.lg .foot{background:#0C1B2E}
+.lg h1{color:#fff}
+.lg h2.sec{color:#2A3642;text-shadow:none}
+.lg .kick{color:#5A6B7A;text-shadow:none}
+.lg .card h3{text-shadow:none}
+.lg .tile .tn{text-shadow:none}
+.lg .strip .lead{text-shadow:none}
+.lg .bh{background:#fff}
+.lg .bh .ttl{color:#2A3642}
+.lg .bh .bsub{color:#5A6B7A}
+.lg .svc-row{background:#fff}
+.lg .sub-card{background:#fff}
+.lg .tile{background:#fff}
+.lg .chip{color:#5A6B7A}
+.lg .card li{color:#3a4654}
+.lg .card .tag{color:#8a7a52}
+.lg .strip .meta{color:#5A6B7A}
+.lg .flbl{color:#5A6B7A}
+.lg .pr{color:#5A6B7A}
+.lg .tile .td{color:#5A6B7A}
+.lg .founded .fl{color:#5A6B7A}
+.lg .fld label{color:#5A6B7A}
+.lg .psearch{background:#fff}
+.lg .psearch input{color:#2A3642}
+.lg .filters{background:#fff}
 `;
 
 const Logo = () => (
@@ -621,7 +643,7 @@ function CapacityMeshPanel() {
             })()}
           </>
         )}
-        <div style={{ textAlign: "center", color: "#7a96ae", fontSize: ".7rem", marginTop: 16 }}>iStructural Group Inc. · Capacity Mesh · deterministic core, AI advisory · simulated demo</div>
+        <div style={{ textAlign: "center", color: "#6b7c8c", fontSize: ".7rem", marginTop: 16 }}>iStructural Group Inc. · Capacity Mesh · deterministic core, AI advisory · simulated demo</div>
       </div>
     </div>
   );
@@ -793,10 +815,10 @@ export default function App() {
             <div className="grid3" style={{marginTop:24}}>
               {PILLARS.map(s => (
                 <article key={s.key} className="card glass" onClick={()=>go(s.key)} style={{cursor:"pointer"}}>
-                  <h3 style={{color:s.c}}>{s.t}</h3>
+                  <h3 style={{color:s.ac}}>{s.t}</h3>
                   <div className="tag">{s.tag}</div>
                   <ul>{s.items.map((it,i)=><li key={i}><b style={{color:s.ac}}>+</b>{it}</li>)}</ul>
-                  <div className="more" style={{color:s.c}}>Explore services →</div>
+                  <div className="more" style={{color:s.ac}}>Explore services →</div>
                 </article>
               ))}
             </div>
@@ -804,10 +826,10 @@ export default function App() {
             <div className="subs">
               <div className="sub-card"><div style={{fontSize:".84rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"#e08066"}}>Post-natural disaster</div></div>
               <div className="sub-card"><div style={{fontSize:".84rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"#cc6a6a"}}>Post-conflict and war zones</div></div>
-              <div className="sub-card"><div style={{fontSize:".84rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"#b389c6"}}>Heritage and aging assets</div></div>
+              <div className="sub-card"><div style={{fontSize:".84rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"#6B3A7D"}}>Heritage and aging assets</div></div>
             </div>
             <div className="strip glass" onClick={()=>go("hub")}>
-              <div><div className="lead" style={{color:"#7fe3a0"}}>Knowledge Hub, free for every engineer, architect, safety officer, and developer</div>
+              <div><div className="lead" style={{color:"#1B6B35"}}>Knowledge Hub, free for every engineer, architect, safety officer, and developer</div>
               <div className="meta">Forms, crack library, calculators, software directory, standards, management templates</div></div>
               <button className="go" style={{background:P.greenD}}>Browse →</button>
             </div>
@@ -824,12 +846,12 @@ export default function App() {
         {page==="s1" && (
           <div className="page">
             <div className="phero glass" style={{borderTop:`4px solid ${P.s1}`}}>
-              <div className="eyebrow" style={{color:"#6db3e6"}}>Service 01</div>
+              <div className="eyebrow" style={{color:"#1E5B8A"}}>Service 01</div>
               <h1>Management & Business Support</h1>
               <p>Strategic project management, business growth advisory, financial risk strategies, and value engineering. Aligning with new standards and surpassing client expectations.</p>
             </div>
             <h2 className="sec">What we deliver</h2>
-            {S1ROWS.map((r,i)=>(<div key={i} className="svc-row"><div style={{fontWeight:700,color:"#6db3e6"}}>{r[0]}</div><div style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6}}>{r[1]}</div></div>))}
+            {S1ROWS.map((r,i)=>(<div key={i} className="svc-row"><div style={{fontWeight:700,color:"#1E5B8A"}}>{r[0]}</div><div style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6}}>{r[1]}</div></div>))}
             <button className="btn" style={{background:P.s1,marginTop:16}} onClick={()=>go("start")}>Start a Management Inquiry →</button>
           </div>
         )}
@@ -838,16 +860,16 @@ export default function App() {
         {page==="s2" && (
           <div className="page">
             <div className="phero glass" style={{borderTop:`4px solid ${P.s2}`}}>
-              <div className="eyebrow" style={{color:"#b389c6"}}>Service 02</div>
+              <div className="eyebrow" style={{color:"#6B3A7D"}}>Service 02</div>
               <h1>Design Services & Consultancy</h1>
               <p>Performance-based seismic design for super-tall structures exceeding 200m. Advanced nonlinear applications. CSi certified training programs.</p>
             </div>
             <h2 className="sec">Third-Party Consultancy</h2>
             <div className="grid4">
               {[["High-Rise",["Lateral stability","Shortening vertical elements","Human response"]],["Bridges",["Alternative concepts (V.E.)","Design + verification","Stage modelling"]],["Irregular",["Rotated/twisted buildings","Vibration analysis","Thermal design","Transfer structures"]]].map((c,i)=>(
-                <div key={i} className="card glass"><h3 style={{fontSize:"1.05rem",color:"#b389c6"}}>{c[0]}</h3><ul>{c[1].map((x,j)=><li key={j}><b style={{color:P.s2}}>+</b>{x}</li>)}</ul></div>
+                <div key={i} className="card glass"><h3 style={{fontSize:"1.05rem",color:"#6B3A7D"}}>{c[0]}</h3><ul>{c[1].map((x,j)=><li key={j}><b style={{color:P.s2}}>+</b>{x}</li>)}</ul></div>
               ))}
-              <div className="card glass" style={{border:"1px solid rgba(107,58,125,.5)"}}><h3 style={{fontSize:"1.05rem",color:"#b389c6"}}>Structural Assessment Platform</h3><div className="tag" style={{margin:"6px 0"}}>Phase 1 · Phase 2 · Conditional AI escalation</div><div style={{fontSize:".82rem",color:"#AFC4D8",lineHeight:1.5}}>Preliminary advisory through full stamped engineering with FEA, repair drawings, authority submission.</div></div>
+              <div className="card glass" style={{border:"1px solid rgba(107,58,125,.5)"}}><h3 style={{fontSize:"1.05rem",color:"#6B3A7D"}}>Structural Assessment Platform</h3><div className="tag" style={{margin:"6px 0"}}>Phase 1 · Phase 2 · Conditional AI escalation</div><div style={{fontSize:".82rem",color:"#5A6B7A",lineHeight:1.5}}>Preliminary advisory through full stamped engineering with FEA, repair drawings, authority submission.</div></div>
             </div>
             <button className="btn" style={{background:P.s2,marginTop:16}} onClick={()=>go("start")}>Start a Design Inquiry →</button>
           </div>
@@ -863,7 +885,7 @@ export default function App() {
             </div>
             <h2 className="sec">AI Literacy & Organizational Readiness</h2>
             <div className="grid2">
-              {S3CARDS.map((c,i)=>(<div key={i} className="card glass"><h3 style={{fontSize:"1.08rem",color:"#5fa8e0"}}>{c[0]}</h3><div style={{fontSize:".86rem",color:"#AFC4D8",marginTop:6,lineHeight:1.55}}>{c[1]}</div></div>))}
+              {S3CARDS.map((c,i)=>(<div key={i} className="card glass"><h3 style={{fontSize:"1.08rem",color:"#1E5B8A"}}>{c[0]}</h3><div style={{fontSize:".86rem",color:"#5A6B7A",marginTop:6,lineHeight:1.55}}>{c[1]}</div></div>))}
             </div>
             <button className="btn" style={{background:P.s3,marginTop:16}} onClick={()=>go("start")}>Start an AI Literacy Inquiry →</button>
           </div>
@@ -878,7 +900,7 @@ export default function App() {
               <p>The most comprehensive free structural, engineering, and management resource online. For engineers, architects, students, safety officers, clients, and government officials.</p>
               <div style={{marginTop:16,display:"inline-flex",alignItems:"baseline",gap:8,padding:"9px 16px",borderRadius:10,background:"rgba(127,227,160,.12)",border:"1px solid rgba(127,227,160,.35)"}}>
                 <span style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.6rem",color:"#7fe3a0"}}>{HUBDATA.reduce((a,b)=>a+b.items.reduce((x,i)=>x+i.res.length,0),0)}</span>
-                <span style={{fontSize:".84rem",fontWeight:600,color:"#cdddef"}}>free, curated resources and growing</span>
+                <span style={{fontSize:".84rem",fontWeight:600,color:"#3a4654"}}>free, curated resources and growing</span>
               </div>
             </div>
             <div style={{marginTop:24}}>
@@ -887,15 +909,15 @@ export default function App() {
                   <div className="bh"><span className="code">{b.code}</span><div style={{flex:1}}><div className="ttl">{b.title}</div><div className="bsub">{`Section · 0${bi+1} of 03 — ${b.sub}`}</div></div></div>
                   <div className={b.items.length===4?"grid4":"grid3"}>
                     {b.items.map((t)=>(
-                      <div key={t.id} className="tile glass" style={{cursor:"pointer"}} onClick={()=>setHubOpen(t.id)}><span className="badge" style={{background:t.c+"26",color:t.c}}>{t.s}</span><div className="tn" style={{color:t.c}}>{t.n}</div><div className="td">{t.d}</div><div style={{marginTop:8,fontSize:".72rem",fontWeight:700,color:t.c}}>{"▸ Open "+t.res.length+" resources"}</div></div>
+                      <div key={t.id} className="tile glass" style={{cursor:"pointer"}} onClick={()=>setHubOpen(t.id)}><span className="badge" style={{background:t.c+"26",color:t.c}}>{t.s}</span><div className="tn" style={{color:"#23303d"}}>{t.n}</div><div className="td">{t.d}</div><div style={{marginTop:8,fontSize:".72rem",fontWeight:700,color:t.c}}>{"▸ Open "+t.res.length+" resources"}</div></div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
             <div className="card glass" style={{marginTop:18,padding:"14px 16px"}}>
-              <div style={{fontSize:".7rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"#AFC4D8",marginBottom:8}}>Disclaimer · Third-Party Notice</div>
-              <div style={{fontSize:".76rem",color:"#8FA8BE",lineHeight:1.7}}>All third-party content linked here is the property of its owners. iStructural Group Inc. is not affiliated with or endorsed by any third party unless stated, hosts none of the linked content, and is not responsible for its availability, licensing, or terms. External links lead to official sources. For educational use. Updated June 2026.</div>
+              <div style={{fontSize:".7rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"#5A6B7A",marginBottom:8}}>Disclaimer · Third-Party Notice</div>
+              <div style={{fontSize:".76rem",color:"#5A6B7A",lineHeight:1.7}}>All third-party content linked here is the property of its owners. iStructural Group Inc. is not affiliated with or endorsed by any third party unless stated, hosts none of the linked content, and is not responsible for its availability, licensing, or terms. External links lead to official sources. For educational use. Updated June 2026.</div>
             </div>
             {hubOpen && (()=>{ const it=HUBDATA.reduce((a,b)=>a.concat(b.items),[]).find(x=>x.id===hubOpen); if(!it) return null; return (
               <div role="dialog" aria-modal="true" onClick={e=>{if(e.target===e.currentTarget)setHubOpen(null);}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(7,16,30,.8)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto"}}>
@@ -943,13 +965,13 @@ export default function App() {
             <div className="psearch glass">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8BA0B5" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
               <input value={pQ} onChange={e=>{setPQ(e.target.value);setPAll(false);}} placeholder="Search projects by name, type, region, country..." />
-              <span style={{fontSize:".8rem",color:"#AFC4D8",whiteSpace:"nowrap"}}>Selected projects</span>
+              <span style={{fontSize:".8rem",color:"#5A6B7A",whiteSpace:"nowrap"}}>Selected projects</span>
             </div>
             <div className="glass" style={{padding:"6px 10px",marginBottom:24}}>
               {projShown.map((p,i)=>{const col=L[catCol[p.c]]||catCol[p.c]||"#9fb3d4";return (
                 <div key={i} className="prow"><div style={{textShadow:"0 1px 3px rgba(0,0,0,.45)"}}>{p.n}</div><span className="pc" style={{background:col+"26",color:col}}>{p.c}</span><div className="pr">{p.country||p.r}</div><button className="pinq" onClick={()=>{setSvc(x=>({...x,["s2:Project Name & Location"]:p.n}));setTab("s2");go("start");}}>Send an inquiry →</button></div>
               );})}
-              {projShown.length===0 && <div style={{padding:20,textAlign:"center",color:"#AFC4D8",fontStyle:"italic"}}>No projects match.</div>}
+              {projShown.length===0 && <div style={{padding:20,textAlign:"center",color:"#5A6B7A",fontStyle:"italic"}}>No projects match.</div>}
               {!pAll && projF.length>20 && <div style={{textAlign:"center",padding:10}}><button className="go" onClick={()=>setPAll(true)}>Show all →</button></div>}
             </div>
           </div>
@@ -959,12 +981,12 @@ export default function App() {
         {page==="training" && (
           <div className="page">
             <div className="phero glass" style={{borderTop:`4px solid ${P.s2}`}}>
-              <div className="eyebrow" style={{color:"#b389c6"}}>Certified Training</div>
+              <div className="eyebrow" style={{color:"#6B3A7D"}}>Certified Training</div>
               <h1>Training Programs</h1>
               <p>CSiAmerica Licensed Instructor since 2010. Over 1,400 engineers trained across MENA and North America. Advanced support for international firms.</p>
             </div>
             <div className="grid4" style={{marginTop:24}}>
-              {TRAIN.map((t,i)=>(<div key={i} className="card glass" style={{cursor:"pointer"}} onClick={()=>go("start")}><h3 style={{fontSize:"1.05rem",color:"#b389c6"}}>{t[0]}</h3><div style={{fontSize:".84rem",color:"#AFC4D8",marginTop:6,lineHeight:1.5}}>{t[1]}</div></div>))}
+              {TRAIN.map((t,i)=>(<div key={i} className="card glass" style={{cursor:"pointer"}} onClick={()=>go("start")}><h3 style={{fontSize:"1.05rem",color:"#6B3A7D"}}>{t[0]}</h3><div style={{fontSize:".84rem",color:"#5A6B7A",marginTop:6,lineHeight:1.5}}>{t[1]}</div></div>))}
             </div>
             <button className="btn" style={{background:P.s2,marginTop:16}} onClick={()=>go("start")}>Request Training →</button>
           </div>
@@ -984,7 +1006,7 @@ export default function App() {
                 <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:P.tealL,border:`1px solid ${P.tealL}66`,borderRadius:20,padding:"3px 9px"}}>Primary tool</span>
               </div>
               <div className="tag">Workforce capability intelligence</div>
-              <div style={{fontSize:".94rem",color:"#cdddef",lineHeight:1.65,marginTop:4}}>Stop guessing who can do the work. Capacity Mesh maps every office and every person, surfaces each office's true forte, and reroutes each project to the people who can actually deliver it, on evidence, not hunches. A live corporate dashboard turns raw capability into staffing decisions in seconds. A deterministic core you can audit, with an AI advisory layer that explains and never invents.</div>
+              <div style={{fontSize:".94rem",color:"#3a4654",lineHeight:1.65,marginTop:4}}>Stop guessing who can do the work. Capacity Mesh maps every office and every person, surfaces each office's true forte, and reroutes each project to the people who can actually deliver it, on evidence, not hunches. A live corporate dashboard turns raw capability into staffing decisions in seconds. A deterministic core you can audit, with an AI advisory layer that explains and never invents.</div>
               <div className="acts">
                 <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request access →</button>
               </div>
@@ -996,7 +1018,7 @@ export default function App() {
                 <span style={{fontSize:".6rem",fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"#bfae86"}}>Also free, for now</span>
               </div>
               <div className="tag" style={{fontSize:".82rem"}}>Free study engine for Canadian P.Eng candidates</div>
-              <div style={{fontSize:".84rem",color:"#AFC4D8",lineHeight:1.6}}>Free, for now. Bring your own course materials and your own Claude account, point the tutor at them, and watch it work: every answer grounded only in your material and cited to its source, an honest readiness check that stays red until you are genuinely ready, and a pace that tracks your exam date. No invented examples, no filler.</div>
+              <div style={{fontSize:".84rem",color:"#5A6B7A",lineHeight:1.6}}>Free, for now. Bring your own course materials and your own Claude account, point the tutor at them, and watch it work: every answer grounded only in your material and cited to its source, an honest readiness check that stays red until you are genuinely ready, and a pace that tracks your exam date. No invented examples, no filler.</div>
               <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
             </article>
             <h2 className="sec">Open Capacity Mesh, owner access</h2>
@@ -1011,10 +1033,10 @@ export default function App() {
               <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
                 <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
                 <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Mesh</h3>
-                <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>Owner only. Sign in with the Google account <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>. No password is shared with this site.</p>
+                <p style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>Owner only. Sign in with the Google account <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>. No password is shared with this site.</p>
                 <button onClick={signInGoogle} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"#fff",color:"#2A3642",border:"none",fontWeight:700,fontSize:".9rem",cursor:"pointer",fontFamily:"inherit"}}><svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
                 {authErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{authErr}</div>}
-                <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
+                <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
               </div>
             )}
           </div>
@@ -1034,7 +1056,7 @@ export default function App() {
 
             <h2 className="sec">Why it is different</h2>
             {NPPE_WHY.map((w,i)=>(
-              <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#e0b65f"}}>{w[0]}</div><div style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6}}>{w[1]}</div></div>
+              <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#e0b65f"}}>{w[0]}</div><div style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6}}>{w[1]}</div></div>
             ))}
 
             <h2 className="sec">How it works</h2>
@@ -1043,14 +1065,14 @@ export default function App() {
                 <div key={i} className="card glass">
                   <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.6rem",color:"#e0b65f"}}>{s[0]}</div>
                   <h3 style={{fontSize:"1.05rem",marginTop:6}}>{s[1]}</h3>
-                  <div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.55}}>{s[2]}</div>
+                  <div style={{fontSize:".85rem",color:"#5A6B7A",marginTop:6,lineHeight:1.55}}>{s[2]}</div>
                 </div>
               ))}
             </div>
 
             <h2 className="sec">Questions</h2>
             {NPPE_FAQ.map((q,i)=>(
-              <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#fff"}}>{q[0]}</div><div style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6}}>{q[1]}</div></div>
+              <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#fff"}}>{q[0]}</div><div style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6}}>{q[1]}</div></div>
             ))}
 
             <div style={{marginTop:24}}>
@@ -1058,7 +1080,7 @@ export default function App() {
             </div>
 
             <div className="card glass" style={{marginTop:22,padding:"16px 18px"}}>
-              <div style={{fontSize:".7rem",color:"#8FA8BE",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
+              <div style={{fontSize:".7rem",color:"#5A6B7A",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
             </div>
           </div>
         )}
@@ -1082,17 +1104,17 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <label style={{display:"flex",gap:10,alignItems:"flex-start",marginTop:16,fontSize:".84rem",color:"#cdddef",lineHeight:1.5,cursor:"pointer"}}>
+              <label style={{display:"flex",gap:10,alignItems:"flex-start",marginTop:16,fontSize:".84rem",color:"#3a4654",lineHeight:1.5,cursor:"pointer"}}>
                 <input type="checkbox" checked={npConsent} onChange={e=>setNpConsent(e.target.checked)} style={{marginTop:3,width:16,height:16,flexShrink:0,accentColor:P.gold}} />
                 <span>{NPPE_CONSENT}</span>
               </label>
               {npErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{npErr}</div>}
               {npStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
               <button className="btn" disabled={npStatus==="sending"} style={{background:P.gold,marginTop:16,width:"100%",opacity:(npValid&&npStatus!=="sending")?1:.6,cursor:npStatus==="sending"?"wait":"pointer"}} onClick={submitNppe}>{npStatus==="sending"?"Sending...":"Submit request"}</button>
-              <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12,lineHeight:1.6}}>Your details are used only to provide the engine and follow up on your setup. They are not shared. Submitting sends your request directly to info@istructgroup.com.</div>
+              <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12,lineHeight:1.6}}>Your details are used only to provide the engine and follow up on your setup. They are not shared. Submitting sends your request directly to info@istructgroup.com.</div>
             </div>
             <div className="card glass" style={{marginTop:18,padding:"16px 18px"}}>
-              <div style={{fontSize:".7rem",color:"#8FA8BE",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
+              <div style={{fontSize:".7rem",color:"#5A6B7A",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
             </div>
           </div>
         )}
@@ -1151,9 +1173,9 @@ export default function App() {
           <div className="page">
             <div className="phero glass"><h1>Contact Us</h1><p>iStructural Group Inc. · Canada · info@istructgroup.com</p></div>
             <div className="grid3" style={{marginTop:24}}>
-              <a className="card glass" href="mailto:info@istructgroup.com?subject=General%20Inquiry" style={{textDecoration:"none",display:"block"}}><h3 style={{fontSize:"1.05rem"}}>General Inquiry</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>Management, design, or consultancy.</div><div style={{marginTop:10,fontWeight:700,color:P.tealL}}>info@istructgroup.com →</div></a>
-              <div className="card glass" style={{cursor:"pointer"}} onClick={()=>go("start")}><h3 style={{fontSize:"1.05rem"}}>Start a Project</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>Management, design, or AI assessment.</div><div style={{marginTop:10,fontWeight:700,color:"#6db3e6"}}>Start a Project →</div></div>
-              <div className="card glass" style={{cursor:"pointer"}} onClick={()=>go("training")}><h3 style={{fontSize:"1.05rem"}}>Training</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>CSi training for your team.</div><div style={{marginTop:10,fontWeight:700,color:"#b389c6"}}>Request Training →</div></div>
+              <a className="card glass" href="mailto:info@istructgroup.com?subject=General%20Inquiry" style={{textDecoration:"none",display:"block"}}><h3 style={{fontSize:"1.05rem"}}>General Inquiry</h3><div style={{fontSize:".85rem",color:"#5A6B7A",marginTop:6,lineHeight:1.6}}>Management, design, or consultancy.</div><div style={{marginTop:10,fontWeight:700,color:P.tealL}}>info@istructgroup.com →</div></a>
+              <div className="card glass" style={{cursor:"pointer"}} onClick={()=>go("start")}><h3 style={{fontSize:"1.05rem"}}>Start a Project</h3><div style={{fontSize:".85rem",color:"#5A6B7A",marginTop:6,lineHeight:1.6}}>Management, design, or AI assessment.</div><div style={{marginTop:10,fontWeight:700,color:"#1E5B8A"}}>Start a Project →</div></div>
+              <div className="card glass" style={{cursor:"pointer"}} onClick={()=>go("training")}><h3 style={{fontSize:"1.05rem"}}>Training</h3><div style={{fontSize:".85rem",color:"#5A6B7A",marginTop:6,lineHeight:1.6}}>CSi training for your team.</div><div style={{marginTop:10,fontWeight:700,color:"#6B3A7D"}}>Request Training →</div></div>
             </div>
           </div>
         )}

@@ -769,7 +769,6 @@ export default function App() {
             <button className={"lk"+(page==="training"?" active":"")} onClick={()=>go("training")}>Training</button>
             <button className={"lk"+(page==="hub"?" active":"")} onClick={()=>go("hub")}>Knowledge Hub</button>
             <button className={"lk"+(page==="resources"?" active":"")} onClick={()=>go("resources")}>Resources</button>
-            <button className={"lk"+(page==="nppe"?" active":"")} onClick={()=>go("nppe")}>NPPE Tutor</button>
             <button className={"lk"+(page==="contact"?" active":"")} onClick={()=>go("contact")}>Contact</button>
             <button className="nav-cta" onClick={()=>go("start")}>Start a Project</button>
           </div>
@@ -987,7 +986,7 @@ export default function App() {
               <div className="tag">Workforce capability intelligence</div>
               <div style={{fontSize:".94rem",color:"#cdddef",lineHeight:1.65,marginTop:4}}>Stop guessing who can do the work. Capacity Mesh maps every office and every person, surfaces each office's true forte, and reroutes each project to the people who can actually deliver it, on evidence, not hunches. A live corporate dashboard turns raw capability into staffing decisions in seconds. A deterministic core you can audit, with an AI advisory layer that explains and never invents.</div>
               <div className="acts">
-                <button className="btn" style={{background:P.teal}} onClick={()=>{const el=document.getElementById("capmeshForm"); if(el) el.scrollIntoView({behavior:"smooth"});}}>Request access →</button>
+                <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request access →</button>
               </div>
               <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in below ↓</div>
             </article>
@@ -1000,19 +999,6 @@ export default function App() {
               <div style={{fontSize:".84rem",color:"#AFC4D8",lineHeight:1.6}}>Free, for now. Bring your own course materials and your own Claude account, point the tutor at them, and watch it work: every answer grounded only in your material and cited to its source, an honest readiness check that stays red until you are genuinely ready, and a pace that tracks your exam date. No invented examples, no filler.</div>
               <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
             </article>
-            <div className="fbody glass" id="capmeshForm" style={{borderRadius:14,marginTop:18}}>
-              <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:"#fff",marginBottom:4}}>Request Capacity Mesh access</div>
-              <p style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6,marginBottom:14}}>Tell us about your firm and we will set up a private walkthrough or early access. We respond within 24 hours.</p>
-              <div className="fgrid">
-                {[["Full name",true],["Company / Organization",true],["Email",true],["Mobile",false],["Role",false]].map(([k,req])=>(
-                  <div key={k} className="fld"><label>{k}{req?" *":""}</label><input value={cm[k]||""} onChange={e=>{setCm(sx=>({...sx,[k]:e.target.value})); if(cmStatus!=="idle") setCmStatus("idle");}} placeholder={k} /></div>
-                ))}
-                <div className="fld full"><label>What do you want Capacity Mesh to do for you?</label><textarea value={cm["Message"]||""} onChange={e=>setCm(sx=>({...sx,Message:e.target.value}))} placeholder="Your goals..." /></div>
-              </div>
-              <button className="btn" disabled={cmStatus==="sending"} onClick={submitCapMesh} style={{background:P.tealL,marginTop:14,width:"100%",opacity:cmStatus==="sending"?.6:1,cursor:cmStatus==="sending"?"wait":"pointer"}}>{cmStatus==="sending"?"Sending...":"Request access"}</button>
-              {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
-              {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#ffb4a8",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
-            </div>
             <h2 className="sec">Open Capacity Mesh, owner access</h2>
             {owner ? (
               <div style={{marginTop:18}}>
@@ -1111,6 +1097,26 @@ export default function App() {
           </div>
         )}
 
+        {page==="capmeshreq" && (
+          <div className="page">
+            <div className="phero glass" style={{borderTop:`4px solid ${P.tealL}`}}>
+              <div className="eyebrow" style={{color:P.tealL}}>Resources · Capacity Mesh · Request access</div>
+              <h1>Request Capacity Mesh access</h1>
+              <p>Tell us about your firm and we will set up a private walkthrough or early access. We respond within 24 hours.</p>
+            </div>
+            <div className="fbody glass" id="capmeshForm" style={{borderRadius:14,marginTop:18}}>
+              <div className="fgrid">
+                {[["Full name",true],["Company / Organization",true],["Email",true],["Mobile",false],["Role",false]].map(([k,req])=>(
+                  <div key={k} className="fld"><label>{k}{req?" *":""}</label><input value={cm[k]||""} onChange={e=>{setCm(sx=>({...sx,[k]:e.target.value})); if(cmStatus!=="idle") setCmStatus("idle");}} placeholder={k} /></div>
+                ))}
+                <div className="fld full"><label>What do you want Capacity Mesh to do for you?</label><textarea value={cm["Message"]||""} onChange={e=>setCm(sx=>({...sx,Message:e.target.value}))} placeholder="Your goals..." /></div>
+              </div>
+              <button className="btn" disabled={cmStatus==="sending"} onClick={submitCapMesh} style={{background:P.tealL,marginTop:14,width:"100%",opacity:cmStatus==="sending"?.6:1,cursor:cmStatus==="sending"?"wait":"pointer"}}>{cmStatus==="sending"?"Sending...":"Request access"}</button>
+              {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
+              {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#ffb4a8",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
+            </div>
+          </div>
+        )}
         {/* START */}
         {page==="start" && (
           <div className="page">
@@ -1177,7 +1183,7 @@ export default function App() {
               <span style={{fontFamily:"Fraunces,serif",fontWeight:800,color:P.tealL,letterSpacing:".1em",textTransform:"uppercase",fontSize:".8rem"}}>iStructural</span>
               <button className="lk" onClick={()=>setDrawer(false)} style={{fontSize:"1.2rem"}}>×</button>
             </div>
-            {[["home","Home"],["s1","Management"],["s2","Design"],["s3","AI & Technology"],["projects","Projects"],["training","Training"],["hub","Knowledge Hub"],["resources","Resources"],["nppe","NPPE Tutor"],["contact","Contact"]].map(n=>(
+            {[["home","Home"],["s1","Management"],["s2","Design"],["s3","AI & Technology"],["projects","Projects"],["training","Training"],["hub","Knowledge Hub"],["resources","Resources"],["contact","Contact"]].map(n=>(
               <button key={n[0]} className="lk" onClick={()=>go(n[0])} style={{textAlign:"left"}}>{n[1]}</button>
             ))}
             <button className="btn" style={{background:P.teal,marginTop:10}} onClick={()=>go("start")}>Start a Project →</button>

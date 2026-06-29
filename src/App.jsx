@@ -769,6 +769,7 @@ export default function App() {
             <button className={"lk"+(page==="training"?" active":"")} onClick={()=>go("training")}>Training</button>
             <button className={"lk"+(page==="hub"?" active":"")} onClick={()=>go("hub")}>Knowledge Hub</button>
             <button className={"lk"+(page==="resources"?" active":"")} onClick={()=>go("resources")}>Resources</button>
+            <button className={"lk"+(page==="nppe"?" active":"")} onClick={()=>go("nppe")}>NPPE Tutor</button>
             <button className={"lk"+(page==="contact"?" active":"")} onClick={()=>go("contact")}>Contact</button>
             <button className="nav-cta" onClick={()=>go("start")}>Start a Project</button>
           </div>
@@ -978,20 +979,27 @@ export default function App() {
               <h1>Resources Management — iStructural Apps</h1>
               <p>A growing collection of iStructural tools. Deterministic cores, AI advisory layers. Open Capacity Mesh, or request access to the NPPE Study Tutor.</p>
             </div>
-            <div className="grid2" style={{marginTop:18}}>
-              <article className="card glass" style={{borderTop:`4px solid ${P.tealL}`}}>
-                <h3 style={{color:P.tealL}}>Capacity Mesh</h3>
-                <div className="tag">Workforce capability intelligence</div>
-                <div style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6}}>Map every office and person, see each office forte, route projects from evidence, read the corporate dashboard. Deterministic core, AI advisory layer.</div>
-                <div className="more" style={{color:P.tealL}}>Owner sign-in below ↓</div>
-              </article>
-              <article className="card glass" style={{borderTop:`4px solid ${P.gold}`,cursor:"pointer"}} onClick={()=>go("nppe")}>
-                <h3 style={{color:"#e0b65f"}}>NPPE Study Tutor</h3>
-                <div className="tag">An AI study engine for the National Professional Practice Exam</div>
-                <div style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6}}>An AI study engine for the NPPE, grounded in your own materials. Free, request-gated access for Canadian P.Eng candidates.</div>
-                <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
-              </article>
-            </div>
+            <article className="card glass" style={{marginTop:18,borderTop:`4px solid ${P.tealL}`,boxShadow:"0 10px 34px rgba(14,190,168,.18),0 6px 22px rgba(0,0,0,.3)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <h3 style={{color:P.tealL,fontSize:"1.45rem"}}>Capacity Mesh</h3>
+                <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:P.tealL,border:`1px solid ${P.tealL}66`,borderRadius:20,padding:"3px 9px"}}>Primary tool</span>
+              </div>
+              <div className="tag">Workforce capability intelligence</div>
+              <div style={{fontSize:".94rem",color:"#cdddef",lineHeight:1.65,marginTop:4}}>Stop guessing who can do the work. Capacity Mesh maps every office and every person, surfaces each office's true forte, and reroutes each project to the people who can actually deliver it, on evidence, not hunches. A live corporate dashboard turns raw capability into staffing decisions in seconds. A deterministic core you can audit, with an AI advisory layer that explains and never invents.</div>
+              <div className="acts">
+                <button className="btn" style={{background:P.teal}} onClick={()=>{const el=document.getElementById("capmeshForm"); if(el) el.scrollIntoView({behavior:"smooth"});}}>Request access →</button>
+              </div>
+              <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in below ↓</div>
+            </article>
+            <article className="card glass" style={{marginTop:14,borderTop:`3px solid ${P.gold}88`,cursor:"pointer",opacity:.92}} onClick={()=>go("nppe")}>
+              <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>
+                <h3 style={{color:"#e0b65f",fontSize:"1.1rem"}}>NPPE Study Tutor</h3>
+                <span style={{fontSize:".6rem",fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"#bfae86"}}>Also free, for now</span>
+              </div>
+              <div className="tag" style={{fontSize:".82rem"}}>Free study engine for Canadian P.Eng candidates</div>
+              <div style={{fontSize:".84rem",color:"#AFC4D8",lineHeight:1.6}}>Free, for now. Bring your own course materials and your own Claude account, point the tutor at them, and watch it work: every answer grounded only in your material and cited to its source, an honest readiness check that stays red until you are genuinely ready, and a pace that tracks your exam date. No invented examples, no filler.</div>
+              <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
+            </article>
             <div className="fbody glass" id="capmeshForm" style={{borderRadius:14,marginTop:18}}>
               <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:"#fff",marginBottom:4}}>Request Capacity Mesh access</div>
               <p style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6,marginBottom:14}}>Tell us about your firm and we will set up a private walkthrough or early access. We respond within 24 hours.</p>
@@ -1005,7 +1013,7 @@ export default function App() {
               {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
               {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#ffb4a8",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
             </div>
-            <h2 className="sec">Capacity Mesh</h2>
+            <h2 className="sec">Open Capacity Mesh, owner access</h2>
             {owner ? (
               <div style={{marginTop:18}}>
                 <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
@@ -1158,7 +1166,7 @@ export default function App() {
       <div className="gc glass">
         <div className="gt">Liquid Glass</div>
         <div className="gr"><span>Clear</span><span className="gv">{Math.round(opacity*100)}%</span></div>
-        <input type="range" min="2" max="55" value={Math.round(opacity*100)} onChange={e=>setOpacity(+e.target.value/100)} />
+        <input type="range" min="2" max="55" aria-label="Glass opacity" value={Math.round(opacity*100)} onChange={e=>setOpacity(+e.target.value/100)} />
         <div className="gr"><span>&nbsp;</span><span>Opaque</span></div>
       </div>
       {/* Mobile drawer */}
@@ -1169,7 +1177,7 @@ export default function App() {
               <span style={{fontFamily:"Fraunces,serif",fontWeight:800,color:P.tealL,letterSpacing:".1em",textTransform:"uppercase",fontSize:".8rem"}}>iStructural</span>
               <button className="lk" onClick={()=>setDrawer(false)} style={{fontSize:"1.2rem"}}>×</button>
             </div>
-            {[["home","Home"],["s1","Management"],["s2","Design"],["s3","AI & Technology"],["projects","Projects"],["training","Training"],["hub","Knowledge Hub"],["resources","Resources"],["contact","Contact"]].map(n=>(
+            {[["home","Home"],["s1","Management"],["s2","Design"],["s3","AI & Technology"],["projects","Projects"],["training","Training"],["hub","Knowledge Hub"],["resources","Resources"],["nppe","NPPE Tutor"],["contact","Contact"]].map(n=>(
               <button key={n[0]} className="lk" onClick={()=>go(n[0])} style={{textAlign:"left"}}>{n[1]}</button>
             ))}
             <button className="btn" style={{background:P.teal,marginTop:10}} onClick={()=>go("start")}>Start a Project →</button>

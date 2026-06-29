@@ -27,7 +27,7 @@ const S1ROWS = [
   ["Risk & Financial Management","Quantitative risk modeling, cost-benefit analysis, insurance and bonding advisory. Data-driven resilient financial strategies."],
   ["Value Engineering (V.E.)","Systematic function analysis. Creative V.E. solutions with remarkable ROI. Applied to high-rise, bridges, irregular structures."],
   ["ROI & Investment Analysis","Lifecycle cost analysis, capital allocation. LEED certification pathway support."],
-  ["Resources Management","Workforce capability intelligence via Capacity Grid. Map every office and person, see each office forte, route projects from evidence."],
+  ["Resources Management","Workforce capability intelligence via Capacity Mesh. Map every office and person, see each office forte, route projects from evidence."],
 ];
 const S3CARDS = [
   ["AI 101 · Foundations","What AI is, what it is not, how it works, where it applies. Tailored workshops for leadership, engineers, operations. No technical background required."],
@@ -254,9 +254,9 @@ const Logo = () => (
   </svg>
 );
 
-// ===== Capacity Grid client-engagement panel (06_Clients) =====
+// ===== Capacity Mesh client-engagement panel (06_Clients) =====
 
-// Capacity Grid — Client Engagement (06_Clients)
+// Capacity Mesh — Client Engagement (06_Clients)
 // Owner creates a project for a client, then runs the method scoped to that client:
 // office capability -> Career Development Cards -> resource interchange -> corporate dashboard.
 // Deterministic core (rule 23): all numbers computed here; an AI layer would only explain/justify.
@@ -482,7 +482,7 @@ function CapacityGridPanel() {
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,800&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
       <div className="wrap">
         <div className="top">
-          <h1>Capacity Grid — Client Engagement</h1>
+          <h1>Capacity Mesh — Client Engagement</h1>
           <span className="tag">06 · Clients</span>
           <select value={ci} onChange={(e) => { setCi(+e.target.value); setPerson(null); setView("corporate"); }}>
             {clients.map((c, i) => <option key={i} value={i}>{c.name}</option>)}
@@ -631,7 +631,7 @@ function CapacityGridPanel() {
             })()}
           </>
         )}
-        <div style={{ textAlign: "center", color: "#7a96ae", fontSize: ".7rem", marginTop: 16 }}>iStructural Group Inc. · Capacity Grid · deterministic core, AI advisory · simulated demo</div>
+        <div style={{ textAlign: "center", color: "#7a96ae", fontSize: ".7rem", marginTop: 16 }}>iStructural Group Inc. · Capacity Mesh · deterministic core, AI advisory · simulated demo</div>
       </div>
     </div>
   );
@@ -684,15 +684,50 @@ export default function App() {
   const [npf, setNpf] = useState({app:"NPPE"});
   const [npConsent, setNpConsent] = useState(false);
   const [npErr, setNpErr] = useState("");
+  const [npStatus, setNpStatus] = useState("idle"); // idle | sending | success | error
   const npValid = NPPE_FIELDS.every(f => !f.req || (f.t==="preset") || (npf[f.k] && String(npf[f.k]).trim())) && npConsent;
-  const submitNppe = () => {
+
+  // ── Email delivery via FormSubmit (no account needed; the first POST triggers a one-time activation email to info@istructgroup.com that must be confirmed once) ──
+  const FORM_ENDPOINT = "https://formsubmit.co/ajax/info@istructgroup.com";
+  const postForm = async (payload) => {
+    const res = await fetch(FORM_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  };
+
+  const submitNppe = async () => {
     if (!npValid) { setNpErr("Please complete all required fields and tick the consent box."); return; }
-    setNpErr("");
-    const lines = NPPE_FIELDS.map(f => `${f.l.replace(" (optional)","")}: ${f.t==="preset" ? (f.v||"NPPE") : (npf[f.k]||"")}`);
-    lines.push(`Consent: Yes — ${NPPE_CONSENT}`);
-    const body = encodeURIComponent("NPPE Study Tutor access request\n\n" + lines.join("\n"));
-    const subject = encodeURIComponent("NPPE Study Tutor — access request");
-    window.location.href = `mailto:info@istructgroup.com?subject=${subject}&body=${body}`;
+    setNpErr(""); setNpStatus("sending");
+    const payload = { _subject: "NPPE Study Tutor - access request", _template: "table" };
+    NPPE_FIELDS.forEach(f => { payload[f.l.replace(" (optional)","")] = f.t==="preset" ? (f.v||"NPPE") : (npf[f.k]||""); });
+    payload["Consent"] = "Yes - " + NPPE_CONSENT;
+    try {
+      const ok = await postForm(payload);
+      setNpStatus(ok ? "success" : "error");
+      if (!ok) setNpErr("Submission failed. Please email info@istructgroup.com directly.");
+    } catch (e) { setNpStatus("error"); setNpErr("Submission failed. Please email info@istructgroup.com directly."); }
+  };
+
+  // ── Service inquiry (Start a Project, tabs s1 to s4) ──
+  const [svc, setSvc] = useState({});
+  const [svcStatus, setSvcStatus] = useState("idle"); // idle | sending | success | error
+  const submitSvc = async () => {
+    const fields = START_FIELDS[tab];
+    const tabName = START_TABS.find(t=>t[0]===tab)[1];
+    const missing = fields.some(f => f[1]!=="ta" && !String(svc[tab+":"+f[0]]||"").trim());
+    const emailVal = String(svc[tab+":Email Address"]||"");
+    const needsEmail = fields.some(f => f[0]==="Email Address");
+    if (missing || (needsEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailVal))) { setSvcStatus("error"); return; }
+    setSvcStatus("sending");
+    const payload = { _subject: "Service inquiry - " + tabName, _template: "table" };
+    fields.forEach(f => { payload[f[0]] = svc[tab+":"+f[0]] || ""; });
+    try {
+      const ok = await postForm(payload);
+      setSvcStatus(ok ? "success" : "error");
+    } catch (e) { setSvcStatus("error"); }
   };
 
   const go = (id) => { setPage(id); setDrawer(false); window.scrollTo({top:0}); };
@@ -776,7 +811,7 @@ export default function App() {
             </div>
             <div className="strip glass" onClick={()=>go("resources")}>
               <div><div className="lead" style={{color:P.tealL}}>Resources Management, a growing collection of iStructural apps</div>
-              <div className="meta">Capacity Grid, workforce capability intelligence under Resources Management. Open it.</div></div>
+              <div className="meta">Capacity Mesh, workforce capability intelligence under Resources Management. Open it.</div></div>
               <button className="go">Open the box →</button>
             </div>
             <div className="founded glass"><div className="v">2010</div><div className="fl">Founded</div></div>
@@ -901,11 +936,11 @@ export default function App() {
             <div className="phero glass">
               <div className="eyebrow">Resources Management · A growing collection of iStructural apps</div>
               <h1>Resources Management — iStructural Apps</h1>
-              <p>A growing collection of iStructural tools. Deterministic cores, AI advisory layers. Open Capacity Grid, or request access to the NPPE Study Tutor.</p>
+              <p>A growing collection of iStructural tools. Deterministic cores, AI advisory layers. Open Capacity Mesh, or request access to the NPPE Study Tutor.</p>
             </div>
             <div className="grid2" style={{marginTop:18}}>
               <article className="card glass" style={{borderTop:`4px solid ${P.tealL}`}}>
-                <h3 style={{color:P.tealL}}>Capacity Grid</h3>
+                <h3 style={{color:P.tealL}}>Capacity Mesh</h3>
                 <div className="tag">Workforce capability intelligence</div>
                 <div style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6}}>Map every office and person, see each office forte, route projects from evidence, read the corporate dashboard. Deterministic core, AI advisory layer.</div>
                 <div className="more" style={{color:P.tealL}}>Owner sign-in below ↓</div>
@@ -917,7 +952,7 @@ export default function App() {
                 <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
               </article>
             </div>
-            <h2 className="sec">Capacity Grid</h2>
+            <h2 className="sec">Capacity Mesh</h2>
             {owner ? (
               <div style={{marginTop:18}}>
                 <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
@@ -928,7 +963,7 @@ export default function App() {
             ) : (
               <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
                 <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
-                <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Grid</h3>
+                <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Mesh</h3>
                 <p style={{color:"#AFC4D8",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>Owner only. Sign in with the Google account <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>. No password is shared with this site.</p>
                 <button onClick={signInGoogle} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"#fff",color:"#2A3642",border:"none",fontWeight:700,fontSize:".9rem",cursor:"pointer",fontFamily:"inherit"}}><svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
                 {authErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{authErr}</div>}
@@ -1005,8 +1040,9 @@ export default function App() {
                 <span>{NPPE_CONSENT}</span>
               </label>
               {npErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{npErr}</div>}
-              <button className="btn" style={{background:P.gold,marginTop:16,width:"100%",opacity:npValid?1:.6}} onClick={submitNppe}>Submit request</button>
-              <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12,lineHeight:1.6}}>Your details are used only to provide the engine and follow up on your setup. They are not shared. Submitting opens an email to info@istructgroup.com with your request.</div>
+              {npStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
+              <button className="btn" disabled={npStatus==="sending"} style={{background:P.gold,marginTop:16,width:"100%",opacity:(npValid&&npStatus!=="sending")?1:.6,cursor:npStatus==="sending"?"wait":"pointer"}} onClick={submitNppe}>{npStatus==="sending"?"Sending...":"Submit request"}</button>
+              <div style={{fontSize:".72rem",color:"#7a96ae",marginTop:12,lineHeight:1.6}}>Your details are used only to provide the engine and follow up on your setup. They are not shared. Submitting sends your request directly to info@istructgroup.com.</div>
             </div>
             <div className="card glass" style={{marginTop:18,padding:"16px 18px"}}>
               <div style={{fontSize:".7rem",color:"#8FA8BE",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
@@ -1023,17 +1059,22 @@ export default function App() {
               <div className="fgrid">
                 {START_FIELDS[tab].map((f,i)=>{
                   const isTa=f[1]==="ta", isSel=f[1]&&f[1]!=="ta";
+                  const k=tab+":"+f[0];
+                  const val=svc[k]||"";
+                  const upd=e=>{ setSvc(s=>({...s,[k]:e.target.value})); if(svcStatus!=="idle") setSvcStatus("idle"); };
                   return (
                     <div key={i} className={"fld"+(isTa?" full":"")}>
                       <label>{f[0]}</label>
-                      {isTa ? <textarea placeholder={f[0]+"..."} /> :
-                       isSel ? <select defaultValue=""><option value="">Select...</option>{f[1].split("|").map(o=><option key={o}>{o}</option>)}</select> :
-                       <input placeholder={f[0]} />}
+                      {isTa ? <textarea placeholder={f[0]+"..."} value={val} onChange={upd} /> :
+                       isSel ? <select value={val} onChange={upd}><option value="">Select...</option>{f[1].split("|").map(o=><option key={o}>{o}</option>)}</select> :
+                       <input placeholder={f[0]} value={val} onChange={upd} />}
                     </div>
                   );
                 })}
               </div>
-              <button className="btn" style={{background:START_TABS.find(t=>t[0]===tab)[2],marginTop:14,width:"100%"}}>Submit Inquiry</button>
+              <button className="btn" disabled={svcStatus==="sending"} onClick={submitSvc} style={{background:START_TABS.find(t=>t[0]===tab)[2],marginTop:14,width:"100%",opacity:svcStatus==="sending"?.6:1,cursor:svcStatus==="sending"?"wait":"pointer"}}>{svcStatus==="sending"?"Sending...":"Submit Inquiry"}</button>
+              {svcStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your inquiry was sent. We respond within 24 hours.</div>}
+              {svcStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#d65a5a",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Please complete every field with a valid email address, then try again. If it keeps failing, email info@istructgroup.com.</div>}
             </div>
           </div>
         )}
@@ -1056,7 +1097,7 @@ export default function App() {
             <div><h4>Management</h4><a onClick={()=>go("s1")}>Project Management</a><a onClick={()=>go("s1")}>Business Strategy</a><a onClick={()=>go("s1")}>Value Engineering</a></div>
             <div><h4>Design</h4><a onClick={()=>go("s2")}>Structural Design</a><a onClick={()=>go("s2")}>Seismic & Wind</a><a onClick={()=>go("training")}>Training</a></div>
             <div><h4>AI & Technology</h4><a onClick={()=>go("s3")}>AI Literacy & Readiness</a><a onClick={()=>go("start")}>Start a Project</a></div>
-            <div><h4>Resources</h4><a onClick={()=>go("hub")}>Knowledge Hub</a><a onClick={()=>go("resources")}>Capacity Grid</a><a onClick={()=>go("nppe")}>NPPE Study Tutor</a><a onClick={()=>go("projects")}>Projects</a></div>
+            <div><h4>Resources</h4><a onClick={()=>go("hub")}>Knowledge Hub</a><a onClick={()=>go("resources")}>Capacity Mesh</a><a onClick={()=>go("nppe")}>NPPE Study Tutor</a><a onClick={()=>go("projects")}>Projects</a></div>
           </div>
           <div className="base"><span>iStructural Group Inc. · istructgroup.com · Canada · info@istructgroup.com</span><span>Copyright 2026 iStructural Group Inc. All rights reserved.</span></div>
         </footer>

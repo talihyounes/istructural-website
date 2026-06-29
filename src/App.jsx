@@ -244,6 +244,9 @@ const CSS = `
 .lg .card:hover{box-shadow:0 16px 36px rgba(20,40,64,.15)}
 .lg .svc-row{transition:border-color .2s}
 .lg .svc-row:hover{border-color:rgba(10,124,110,.45)}
+@media(min-width:561px) and (max-width:880px){.lg .grid3,.lg .grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.lg .phero{padding:28px 20px}.lg h2.sec{margin:34px 0 14px}}
+@media(max-width:680px){.lg .chip{padding:7px 13px;font-size:.85rem}.lg .drawer .lk{padding:14px 12px;font-size:1.05rem}.lg .nav-cta{padding:9px 16px}.lg .lk{padding:8px 12px}}
 `;
 
 const Logo = () => (

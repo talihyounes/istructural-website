@@ -186,7 +186,7 @@ const CSS = `
 .lg .fld select option{color:#11243c;background:#f3f6fa}
 .lg .fld textarea{min-height:80px;resize:vertical}
 .lg .full{grid-column:1/-1}
-.lg .founded{text-align:center;margin:40px auto 0;padding:20px;max-width:200px}
+.lg .founded{text-align:left;margin:40px 0 0;padding:20px;max-width:200px}
 .lg .founded .v{font-family:'Fraunces',serif;font-weight:800;font-size:2rem;color:#0EBEA8}
 .lg .founded .fl{font-size:.7rem;color:#5A6B7A;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .lg .foot{max-width:1200px;margin:46px auto 24px;padding:26px 28px 18px}
@@ -1082,13 +1082,7 @@ export default function App() {
               <div key={i} className="svc-row"><div style={{fontWeight:700,color:"#fff"}}>{q[0]}</div><div style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6}}>{q[1]}</div></div>
             ))}
 
-            <div style={{marginTop:24}}>
-              <button className="btn" style={{background:P.gold}} onClick={()=>go("nppereq")}>Request access (free) →</button>
-            </div>
 
-            <div className="card glass" style={{marginTop:22,padding:"16px 18px"}}>
-              <div style={{fontSize:".7rem",color:"#5A6B7A",lineHeight:1.6}}>{NPPE_DISCLAIMER}</div>
-            </div>
           </div>
         )}
 

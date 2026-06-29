@@ -35,20 +35,7 @@ const S3CARDS = [
   ["Tool Selection & Integration","Identify the right AI tools for your tasks: document processing, QC, scheduling, reporting. Vendor-neutral. Integration planning."],
   ["Implementation Support","Hands-on deployment into existing workflows. Staff training. Process redesign. Performance monitoring. Advisory retainer available."],
 ];
-const HUB = [
-  {code:"DOC",title:"Documents, Forms and Templates",sub:"Static deliverables to download, fill, or copy.",items:[
-    ["Free Inspection Forms","Safety pre-check, site ID, Phase 1 field form, post-disaster rapid.","AI Platform",P.s3],
-    ["Crack & Damage Library","Visual guide: crack types, spalling, delamination. Severity ratings.","AI + Design",P.s3],
-    ["PM Templates & Frameworks","RFP templates, scope of work, risk registers, milestone tracking.","Management",P.s1],
-    ["V.E. & ROI Tools","Value engineering templates, cost-benefit calculators, LEED guides.","Management",P.s1]]},
-  {code:"TLS",title:"Calculators, Spreadsheets and Software",sub:"Interactive and computational tools to run or install.",items:[
-    ["Structural Calculators","Beam deflection, buckling, seismic base shear, wind load. Browser-based.","Design",P.s2],
-    ["Trial Software","Commercial trial downloads from leading vendors. 10 to 30-day trials.","Design + Training",P.s2],
-    ["Budget-Friendly Software","Free, open-source, and low-cost alternatives for students and small practices.","All Services",P.greenD]]},
-  {code:"REF",title:"Standards, Training and External Links",sub:"Outbound references to authoritative third parties.",items:[
-    ["International Standards","ACI, AASHTO, IBC, FEMA, CSA, NBC, Eurocode. Plus ASCE, ICOMOS, ISO references.","All Services",P.greenD],
-    ["Training & Certification Links","PMI, ICC, ACI, AASHTO, FEMA, CSA, ICOMOS, Eurocode certs and university programs.","All Services",P.greenD]]},
-];
+const HUBDATA = [{"code": "DOC", "title": "Documents, Forms and Templates", "sub": "Static deliverables to download, fill, or copy.", "items": [{"id": "forms", "n": "Free Inspection Forms", "d": "Safety pre-check, site ID, Phase 1 field form, post-disaster rapid.", "s": "AI Platform", "c": "#3fd0d8", "res": [{"region": "USA", "title": "FEMA P-154 Rapid Visual Screening of Buildings, Handbook + Forms (3rd Ed.)", "body": "FEMA", "year": "2015", "url": "https://www.fema.gov/sites/default/files/2020-07/fema_earthquakes_rapid-visual-screening-of-buildings-for-potential-seismic-hazards-a-handbook-third-edition-fema-p-154.pdf"}, {"region": "USA", "title": "FEMA P-2055 Post-Disaster Building Safety Evaluation Guidance", "body": "FEMA", "year": "2019", "url": "https://www.fema.gov/sites/default/files/2020-07/fema_p-2055_post-disaster_buildingsafety_evaluation_2019.pdf"}, {"region": "Canada", "title": "Level 1 Preliminary Seismic Risk Screening Tool (PST), User's Guide", "body": "National Research Council Canada", "year": "2020", "url": "https://nrc-publications.canada.ca/eng/view/object/?id=5f059958-29e6-43eb-aa37-c896ab11dcd1"}, {"region": "Canada", "title": "Post-Disaster Building Assessment Resources, forms, placards, kits", "body": "BC Housing", "year": "2022", "url": "https://www.bchousing.org/projects-partners/emergency-management/building-assessments/pdba-resources"}, {"region": "Europe", "title": "Second-Generation Eurocodes Workshop, training materials", "body": "EU Joint Research Centre", "year": "2025", "url": "https://eurocodes.jrc.ec.europa.eu/news/now-available-training-materials-second-generation-eurocodes-workshop-3-5-june-2025"}]}, {"id": "crack", "n": "Crack & Damage Library", "d": "Crack types, spalling, delamination. Severity ratings.", "s": "AI + Design", "c": "#3fd0d8", "res": [{"region": "USA", "title": "FEMA P-2018 Seismic Evaluation of Older Concrete Buildings for Earthquake Damage", "body": "FEMA", "year": "2018", "url": "https://www.fema.gov/sites/default/files/2020-08/fema_seismic-eval-older-concrete-buildings_p-2018.pdf"}, {"region": "USA", "title": "FEMA P-58-1 Seismic Performance Assessment of Buildings, Vol. 1 Methodology (2nd Edition)", "body": "FEMA / Applied Technology Council", "year": "2019", "url": "https://www.usrc.org/wp-content/uploads/FEMA_P-58-1-SE_Volume1_Methodology.pdf"}, {"region": "Canada", "title": "Federal Flood Damage Estimation Guidelines for Buildings and Infrastructure", "body": "Natural Resources Canada", "year": "2021", "url": "https://publications.gc.ca/collections/collection_2021/rncan-nrcan/M45-124-2021-eng.pdf"}, {"region": "Europe", "title": "EN 1504 Concrete Repair Standards, illustrated reference summary", "body": "EN 1504-aligned guide", "year": "2018", "url": "https://www.sika.com/dam/dms/corporate/z/glo-concrete-repair-protection-en-1504.pdf"}]}, {"id": "pm", "n": "PM Templates & Frameworks", "d": "RFP templates, scope of work, risk registers.", "s": "Management", "c": "#6db3e6", "res": [{"region": "USA", "title": "PMBOK 6 Project Risk Management, Risk Register and matrix templates", "body": "PMI Central Italy Chapter", "year": "2018", "url": "https://www.pmi-centralitaly.org/wp-content/uploads/2019/06/PMBoK_Risk_03072018.pdf"}, {"region": "Canada", "title": "Federal Flood Damage Estimation Guidelines (planning + risk framework)", "body": "Natural Resources Canada", "year": "2021", "url": "https://publications.gc.ca/collections/collection_2021/rncan-nrcan/M45-124-2021-eng.pdf"}, {"region": "Europe", "title": "Managing an Intervention, EU INTPA project cycle guidance", "body": "European Commission, DG INTPA", "year": "Live 2026", "url": "https://international-partnerships.ec.europa.eu/funding-and-technical-assistance/guidelines/managing-intervention_en"}]}, {"id": "ve", "n": "V.E. & ROI Tools", "d": "Value engineering templates, cost-benefit, LEED.", "s": "Management", "c": "#6db3e6", "res": [{"region": "USA", "title": "SAVE International Value Methodology Standard, Six-Phase Job Plan", "body": "SAVE International", "year": "2015", "url": "https://cdn.ymaws.com/www.value-eng.org/resource/resmgr/standards_documents/vmstd.pdf"}, {"region": "USA", "title": "SD-24 Value Engineering: Guidebook of Best Practices and Tools", "body": "US Department of Defense", "year": "2025", "url": "https://www.cto.mil/wp-content/uploads/2025/02/SD-24-VE-Guidebook-25Feb2025-Cleared-1.pdf"}, {"region": "Europe", "title": "Level(s) Indicator 6.1 Life Cycle Costs, User Manual", "body": "EU Joint Research Centre", "year": "2021", "url": "https://susproc.jrc.ec.europa.eu/product-bureau/sites/default/files/2021-01/UM3_Indicator_6.1_v1.1_21pp.pdf"}, {"region": "Europe", "title": "Cost-Effective Energy Transformation of Europe's Buildings", "body": "EU Joint Research Centre", "year": "2019", "url": "https://publications.jrc.ec.europa.eu/repository/bitstream/JRC117739/cost_optimal_energy_renovations_online.pdf"}]}]}, {"code": "TLS", "title": "Calculators, Spreadsheets and Software", "sub": "Interactive and computational tools.", "items": [{"id": "calc", "n": "Structural Calculators", "d": "Concrete, steel, wood, wind, seismic. Browser-based.", "s": "Design", "c": "#c39bd8", "res": [{"region": "USA", "units": "SI/US", "title": "ACI 318-19 Reinforced Concrete Beams Design Calculator", "body": "CalcTree", "year": "Live 2026", "url": "https://www.calctree.com/templates/concrete-beam"}, {"region": "USA / Europe", "units": "SI/US", "title": "ACI 318-19 / EN 1992-1-1 RC Section Design Calculator", "body": "CalcForge", "year": "Live 2026", "url": "https://calcforge.com/concrete/1"}, {"region": "Europe", "units": "SI", "title": "EN 1992-1-1 (EC2) RC Slabs, Beams, Columns, Punching, Crack Width", "body": "EurocodeApplied", "year": "Live 2026", "url": "https://eurocodeapplied.com/design/en1992"}, {"region": "Canada", "units": "SI/US", "title": "CSA A23.3-14 RC Slab and Wall Resistance Calculator", "body": "SkyCiv", "year": "Live 2026", "url": "https://skyciv.com/quick-calculators/csa-a23-concrete-slab-calculator/"}, {"region": "Canada", "units": "SI", "title": "CSA A23.3-19 RC Beams, Slabs and Columns Design Calculator", "body": "SAFI", "year": "Live 2026", "url": "https://safi.com/concrete-engineering-calculator/"}, {"region": "Canada", "units": "SI", "title": "CSA A23.3-14 RC Beam Design Examples and Worksheets", "body": "StructurePoint spBeam", "year": "Live 2026", "url": "https://structurepoint.org/publication/design-examples.asp"}, {"region": "USA", "units": "US", "title": "ACI 318-19 Post-Tensioned Concrete Slab Calculator", "body": "ConcreteMetric", "year": "Live 2026", "url": "https://concretemetric.com/calculators/post-tension-slab-calculator/"}, {"region": "USA", "units": "US", "title": "ACI 318 Post-Tensioned Beam and Slab Spreadsheets", "body": "PDH Online", "year": "Live 2026", "url": "https://pdhonline.com/courses/s133/s133.htm"}, {"region": "USA", "units": "SI/US", "title": "AISC 360-16/22 Steel Beam and Column Design Calculator", "body": "CalcTree", "year": "Live 2026", "url": "https://www.calctree.com/templates/steel-section"}, {"region": "USA / Europe / Canada", "units": "SI/US", "title": "AISC 360 / EN 1993 / CSA S16 Steel Column Capacity", "body": "SteelCalculator.app", "year": "Live 2026", "url": "https://steelcalculator.app/tools/column-capacity/"}, {"region": "Europe", "units": "SI", "title": "EN 1993-1-1 (EC3) Steel Beam, Column and Connection Calculator", "body": "SkyCiv EC3", "year": "Live 2026", "url": "https://skyciv.com/free-tools/"}, {"region": "Canada", "units": "SI", "title": "CSA S16-19 Steel Beam, Column and Member Calculator", "body": "AutoCalcs", "year": "Live 2026", "url": "https://autocalcs.com/csa-s16-design-calculator"}, {"region": "Canada", "units": "SI", "title": "CSA S16:19 + NBCC 2015 Steel Beam Calculator", "body": "Calcs.com", "year": "Live 2026", "url": "https://calcs.com/calculations/steelbeamca"}, {"region": "Canada", "units": "SI", "title": "CSA S16:19 + NBCC 2015 Steel Member Calculator", "body": "ClearCalcs", "year": "Live 2026", "url": "https://www.clearcalcs.com/calculations/steelmemberca"}, {"region": "USA", "units": "SI/US", "title": "AISC 360-22 Steel-Concrete Composite Beam Calculator", "body": "SteelCalculator.app", "year": "Live 2026", "url": "https://steelcalculator.app/tools/composite-design/"}, {"region": "USA / Europe", "units": "SI/US", "title": "AISC 360 / EN 1994 Composite Beam Calculator", "body": "ToolsRail", "year": "Live 2026", "url": "https://www.toolsrail.com/civil/composite-beam-calculator.php"}, {"region": "USA", "units": "US", "title": "NDS 2024 + AISC 360 Wood and Steel Beam Calculator", "body": "WebStructural", "year": "Live 2026", "url": "https://webstructural.com/beam-designer.html"}, {"region": "Europe", "units": "SI", "title": "EN 1995-1-1 (EC5) Timber Beam Design Calculator", "body": "CalcTree", "year": "Live 2026", "url": "https://www.calctree.com/templates/timber-beam"}, {"region": "Canada", "units": "SI/US", "title": "CSA O86-14/19 Wood Beam Design Calculator", "body": "SkyCiv", "year": "Live 2026", "url": "https://skyciv.com/quick-calculators/canadian-wood-beam-design/"}, {"region": "USA / Europe / Canada", "units": "SI/US", "title": "ADM 2020 / EN 1999 / CSA S157 Aluminum Beam Calculator", "body": "SkyCiv", "year": "Live 2026", "url": "https://skyciv.com/quick-calculators/aluminum-beam-capacity-calculator/"}, {"region": "USA / Europe / Canada", "units": "SI/US", "title": "ASCE 7-22 / EN 1991-1-4 / NBCC 2020 Wind Load Calculator", "body": "SkyCiv", "year": "Live 2026", "url": "https://skyciv.com/wind-load-calculator/"}, {"region": "USA", "units": "US", "title": "ASCE 7 / ASCE 41 / NEHRP / IBC / AASHTO Seismic Design Web Services", "body": "US Geological Survey", "year": "Live 2026", "url": "https://earthquake.usgs.gov/ws/designmaps/"}, {"region": "USA", "units": "US", "title": "USGS Unified Seismic Hazard Tool", "body": "US Geological Survey", "year": "Live 2026", "url": "https://earthquake.usgs.gov/hazards/interactive/"}, {"region": "USA", "units": "US", "title": "ASCE 7-10/16/22 Hazard Tool (wind, seismic, snow, ice)", "body": "American Society of Civil Engineers", "year": "Live 2026", "url": "https://ascehazardtool.org/"}, {"region": "Canada", "units": "SI", "title": "NBCC 2020 Seismic Hazard Tool (Sa, PGA, PGV)", "body": "Natural Resources Canada", "year": "2025", "url": "https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"}, {"region": "Canada", "units": "SI", "title": "NBCC 2020 Seismic Load, Equivalent Static Method Calculator", "body": "Jabacus", "year": "Live 2026", "url": "https://jabacus.com/engineering/nbc2020/seismic.php"}, {"region": "USA / Europe / Canada", "units": "SI/US", "title": "Multi-Code Beam Analysis Calculator (SFD, BMD, deflection)", "body": "SkyCiv", "year": "Live 2026", "url": "https://skyciv.com/free-beam-calculator/"}, {"region": "Europe", "units": "SI/US", "title": "2D Beam, Frame and Truss Analysis Calculator", "body": "BeamGuru", "year": "Live 2026", "url": "https://beamguru.com/"}, {"region": "Europe", "units": "SI", "title": "EN 1990 to EN 1998 Eurocode Multi-Code Suite", "body": "EurocodeApplied", "year": "Live 2026", "url": "https://eurocodeapplied.com/"}, {"region": "USA", "units": "US", "title": "Wood Connection Calculator (bolts, nails, lag and wood screws), NDS 2024", "body": "American Wood Council", "year": "Live 2026", "url": "https://awc.org/resources/connection-calculator/"}, {"region": "USA", "units": "US", "title": "Span Options Calculator for Wood Joists and Rafters", "body": "American Wood Council", "year": "Live 2026", "url": "https://awc.org/resources/span-options-calculator-for-wood-joists-and-rafters/"}, {"region": "USA", "units": "US", "title": "IBC Heights and Areas Calculator (AWC + WoodWorks + ICC)", "body": "American Wood Council", "year": "Live 2026", "url": "https://awc.org/resources/heights-and-areas-calculator/"}, {"region": "Canada", "units": "SI", "title": "Wood Beam, Joist and Rafter Design Calculator (NBCC)", "body": "Canadian Wood Council", "year": "Live 2026", "url": "https://cwc.ca/design-tool/"}, {"region": "Canada", "units": "SI", "title": "Dimension Calc, wood member sizing", "body": "Canadian Wood Council", "year": "Live 2026", "url": "https://cwc.ca/design-tool/dimensioncalc/"}, {"region": "USA", "units": "SI/US", "title": "AISC Shapes Database v16.0 + free 16th-Edition resources", "body": "American Institute of Steel Construction", "year": "Live 2026", "url": "https://www.aisc.org/publications/steel-construction-manual-resources/16th-ed-steel-construction-manual/aisc-shapes-database-v16.0/"}, {"region": "USA", "units": "US", "title": "WoodWorks Tools and Guides (span tables, calculators)", "body": "WoodWorks", "year": "Live 2026", "url": "https://www.woodworks.org/tools-guides/"}]}, {"id": "trial", "n": "Trial Software", "d": "Commercial trial downloads from leading vendors.", "s": "Design + Training", "c": "#c39bd8", "res": [{"region": "30-day trial", "title": "ETABS", "body": "Computers and Structures, Inc.", "d": "Multi-story buildings, lateral systems, response spectrum.", "url": "https://www.csiamerica.com/products/etabs/trial"}, {"region": "30-day trial", "title": "SAP2000", "body": "Computers and Structures, Inc.", "d": "General-purpose analysis, linear and nonlinear.", "url": "https://www.csiamerica.com/products/sap2000/trial"}, {"region": "30-day trial", "title": "CSiBridge", "body": "Computers and Structures, Inc.", "d": "Bridge analysis, design, staged construction.", "url": "https://www.csiamerica.com/products/csibridge/trial"}, {"region": "30-day trial", "title": "SAFE", "body": "Computers and Structures, Inc.", "d": "Slab and foundation design, PT and RC.", "url": "https://www.csiamerica.com/products/safe/trial"}, {"region": "14-day trial", "title": "IDEA StatiCa", "body": "IDEA StatiCa s.r.o.", "d": "Steel connection design and code-check.", "url": "https://www.ideastatica.com/product-downloads"}, {"region": "30-day trial", "title": "MIDAS Civil NX", "body": "MIDAS IT", "d": "Bridges and civil structures, advanced FEA.", "url": "https://resource.midasuser.com/en/free-trial"}, {"region": "30-day trial", "title": "MIDAS GEN", "body": "MIDAS IT", "d": "Buildings and general structural analysis.", "url": "https://resource.midasuser.com/en/free-trial"}, {"region": "10-day trial", "title": "ADAPT-Builder", "body": "RISA Tech, Inc.", "d": "Concrete buildings with PT, BIM environment.", "url": "https://risa.com/products/adapt-builder"}, {"region": "10-day trial", "title": "ADAPT-PT/RC", "body": "RISA Tech, Inc.", "d": "Post-tensioned beam and slab design.", "url": "https://risa.com/products/adapt-pt-rc"}, {"region": "10-day trial", "title": "RISA-3D", "body": "RISA Tech, Inc.", "d": "3D analysis and design.", "url": "https://risa.com/products/risa-3d"}, {"region": "10-day trial", "title": "RISAFloor", "body": "RISA Tech, Inc.", "d": "Multi-story gravity systems and floor design.", "url": "https://risa.com/products/risafloor"}, {"region": "30-day trial", "title": "DeepEX", "body": "Deep Excavation LLC", "d": "Deep excavation and retaining walls.", "url": "https://www.deepexcavation.com/en/downloads"}]}, {"id": "budget", "n": "Budget-Friendly Software", "d": "Free, open-source, and low-cost alternatives.", "s": "All Services", "c": "#5fce86", "res": [{"title": "OpenSees", "body": "UC Berkeley / PEER", "d": "Nonlinear seismic, research, open-source.", "url": "https://opensees.berkeley.edu/"}, {"title": "Code_Aster + Salome-Meca", "body": "EDF", "d": "General FEA, industrial-grade open-source.", "url": "https://code-aster.org/"}, {"title": "STRES Software", "body": "STRES", "d": "RC design tools, ACI 318-19.", "url": "https://stres-software.com/"}, {"title": "FreeCAD with FEM", "body": "The FreeCAD Project", "d": "CAD plus simple FEA.", "url": "https://www.freecad.org/"}, {"title": "Mastan2", "body": "Cornell University", "d": "2D/3D matrix analysis, learning tool.", "url": "https://www.mastan2.com/"}, {"title": "CalculiX", "body": "Guido Dhondt et al.", "d": "FEA solver, ABAQUS-like syntax.", "url": "https://www.calculix.de/"}, {"title": "PrePoMax", "body": "Open-source", "d": "Pre/post-processor for CalculiX.", "url": "https://prepomax.fs.um.si/"}, {"title": "2D Frame Analysis", "body": "EngiSSol", "d": "Quick 2D frame analysis, free version.", "url": "https://www.engissol.com/"}, {"title": "LISA-FEA", "body": "Sonnenhof Holdings", "d": "Low-cost general FEA.", "url": "https://lisafea.com/"}, {"title": "TRUSS4", "body": "Trussplan", "d": "Truss analysis and design, free version.", "url": "https://www.fine.eu/products/truss/"}]}]}, {"code": "REF", "title": "Standards, Training and External Links", "sub": "Authoritative third-party references.", "items": [{"id": "std", "n": "International Standards", "d": "ASCE, USGS, NBCC, Eurocodes, ICC codes.", "s": "All Services", "c": "#5fce86", "res": [{"region": "USA", "title": "ASCE Hazard Tool, ASCE 7-10/16/22 design parameters", "body": "American Society of Civil Engineers", "year": "Live 2026", "url": "https://ascehazardtool.org/"}, {"region": "USA", "title": "USGS Seismic Design Web Services", "body": "US Geological Survey", "year": "Live 2026", "url": "https://earthquake.usgs.gov/ws/designmaps/"}, {"region": "Canada", "title": "National Building Code of Canada 2020, free PDF", "body": "National Research Council Canada", "year": "2020", "url": "https://nrc-publications.canada.ca/eng/search/?q=NRCCode"}, {"region": "Canada", "title": "NBC 2020 Seismic Hazard Tool", "body": "Natural Resources Canada (CHIS)", "year": "2025", "url": "https://www.seismescanada.rncan.gc.ca/hazard-alea/interpolat/nbc-cnb-en.php"}, {"region": "Europe", "title": "Eurocodes Learning Corner, full family + JRC docs", "body": "EU Joint Research Centre", "year": "Live 2026", "url": "https://eurocodes.jrc.ec.europa.eu/learning-corner"}, {"region": "Europe", "title": "Eurocode 2 Worked Examples", "body": "The Concrete Initiative", "year": "2017", "url": "https://www.theconcreteinitiative.eu/images/ECP_Documents/Eurocode2_WorkedExamples.pdf"}, {"region": "USA", "title": "ICC Digital Codes, free read-only 2024 IBC, IRC and more", "body": "International Code Council", "year": "Live 2026", "url": "https://codes.iccsafe.org/"}]}, {"id": "cert", "n": "Training & Certification Links", "d": "FEMA, CSCE, OSPE, Eurocodes training.", "s": "All Services", "c": "#5fce86", "res": [{"region": "USA", "title": "FEMA Emergency Management Institute, 200+ free courses", "body": "FEMA EMI", "year": "Live 2026", "url": "https://training.fema.gov/is/crslist.aspx"}, {"region": "USA", "title": "FEMA P-154 official training page", "body": "FEMA", "year": "Live 2026", "url": "https://www.fema.gov/emergency-managers/risk-management/earthquake/training/fema-p-154"}, {"region": "Canada", "title": "CSCE Professional Development portal", "body": "CSCE / SCGC", "year": "Live 2026", "url": "https://legacy.csce.ca/en/lifelong-learning/professional-development/"}, {"region": "Canada", "title": "OSPE Continuing Professional Development, free sessions", "body": "Ontario Society of Professional Engineers", "year": "Live 2026", "url": "https://ospe.on.ca/academy/cpd/"}, {"region": "Europe", "title": "Eurocodes Learning Corner, free training materials", "body": "EU Joint Research Centre", "year": "Live 2026", "url": "https://eurocodes.jrc.ec.europa.eu/learning-corner/training-materials"}, {"region": "Europe", "title": "JRC Eurocodes Evolution, explainer video series", "body": "EU Joint Research Centre", "year": "2025", "url": "https://eurocodes.jrc.ec.europa.eu/2nd-generation/eurocodes-evolution-explained-video-series"}]}]}];
 const TRAIN = [["ETABS","Multi-story building. Lateral systems, P-delta, response spectrum."],["SAP2000","General purpose. Linear/nonlinear, static/dynamic."],["CSiBridge","Bridge modeling, staging, tendon layout, seismic."],["SAFE","Slab and foundation. PT and RC. FEA + strip design."],["RAM Concept","PT slab specialist. Tendon profiling, load balancing."],["ADAPT PT","PT analysis. Continuous beam, one-way slab."],["Others","Other third-party software. Specify on request."]];
 const CATS = ["All","Residential","Commercial","Retail","Institutional","Bridges","Infrastructure","Cultural","Business Development"];
 const REGIONS = ["All","UAE","KSA","Qatar","Lebanon","North America","Other"];
@@ -176,7 +163,10 @@ const CSS = `
 .lg .chip.on{background:#0A7C6E;color:#fff;border-color:#0A7C6E}
 .lg .psearch{display:flex;align-items:center;gap:8px;margin:14px 0;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--glass-stroke)}
 .lg .psearch input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:.9rem;font-family:inherit}
-.lg .prow{display:grid;grid-template-columns:1fr 130px 120px;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.08);font-size:.86rem}
+.lg .prow{display:grid;grid-template-columns:1fr 116px 86px auto;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.08);font-size:.86rem}
+.lg .pinq{justify-self:end;padding:5px 11px;border-radius:7px;border:1px solid rgba(14,190,168,.5);background:rgba(14,190,168,.14);color:#0EBEA8;font-size:.74rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.lg .pinq:hover{background:rgba(14,190,168,.26)}
+@media(max-width:680px){.lg .prow{grid-template-columns:1fr auto;row-gap:6px}.lg .pr{text-align:left}.lg .pinq{grid-column:1/-1;justify-self:start}}
 .lg .prow:nth-child(odd){background:rgba(255,255,255,.03)}
 .lg .pc{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;text-align:center}
 .lg .pr{color:#AFC4D8;text-align:right;font-size:.8rem}
@@ -447,7 +437,7 @@ const CG_CSS = `
 .cg .empty{padding:30px;text-align:center;color:#9fb6d0}
 `;
 
-function CapacityGridPanel() {
+function CapacityMeshPanel() {
   const demoPeople = useMemo(() => buildPeople(), []);
   const [clients, setClients] = useState([{ name: "Demo Global Structures Inc.", offices: ["New York", "Toronto", "Paris"], people: demoPeople }]);
   const [ci, setCi] = useState(0);
@@ -642,6 +632,7 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [opacity, setOpacity] = useState(0.12);
   const [drawer, setDrawer] = useState(false);
+  const [hubOpen, setHubOpen] = useState(null);
   const [owner, setOwner] = useState(false);
   // Owner sign-in via Google, restricted to the whitelist. No password is shared with the site. No DNS/email needed.
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -730,6 +721,17 @@ export default function App() {
     } catch (e) { setSvcStatus("error"); }
   };
 
+  const [cm, setCm] = useState({});
+  const [cmStatus, setCmStatus] = useState("idle");
+  const submitCapMesh = async () => {
+    const missing = ["Full name","Company / Organization","Email"].some(k=>!String(cm[k]||"").trim());
+    const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(cm["Email"]||"").trim());
+    if (missing || !emailOk) { setCmStatus("error"); return; }
+    setCmStatus("sending");
+    const payload = { _subject: "Capacity Mesh access request", _template: "table", ...cm };
+    try { const ok = await postForm(payload); setCmStatus(ok ? "success" : "error"); }
+    catch (e) { setCmStatus("error"); }
+  };
   const go = (id) => { setPage(id); setDrawer(false); window.scrollTo({top:0}); };
   const isSvc = ["s1","s2","s3"].includes(page);
 
@@ -874,22 +876,60 @@ export default function App() {
               <div className="eyebrow" style={{color:"#7fe3a0"}}>Free for everyone</div>
               <h1>Knowledge Hub</h1>
               <p>The most comprehensive free structural, engineering, and management resource online. For engineers, architects, students, safety officers, clients, and government officials.</p>
+              <div style={{marginTop:16,display:"inline-flex",alignItems:"baseline",gap:8,padding:"9px 16px",borderRadius:10,background:"rgba(127,227,160,.12)",border:"1px solid rgba(127,227,160,.35)"}}>
+                <span style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.6rem",color:"#7fe3a0"}}>{HUBDATA.reduce((a,b)=>a+b.items.reduce((x,i)=>x+i.res.length,0),0)}</span>
+                <span style={{fontSize:".84rem",fontWeight:600,color:"#cdddef"}}>free, curated resources and growing</span>
+              </div>
             </div>
             <div style={{marginTop:24}}>
-              {HUB.map((b,bi)=>(
+              {HUBDATA.map((b,bi)=>(
                 <div key={b.code} style={{marginBottom:18}}>
                   <div className="bh"><span className="code">{b.code}</span><div style={{flex:1}}><div className="ttl">{b.title}</div><div className="bsub">{`Section · 0${bi+1} of 03 — ${b.sub}`}</div></div></div>
                   <div className={b.items.length===4?"grid4":"grid3"}>
-                    {b.items.map((t,i)=>{const lt=L[t[3]]||t[3];return (
-                      <div key={i} className="tile glass"><span className="badge" style={{background:lt+"26",color:lt}}>{t[2]}</span><div className="tn" style={{color:lt}}>{t[0]}</div><div className="td">{t[1]}</div></div>
-                    );})}
+                    {b.items.map((t)=>(
+                      <div key={t.id} className="tile glass" style={{cursor:"pointer"}} onClick={()=>setHubOpen(t.id)}><span className="badge" style={{background:t.c+"26",color:t.c}}>{t.s}</span><div className="tn" style={{color:t.c}}>{t.n}</div><div className="td">{t.d}</div><div style={{marginTop:8,fontSize:".72rem",fontWeight:700,color:t.c}}>{"▸ Open "+t.res.length+" resources"}</div></div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
+            <div className="card glass" style={{marginTop:18,padding:"14px 16px"}}>
+              <div style={{fontSize:".7rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"#AFC4D8",marginBottom:8}}>Disclaimer · Third-Party Notice</div>
+              <div style={{fontSize:".76rem",color:"#8FA8BE",lineHeight:1.7}}>All third-party content linked here is the property of its owners. iStructural Group Inc. is not affiliated with or endorsed by any third party unless stated, hosts none of the linked content, and is not responsible for its availability, licensing, or terms. External links lead to official sources. For educational use. Updated June 2026.</div>
+            </div>
+            {hubOpen && (()=>{ const it=HUBDATA.reduce((a,b)=>a.concat(b.items),[]).find(x=>x.id===hubOpen); if(!it) return null; return (
+              <div role="dialog" aria-modal="true" onClick={e=>{if(e.target===e.currentTarget)setHubOpen(null);}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(7,16,30,.8)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px",overflowY:"auto"}}>
+                <div style={{position:"relative",width:"100%",maxWidth:820,background:"#0c1a2e",border:"1px solid rgba(127,227,160,.25)",borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,.55)",overflow:"hidden"}}>
+                  <div style={{height:4,background:"linear-gradient(90deg,#1B6B35,#0A7C6E,#6B3A7D)"}} />
+                  <button onClick={()=>setHubOpen(null)} aria-label="Close" style={{position:"absolute",top:14,right:14,width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"#fff",fontSize:"1.3rem",fontWeight:700,cursor:"pointer",lineHeight:1,fontFamily:"inherit"}}>×</button>
+                  <div style={{padding:"24px 26px 28px"}}>
+                    <div style={{fontSize:".72rem",fontWeight:700,letterSpacing:".18em",textTransform:"uppercase",color:"#7fe3a0",marginBottom:6}}>{it.s}</div>
+                    <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.4rem",color:"#fff",marginBottom:6}}>{it.n}</div>
+                    <div style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6,marginBottom:16,maxWidth:680}}>{it.res.length+" free resources. Links lead to the issuing authority; no login or purchase required."}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                      {it.res.map((r,ri)=>(
+                        <a key={ri} href={r.url} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 12px",borderRadius:8,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.12)",textDecoration:"none"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:".9rem",fontWeight:700,color:"#eaf2ff"}}>{r.title}</div>
+                              <div style={{fontSize:".78rem",color:"#8FA8BE",marginTop:2}}>{r.body}{r.year?" · "+r.year:""}</div>
+                              {r.d && <div style={{fontSize:".78rem",color:"#AFC4D8",marginTop:4,lineHeight:1.5}}>{r.d}</div>}
+                            </div>
+                            <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
+                              {r.region && <span style={{fontSize:".68rem",fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(127,227,160,.15)",color:"#7fe3a0",whiteSpace:"nowrap",border:"1px solid rgba(127,227,160,.3)"}}>{r.region}</span>}
+                              {r.units && <span style={{fontSize:".66rem",fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(255,255,255,.08)",color:"#cdddef",whiteSpace:"nowrap"}}>{r.units}</span>}
+                            </div>
+                          </div>
+                          <div style={{fontSize:".72rem",color:"#7fe3a0",fontWeight:700,marginTop:6}}>Open ↗</div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );})()}
           </div>
         )}
-
         {/* PROJECTS */}
         {page==="projects" && (
           <div className="page">
@@ -903,14 +943,14 @@ export default function App() {
             <div className="psearch glass">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8BA0B5" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
               <input value={pQ} onChange={e=>{setPQ(e.target.value);setPAll(false);}} placeholder="Search projects by name, type, region, country..." />
-              <span style={{fontSize:".8rem",color:"#AFC4D8",whiteSpace:"nowrap"}}>{projF.length} {projF.length===1?"project":"projects"}</span>
+              <span style={{fontSize:".8rem",color:"#AFC4D8",whiteSpace:"nowrap"}}>Selected projects</span>
             </div>
             <div className="glass" style={{padding:"6px 10px",marginBottom:24}}>
               {projShown.map((p,i)=>{const col=L[catCol[p.c]]||catCol[p.c]||"#9fb3d4";return (
-                <div key={i} className="prow"><div style={{textShadow:"0 1px 3px rgba(0,0,0,.45)"}}>{p.n}</div><span className="pc" style={{background:col+"26",color:col}}>{p.c}</span><div className="pr">{p.country||p.r}</div></div>
+                <div key={i} className="prow"><div style={{textShadow:"0 1px 3px rgba(0,0,0,.45)"}}>{p.n}</div><span className="pc" style={{background:col+"26",color:col}}>{p.c}</span><div className="pr">{p.country||p.r}</div><button className="pinq" onClick={()=>{setSvc(x=>({...x,["s2:Project Name & Location"]:p.n}));setTab("s2");go("start");}}>Send an inquiry →</button></div>
               );})}
               {projShown.length===0 && <div style={{padding:20,textAlign:"center",color:"#AFC4D8",fontStyle:"italic"}}>No projects match.</div>}
-              {!pAll && projF.length>20 && <div style={{textAlign:"center",padding:10}}><button className="go" onClick={()=>setPAll(true)}>Show all {projF.length} →</button></div>}
+              {!pAll && projF.length>20 && <div style={{textAlign:"center",padding:10}}><button className="go" onClick={()=>setPAll(true)}>Show all →</button></div>}
             </div>
           </div>
         )}
@@ -952,13 +992,26 @@ export default function App() {
                 <div className="more" style={{color:"#e0b65f"}}>Request access →</div>
               </article>
             </div>
+            <div className="fbody glass" id="capmeshForm" style={{borderRadius:14,marginTop:18}}>
+              <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:"#fff",marginBottom:4}}>Request Capacity Mesh access</div>
+              <p style={{fontSize:".86rem",color:"#AFC4D8",lineHeight:1.6,marginBottom:14}}>Tell us about your firm and we will set up a private walkthrough or early access. We respond within 24 hours.</p>
+              <div className="fgrid">
+                {[["Full name",true],["Company / Organization",true],["Email",true],["Mobile",false],["Role",false]].map(([k,req])=>(
+                  <div key={k} className="fld"><label>{k}{req?" *":""}</label><input value={cm[k]||""} onChange={e=>{setCm(sx=>({...sx,[k]:e.target.value})); if(cmStatus!=="idle") setCmStatus("idle");}} placeholder={k} /></div>
+                ))}
+                <div className="fld full"><label>What do you want Capacity Mesh to do for you?</label><textarea value={cm["Message"]||""} onChange={e=>setCm(sx=>({...sx,Message:e.target.value}))} placeholder="Your goals..." /></div>
+              </div>
+              <button className="btn" disabled={cmStatus==="sending"} onClick={submitCapMesh} style={{background:P.tealL,marginTop:14,width:"100%",opacity:cmStatus==="sending"?.6:1,cursor:cmStatus==="sending"?"wait":"pointer"}}>{cmStatus==="sending"?"Sending...":"Request access"}</button>
+              {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
+              {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#ffb4a8",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
+            </div>
             <h2 className="sec">Capacity Mesh</h2>
             {owner ? (
               <div style={{marginTop:18}}>
                 <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
                   <button className="lk" onClick={signOutOwner}>Sign out ({ownerEmail})</button>
                 </div>
-                <CapacityGridPanel/>
+                <CapacityMeshPanel/>
               </div>
             ) : (
               <div className="card glass" style={{maxWidth:520,margin:"18px auto 0",padding:24}}>
@@ -1084,13 +1137,12 @@ export default function App() {
           <div className="page">
             <div className="phero glass"><h1>Contact Us</h1><p>iStructural Group Inc. · Canada · info@istructgroup.com</p></div>
             <div className="grid3" style={{marginTop:24}}>
-              <div className="card glass"><h3 style={{fontSize:"1.05rem"}}>General Inquiry</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>Management, design, or consultancy.</div><div style={{marginTop:10,fontWeight:700,color:P.tealL}}>info@istructgroup.com →</div></div>
+              <a className="card glass" href="mailto:info@istructgroup.com?subject=General%20Inquiry" style={{textDecoration:"none",display:"block"}}><h3 style={{fontSize:"1.05rem"}}>General Inquiry</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>Management, design, or consultancy.</div><div style={{marginTop:10,fontWeight:700,color:P.tealL}}>info@istructgroup.com →</div></a>
               <div className="card glass" style={{cursor:"pointer"}} onClick={()=>go("start")}><h3 style={{fontSize:"1.05rem"}}>Start a Project</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>Management, design, or AI assessment.</div><div style={{marginTop:10,fontWeight:700,color:"#6db3e6"}}>Start a Project →</div></div>
               <div className="card glass" style={{cursor:"pointer"}} onClick={()=>go("training")}><h3 style={{fontSize:"1.05rem"}}>Training</h3><div style={{fontSize:".85rem",color:"#AFC4D8",marginTop:6,lineHeight:1.6}}>CSi training for your team.</div><div style={{marginTop:10,fontWeight:700,color:"#b389c6"}}>Request Training →</div></div>
             </div>
           </div>
         )}
-
         <footer className="foot glass">
           <div className="foot-grid">
             <div><div className="co">iStructural Group Inc.</div><div className="blurb">Since 2010. Advanced structural engineering, business strategy, and AI-powered assessment. Canada.</div></div>
@@ -1102,7 +1154,6 @@ export default function App() {
           <div className="base"><span>iStructural Group Inc. · istructgroup.com · Canada · info@istructgroup.com</span><span>Copyright 2026 iStructural Group Inc. All rights reserved.</span></div>
         </footer>
       </div>
-
       {/* Glass opacity control (iOS 27 style) */}
       <div className="gc glass">
         <div className="gt">Liquid Glass</div>
@@ -1110,7 +1161,6 @@ export default function App() {
         <input type="range" min="2" max="55" value={Math.round(opacity*100)} onChange={e=>setOpacity(+e.target.value/100)} />
         <div className="gr"><span>&nbsp;</span><span>Opaque</span></div>
       </div>
-
       {/* Mobile drawer */}
       {drawer && (
         <div className="drawer" onClick={e=>{if(e.target===e.currentTarget)setDrawer(false);}}>

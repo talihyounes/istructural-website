@@ -660,6 +660,26 @@ function CapacityMeshPanel() {
 }
 
 
+// ===== Capacity Mesh teaser data (3-office MVP Corporate demo; simulated) =====
+const CM_VORONOI = `<svg viewBox="0 0 320 170" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M123.5,81.0 L157.5,84.1 L157.9,76.6 L135.8,37.0 L121.1,64.9 L123.0,80.6 L123.5,81.0Z" fill="#0db39e" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M84.0,92.8 L80.5,102.9 L105.8,112.2 L107.2,102.1 L100.7,85.2 L93.3,77.7 L84.0,92.8Z" fill="#0dbca6" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M59.9,60.3 L0.0,28.2 L0.0,125.7 L80.5,102.9 L84.0,92.8 L59.9,60.3Z" fill="#0ca491" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M95.6,60.8 L130.9,0.0 L42.5,0.0 L95.6,60.8Z" fill="#0db19c" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M156.4,147.7 L123.5,81.0 L123.0,80.6 L122.2,81.3 L107.2,102.1 L105.8,112.2 L146.9,170.0 L157.3,170.0 L156.4,147.7Z" fill="#0ec7b0" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M93.1,74.5 L59.9,60.3 L84.0,92.8 L93.3,77.7 L93.1,74.5Z" fill="#0ec7b0" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M100.7,85.2 L122.2,81.3 L123.0,80.6 L121.1,64.9 L96.7,71.3 L93.1,74.5 L93.3,77.7 L100.7,85.2Z" fill="#0b9b89" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M59.9,60.3 L93.1,74.5 L96.7,71.3 L95.6,60.8 L42.5,0.0 L0.0,0.0 L0.0,28.2 L59.9,60.3Z" fill="#0ba08d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M107.2,102.1 L122.2,81.3 L100.7,85.2 L107.2,102.1Z" fill="#0b9785" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M95.6,60.8 L96.7,71.3 L121.1,64.9 L135.8,37.0 L136.7,0.0 L130.9,0.0 L95.6,60.8Z" fill="#0cad99" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M156.4,147.7 L161.3,100.6 L157.5,84.1 L123.5,81.0 L156.4,147.7Z" fill="#0b9584" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M0.0,125.7 L0.0,170.0 L146.9,170.0 L105.8,112.2 L80.5,102.9 L0.0,125.7Z" fill="#0cae9a" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M208.6,68.0 L250.2,15.9 L190.9,52.2 L192.9,59.3 L196.2,63.1 L208.6,68.0Z" fill="#c0933d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M190.9,52.2 L250.2,15.9 L253.2,13.1 L261.5,0.0 L155.1,0.0 L190.9,52.2Z" fill="#aa8236" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M245.6,77.0 L249.9,26.7 L233.0,61.2 L245.6,77.0Z" fill="#c2943d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M211.8,121.6 L215.5,116.9 L222.0,87.6 L214.4,73.9 L208.6,68.0 L196.2,63.1 L188.4,81.9 L211.8,121.6Z" fill="#bd903c" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M161.3,100.6 L188.4,81.9 L196.2,63.1 L192.9,59.3 L157.9,76.6 L157.5,84.1 L161.3,100.6Z" fill="#9b7631" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M157.9,76.6 L192.9,59.3 L190.9,52.2 L155.1,0.0 L136.7,0.0 L135.8,37.0 L157.9,76.6Z" fill="#bb8f3b" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M157.3,170.0 L185.2,170.0 L211.8,121.6 L188.4,81.9 L161.3,100.6 L156.4,147.7 L157.3,170.0Z" fill="#a98136" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M245.9,79.7 L269.6,87.8 L311.9,65.9 L320.0,58.2 L320.0,0.0 L261.5,0.0 L253.2,13.1 L249.9,26.7 L245.6,77.0 L245.9,79.7Z" fill="#b38838" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M222.0,87.6 L245.9,79.7 L245.6,77.0 L233.0,61.2 L214.4,73.9 L222.0,87.6Z" fill="#ab8236" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M214.4,73.9 L233.0,61.2 L249.9,26.7 L253.2,13.1 L250.2,15.9 L208.6,68.0 L214.4,73.9Z" fill="#c3953e" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M255.8,110.0 L267.8,92.0 L269.6,87.8 L245.9,79.7 L222.0,87.6 L215.5,116.9 L255.8,110.0Z" fill="#1b537d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M293.5,133.2 L264.4,139.0 L243.6,170.0 L320.0,170.0 L320.0,162.0 L293.5,133.2Z" fill="#184b72" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M293.4,122.9 L311.9,65.9 L269.6,87.8 L267.8,92.0 L277.5,118.0 L293.4,122.9Z" fill="#1c5582" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M311.9,65.9 L293.4,122.9 L293.5,133.2 L320.0,162.0 L320.0,58.2 L311.9,65.9Z" fill="#1e5c8b" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M263.0,126.6 L264.4,139.0 L293.5,133.2 L293.4,122.9 L277.5,118.0 L263.0,126.6Z" fill="#1a4f78" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M267.8,92.0 L255.8,110.0 L263.0,126.6 L277.5,118.0 L267.8,92.0Z" fill="#194d74" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M264.4,139.0 L263.0,126.6 L255.8,110.0 L215.5,116.9 L211.8,121.6 L185.2,170.0 L243.6,170.0 L264.4,139.0Z" fill="#1a517b" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+const CM_AREAS = [
+  {a:"High-Seismic", rows:[["NY","#1E5B8A",69,1],["TO","#0EBEA8",37,0],["PA","#C6973F",39,0]]},
+  {a:"High-rise Towers", rows:[["NY","#1E5B8A",69,1],["TO","#0EBEA8",65,0],["PA","#C6973F",40,0]]},
+  {a:"ETABS / 3D Modelling", rows:[["NY","#1E5B8A",61,0],["TO","#0EBEA8",88,1],["PA","#C6973F",62,0]]},
+  {a:"Detailing & BIM", rows:[["NY","#1E5B8A",62,0],["TO","#0EBEA8",88,0],["PA","#C6973F",90,1]]},
+  {a:"Bridges (Eurocode)", rows:[["NY","#1E5B8A",44,0],["TO","#0EBEA8",37,0],["PA","#C6973F",69,1]]},
+  {a:"Peer Review", rows:[["NY","#1E5B8A",69,1],["TO","#0EBEA8",38,0],["PA","#C6973F",40,0]]},
+];
+const CM_ROUTING = [
+  ["High-Seismic","#1E5B8A","New York · 69","Toronto, Paris"],
+  ["High-rise Towers","#1E5B8A","New York · 69","Paris"],
+  ["ETABS / 3D Modelling","#0A7C6E","Toronto · 88","New York, Paris"],
+  ["Detailing & BIM","#A8762A","Paris · 90","New York"],
+  ["Bridges (Eurocode)","#A8762A","Paris · 69","New York, Toronto"],
+  ["Peer Review","#1E5B8A","New York · 69","Toronto, Paris"],
+];
+const CM_LABEL = { NY:"#1E5B8A", TO:"#0A7C6E", PA:"#A8762A" };
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [opacity] = useState(0.12);
@@ -755,6 +775,13 @@ export default function App() {
 
   const [cm, setCm] = useState({});
   const [cmStatus, setCmStatus] = useState("idle");
+  const [cmEx, setCmEx] = useState(false);
+  useEffect(() => {
+    if (!cmEx) return;
+    const onKey = (e) => { if (e.key === "Escape") setCmEx(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [cmEx]);
   const submitCapMesh = async () => {
     const missing = ["Full name","Company / Organization","Email"].some(k=>!String(cm[k]||"").trim());
     const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(cm["Email"]||"").trim());
@@ -1022,6 +1049,100 @@ export default function App() {
               </div>
               <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in below ↓</div>
             </article>
+
+            {/* ===== Capacity Mesh teaser: compact Voronoi card + slide-in drawer ===== */}
+            <article className="card glass" style={{marginTop:14,padding:0,overflow:"hidden",borderTop:`4px solid ${P.tealL}`}}>
+              <div style={{display:"flex",flexWrap:"wrap"}}>
+                <div style={{flex:"1 1 240px",position:"relative",background:"#0C1B2E",minHeight:180}}>
+                  <div dangerouslySetInnerHTML={{__html:CM_VORONOI}} style={{height:"100%",minHeight:180}} />
+                  <span style={{position:"absolute",left:12,bottom:10,fontSize:".6rem",fontWeight:700,color:"#cfe0f0",background:"rgba(6,14,24,.55)",padding:"3px 8px",borderRadius:5}}>Each cell = one engineer · 29 across 3 offices</span>
+                </div>
+                <div style={{flex:"1 1 300px",padding:"20px 22px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                    <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:P.teal}}>Live example</div>
+                    <span style={{fontSize:".58rem",fontWeight:800,letterSpacing:".07em",textTransform:"uppercase",color:P.gold,border:`1px solid ${P.gold}66`,borderRadius:6,padding:"4px 8px"}}>Simulated demo</span>
+                  </div>
+                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:"#2A3642",marginTop:8,lineHeight:1.25}}>One firm, three offices, each strong somewhere</div>
+                  <p style={{fontSize:".88rem",color:"#5A6B7A",lineHeight:1.6,marginTop:8}}>Toronto, New York and Paris, scored across six capability areas. One map shows each office forte and where the next project should go.</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
+                    {[["New York","#1E5B8A",68],["Toronto","#0EBEA8",100],["Paris","#C6973F",95]].map(([n,c,v])=>(
+                      <div key={n} style={{display:"flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid rgba(20,40,64,.12)",borderRadius:9,padding:"7px 11px"}}>
+                        <span style={{width:9,height:9,borderRadius:2,background:c}} />
+                        <span style={{fontSize:".74rem",color:"#5A6B7A"}}>{n}</span>
+                        <b style={{fontFamily:"'Fraunces',serif",color:"#2A3642",fontSize:".92rem"}}>{v}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{fontSize:".66rem",color:"#8a93a0",marginTop:6}}>Office coverage, share of tracked capabilities the team can deliver.</div>
+                  <button className="btn" style={{background:P.teal,marginTop:16}} onClick={()=>setCmEx(true)}>See how projects get routed →</button>
+                </div>
+              </div>
+            </article>
+
+            {/* slide-in drawer (always mounted, animated via inline styles) */}
+            <div role="dialog" aria-modal="true" aria-label="Capacity Mesh three-office example"
+              style={{position:"fixed",inset:0,zIndex:1200,visibility:cmEx?"visible":"hidden",opacity:cmEx?1:0,transition:"opacity .25s ease"}}>
+              <div onClick={()=>setCmEx(false)} style={{position:"absolute",inset:0,background:"rgba(20,40,64,.45)",backdropFilter:"blur(2px)",WebkitBackdropFilter:"blur(2px)"}} />
+              <div style={{position:"absolute",top:0,right:0,height:"100%",width:"min(470px,93vw)",background:"#F7F5F0",borderLeft:"1px solid rgba(20,40,64,.12)",boxShadow:"-20px 0 60px rgba(20,40,64,.28)",transform:cmEx?"translateX(0)":"translateX(100%)",transition:"transform .3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",padding:"22px 24px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+                  <div>
+                    <div style={{fontSize:".64rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:P.teal}}>Capacity Mesh · live example</div>
+                    <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:"#2A3642",marginTop:4}}>Office forte and project routing</div>
+                  </div>
+                  <button onClick={()=>setCmEx(false)} aria-label="Close" style={{background:"#fff",border:"1px solid rgba(20,40,64,.15)",color:"#2A3642",width:32,height:32,borderRadius:8,cursor:"pointer",fontSize:"1.1rem",lineHeight:1,flexShrink:0,fontFamily:"inherit"}}>×</button>
+                </div>
+
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6,marginTop:16}}>
+                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:"#2A3642"}}>Office forte by capability area</div>
+                  <div style={{display:"flex",gap:10,fontSize:".66rem",color:"#5A6B7A",flexWrap:"wrap"}}>
+                    <span><span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:"#1E5B8A",marginRight:4}} />NY</span>
+                    <span><span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:"#0EBEA8",marginRight:4}} />TO</span>
+                    <span><span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:"#C6973F",marginRight:4}} />PA</span>
+                    <span>★ lead</span>
+                  </div>
+                </div>
+                <div style={{fontSize:".7rem",color:"#8a93a0",margin:"4px 0 14px"}}>Mean experience, scaled 0 to 100.</div>
+
+                {CM_AREAS.map((g,gi)=>(
+                  <div key={g.a} style={{marginBottom:gi<CM_AREAS.length-1?13:4}}>
+                    <div style={{fontSize:".78rem",fontWeight:700,color:"#2A3642",marginBottom:5}}>{g.a}</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                      {g.rows.map(([code,col,val,lead])=>(
+                        <div key={code} style={{display:"grid",gridTemplateColumns:"30px 1fr 44px",gap:8,alignItems:"center"}}>
+                          <div style={{fontSize:".62rem",fontWeight:800,color:CM_LABEL[code]}}>{code}</div>
+                          <div style={{background:"rgba(20,40,64,.08)",borderRadius:5,height:14}}>
+                            <div style={{height:"100%",width:val+"%",background:col,borderRadius:5,opacity:lead?1:.5}} />
+                          </div>
+                          <div style={{fontSize:".66rem",fontWeight:lead?800:700,color:lead?"#2A3642":"#7a8694"}}>{lead?val+" ★":val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{marginTop:20,borderTop:"1px solid rgba(20,40,64,.12)",paddingTop:16}}>
+                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:"#2A3642",marginBottom:4}}>Routing advisor · who leads, who borrows</div>
+                  <div style={{fontSize:".7rem",color:"#8a93a0",marginBottom:10}}>When a project comes in, where does it go.</div>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem"}}>
+                    <thead><tr style={{textAlign:"left",color:P.teal,fontSize:".64rem",letterSpacing:".06em",textTransform:"uppercase"}}>
+                      <th style={{padding:"7px 10px",borderBottom:"1px solid rgba(20,40,64,.15)"}}>Capability</th>
+                      <th style={{padding:"7px 10px",borderBottom:"1px solid rgba(20,40,64,.15)"}}>Lead</th>
+                      <th style={{padding:"7px 10px",borderBottom:"1px solid rgba(20,40,64,.15)"}}>Route to</th>
+                    </tr></thead>
+                    <tbody>
+                      {CM_ROUTING.map((r,ri)=>(
+                        <tr key={r[0]}>
+                          <td style={{padding:"8px 10px",borderBottom:ri<CM_ROUTING.length-1?"1px solid rgba(20,40,64,.08)":"none",color:"#2A3642"}}>{r[0]}</td>
+                          <td style={{padding:"8px 10px",borderBottom:ri<CM_ROUTING.length-1?"1px solid rgba(20,40,64,.08)":"none",fontWeight:700,color:r[1]}}>{r[2]}</td>
+                          <td style={{padding:"8px 10px",borderBottom:ri<CM_ROUTING.length-1?"1px solid rgba(20,40,64,.08)":"none",color:"#5A6B7A"}}>{r[3]}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{fontSize:".66rem",color:"#8a93a0",marginTop:14,fontStyle:"italic"}}>Capacity Mesh simulated demonstration data, not real personnel records. Source: iStructural Capacity Mesh MVP Corporate demo.</div>
+              </div>
+            </div>
             <article className="card glass" style={{marginTop:14,borderTop:`3px solid ${P.gold}88`,cursor:"pointer",opacity:.92}} onClick={()=>go("nppe")}>
               <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>
                 <h3 style={{color:"#e0b65f",fontSize:"1.1rem"}}>NPPE Study Tutor</h3>

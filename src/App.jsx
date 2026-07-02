@@ -246,6 +246,25 @@ const CSS = `
 .lg .svc-row:hover{border-color:rgba(10,124,110,.45)}
 @media(min-width:561px) and (max-width:880px){.lg .grid3,.lg .grid4{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.lg .phero{padding:28px 20px}.lg h2.sec{margin:34px 0 14px}}
+/* ===== v-next: mobile perf + touch + a11y ===== */
+.lg .dd.open .dd-menu{display:flex}
+.lg button:focus-visible,.lg .lk:focus-visible,.lg .chip:focus-visible{outline:2px solid #0EBEA8;outline-offset:2px}
+@media(max-width:880px){
+  .lg{--glass-blur:12px}
+  .lg .bg:after{animation:none;filter:blur(18px)}
+  .lg .gc{display:none}
+  .lg .hamb{width:44px;height:44px}
+  .lg .chip{min-height:44px;display:inline-flex;align-items:center}
+  .lg .pinq{min-height:40px}
+  .lg .go{min-height:44px}
+  .lg .foot .col a{padding:8px 0;font-size:.8rem}
+}
+@media(max-width:640px){.lg .fld input,.lg .fld select,.lg .fld textarea{font-size:16px}}
+.lg .cmx-tab{min-height:46px;padding:0 16px;border-radius:10px;border:1px solid rgba(20,40,64,.15);background:#fff;color:#5A6B7A;font-weight:800;font-size:.82rem;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px}
+.lg .cmx-tab.on{background:rgba(10,124,110,.12);border-color:#0A7C6E;color:#0A7C6E}
+.lg .cmx-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.lg .cmx-kpi{flex:1 1 90px;background:#fff;border:1px solid rgba(20,40,64,.1);border-radius:10px;padding:10px;text-align:center}
+.lg .cmx-roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 @media(max-width:680px){.lg .chip{padding:7px 13px;font-size:.85rem}.lg .drawer .lk{padding:14px 12px;font-size:1.05rem}.lg .nav-cta{padding:9px 16px}.lg .lk{padding:8px 12px}}
 `;
 
@@ -661,29 +680,220 @@ function CapacityMeshPanel() {
 
 
 // ===== Capacity Mesh teaser data (3-office MVP Corporate demo; simulated) =====
-const CM_VORONOI = `<svg viewBox="0 0 320 170" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M123.5,81.0 L157.5,84.1 L157.9,76.6 L135.8,37.0 L121.1,64.9 L123.0,80.6 L123.5,81.0Z" fill="#0db39e" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M84.0,92.8 L80.5,102.9 L105.8,112.2 L107.2,102.1 L100.7,85.2 L93.3,77.7 L84.0,92.8Z" fill="#0dbca6" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M59.9,60.3 L0.0,28.2 L0.0,125.7 L80.5,102.9 L84.0,92.8 L59.9,60.3Z" fill="#0ca491" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M95.6,60.8 L130.9,0.0 L42.5,0.0 L95.6,60.8Z" fill="#0db19c" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M156.4,147.7 L123.5,81.0 L123.0,80.6 L122.2,81.3 L107.2,102.1 L105.8,112.2 L146.9,170.0 L157.3,170.0 L156.4,147.7Z" fill="#0ec7b0" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M93.1,74.5 L59.9,60.3 L84.0,92.8 L93.3,77.7 L93.1,74.5Z" fill="#0ec7b0" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M100.7,85.2 L122.2,81.3 L123.0,80.6 L121.1,64.9 L96.7,71.3 L93.1,74.5 L93.3,77.7 L100.7,85.2Z" fill="#0b9b89" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M59.9,60.3 L93.1,74.5 L96.7,71.3 L95.6,60.8 L42.5,0.0 L0.0,0.0 L0.0,28.2 L59.9,60.3Z" fill="#0ba08d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M107.2,102.1 L122.2,81.3 L100.7,85.2 L107.2,102.1Z" fill="#0b9785" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M95.6,60.8 L96.7,71.3 L121.1,64.9 L135.8,37.0 L136.7,0.0 L130.9,0.0 L95.6,60.8Z" fill="#0cad99" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M156.4,147.7 L161.3,100.6 L157.5,84.1 L123.5,81.0 L156.4,147.7Z" fill="#0b9584" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M0.0,125.7 L0.0,170.0 L146.9,170.0 L105.8,112.2 L80.5,102.9 L0.0,125.7Z" fill="#0cae9a" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M208.6,68.0 L250.2,15.9 L190.9,52.2 L192.9,59.3 L196.2,63.1 L208.6,68.0Z" fill="#c0933d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M190.9,52.2 L250.2,15.9 L253.2,13.1 L261.5,0.0 L155.1,0.0 L190.9,52.2Z" fill="#aa8236" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M245.6,77.0 L249.9,26.7 L233.0,61.2 L245.6,77.0Z" fill="#c2943d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M211.8,121.6 L215.5,116.9 L222.0,87.6 L214.4,73.9 L208.6,68.0 L196.2,63.1 L188.4,81.9 L211.8,121.6Z" fill="#bd903c" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M161.3,100.6 L188.4,81.9 L196.2,63.1 L192.9,59.3 L157.9,76.6 L157.5,84.1 L161.3,100.6Z" fill="#9b7631" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M157.9,76.6 L192.9,59.3 L190.9,52.2 L155.1,0.0 L136.7,0.0 L135.8,37.0 L157.9,76.6Z" fill="#bb8f3b" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M157.3,170.0 L185.2,170.0 L211.8,121.6 L188.4,81.9 L161.3,100.6 L156.4,147.7 L157.3,170.0Z" fill="#a98136" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M245.9,79.7 L269.6,87.8 L311.9,65.9 L320.0,58.2 L320.0,0.0 L261.5,0.0 L253.2,13.1 L249.9,26.7 L245.6,77.0 L245.9,79.7Z" fill="#b38838" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M222.0,87.6 L245.9,79.7 L245.6,77.0 L233.0,61.2 L214.4,73.9 L222.0,87.6Z" fill="#ab8236" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M214.4,73.9 L233.0,61.2 L249.9,26.7 L253.2,13.1 L250.2,15.9 L208.6,68.0 L214.4,73.9Z" fill="#c3953e" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M255.8,110.0 L267.8,92.0 L269.6,87.8 L245.9,79.7 L222.0,87.6 L215.5,116.9 L255.8,110.0Z" fill="#1b537d" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M293.5,133.2 L264.4,139.0 L243.6,170.0 L320.0,170.0 L320.0,162.0 L293.5,133.2Z" fill="#184b72" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M293.4,122.9 L311.9,65.9 L269.6,87.8 L267.8,92.0 L277.5,118.0 L293.4,122.9Z" fill="#1c5582" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M311.9,65.9 L293.4,122.9 L293.5,133.2 L320.0,162.0 L320.0,58.2 L311.9,65.9Z" fill="#1e5c8b" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M263.0,126.6 L264.4,139.0 L293.5,133.2 L293.4,122.9 L277.5,118.0 L263.0,126.6Z" fill="#1a4f78" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M267.8,92.0 L255.8,110.0 L263.0,126.6 L277.5,118.0 L267.8,92.0Z" fill="#194d74" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/><path d="M264.4,139.0 L263.0,126.6 L255.8,110.0 L215.5,116.9 L211.8,121.6 L185.2,170.0 L243.6,170.0 L264.4,139.0Z" fill="#1a517b" stroke="#0C1B2E" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
-const CM_AREAS = [
-  {a:"High-Seismic", rows:[["NY","#1E5B8A",69,1],["TO","#0EBEA8",37,0],["PA","#C6973F",39,0]]},
-  {a:"High-rise Towers", rows:[["NY","#1E5B8A",69,1],["TO","#0EBEA8",65,0],["PA","#C6973F",40,0]]},
-  {a:"ETABS / 3D Modelling", rows:[["NY","#1E5B8A",61,0],["TO","#0EBEA8",88,1],["PA","#C6973F",62,0]]},
-  {a:"Detailing & BIM", rows:[["NY","#1E5B8A",62,0],["TO","#0EBEA8",88,0],["PA","#C6973F",90,1]]},
-  {a:"Bridges (Eurocode)", rows:[["NY","#1E5B8A",44,0],["TO","#0EBEA8",37,0],["PA","#C6973F",69,1]]},
-  {a:"Peer Review", rows:[["NY","#1E5B8A",69,1],["TO","#0EBEA8",38,0],["PA","#C6973F",40,0]]},
+const CMD_VOR = [
+  ["NY","Robert Hayes","71.3,4.0 198.9,4.0 162.6,102.6 154.7,108.0 72.8,7.6",132.1,45.2],
+  ["NY","Aisha Khan","72.8,7.6 154.7,108.0 144.7,148.0 53.9,135.9",106.5,99.9],
+  ["NY","Tomas Rivera","181.5,356.0 51.7,356.0 148.9,160.2 233.6,196.8 216.8,302.2",166.5,274.2],
+  ["NY","Grace Lin","198.9,4.0 237.0,4.0 232.1,90.6 162.6,102.6",207.7,50.3],
+  ["NY","Daniel Park","51.7,356.0 4.0,356.0 4.0,156.7 53.9,135.9 144.7,148.0 148.9,160.2",67.9,218.8],
+  ["NY","Maria Lopez","4.0,4.0 71.3,4.0 72.8,7.6 53.9,135.9 4.0,156.7",41.2,61.6],
+  ["NY","Sofia Bauer","233.6,196.8 148.9,160.2 144.7,148.0 154.7,108.0 162.6,102.6 232.1,90.6 249.5,99.8 264.9,171.8 254.8,187.0",205.1,140.5],
+  ["TO","Daniel Wong","237.0,4.0 318.1,4.0 325.1,62.7 249.5,99.8 232.1,90.6",272.3,52.2],
+  ["TO","Priya Shah","444.4,237.5 392.7,236.5 373.8,188.9 409.2,166.9 431.7,168.5 451.0,183.4",417.2,197.0],
+  ["TO","Mohammed Ali","443.2,356.0 316.7,356.0 331.9,277.5 373.1,279.6",366.2,317.3],
+  ["TO","Emma Clarke","254.8,187.0 264.9,171.8 325.6,147.4 367.6,187.8 315.6,236.8",305.7,186.2],
+  ["TO","Raj Patel","318.1,4.0 431.0,4.0 430.7,73.0 387.0,92.6 341.9,85.7 325.1,62.7",372.3,53.7],
+  ["TO","Olivia Brown","325.6,147.4 264.9,171.8 249.5,99.8 325.1,62.7 341.9,85.7",301.4,113.5],
+  ["TO","Lucas Meyer","409.2,166.9 373.8,188.9 367.6,187.8 325.6,147.4 341.9,85.7 387.0,92.6",367.5,144.9],
+  ["TO","Hannah Reed","316.7,356.0 181.5,356.0 216.8,302.2 320.8,268.6 331.9,277.5",273.5,312.1],
+  ["TO","Ethan Wright","216.8,302.2 233.6,196.8 254.8,187.0 315.6,236.8 320.8,268.6",268.3,238.3],
+  ["TO","Sofia Mendez","373.8,188.9 392.7,236.5 373.1,279.6 331.9,277.5 320.8,268.6 315.6,236.8 367.6,187.8",353.6,239.4],
+  ["TO","Liam Tremblay","461.4,356.0 443.2,356.0 373.1,279.6 392.7,236.5 444.4,237.5 480.9,286.1",432.6,291.9],
+  ["TO","Noah Kim","431.7,168.5 409.2,166.9 387.0,92.6 430.7,73.0 454.8,88.0 459.5,105.5",428.8,115.8],
+  ["PA","Julien Moreau","596.5,146.9 548.1,219.6 512.5,177.7 513.9,146.1 538.6,113.8 554.9,112.3",544.1,152.7],
+  ["PA","Camille Laurent","538.6,113.8 513.9,146.1 459.5,105.5 454.8,88.0 511.1,63.4",495.6,103.4],
+  ["PA","Antoine Dubois","588.6,356.0 461.4,356.0 480.9,286.1 549.7,225.7 565.2,233.9",529.2,291.6],
+  ["PA","Lea Martin","636.0,137.2 636.0,236.6 565.2,233.9 549.7,225.7 548.1,219.6 596.5,146.9",588.6,200.0],
+  ["PA","Chloe Petit","431.0,4.0 535.3,4.0 511.1,63.4 454.8,88.0 430.7,73.0",472.6,46.5],
+  ["PA","Emma Rousseau","480.9,286.1 444.4,237.5 451.0,183.4 512.5,177.7 548.1,219.6 549.7,225.7",497.8,221.7],
+  ["PA","Hugo Bernard","451.0,183.4 431.7,168.5 459.5,105.5 513.9,146.1 512.5,177.7",473.7,156.2],
+  ["PA","Louis Faure","636.0,236.6 636.0,356.0 588.6,356.0 565.2,233.9",606.5,295.6],
+  ["PA","Mathis Roy","636.0,14.4 636.0,137.2 596.5,146.9 554.9,112.3",605.9,102.7],
+  ["PA","Ines Garnier","535.3,4.0 636.0,4.0 636.0,14.4 554.9,112.3 538.6,113.8 511.1,63.4",568.7,52.0]
 ];
-const CM_ROUTING = [
-  ["High-Seismic","#1E5B8A","New York · 69","Toronto, Paris"],
-  ["High-rise Towers","#1E5B8A","New York · 69","Paris"],
-  ["ETABS / 3D Modelling","#0A7C6E","Toronto · 88","New York, Paris"],
-  ["Detailing & BIM","#A8762A","Paris · 90","New York"],
-  ["Bridges (Eurocode)","#A8762A","Paris · 69","New York, Toronto"],
-  ["Peer Review","#1E5B8A","New York · 69","Toronto, Paris"],
-];
-const CM_LABEL = { NY:"#1E5B8A", TO:"#0A7C6E", PA:"#A8762A" };
+// ===== Capacity Mesh teaser v2 (engine v2.1, gold-gate validated; simulated demo) =====
+const CMD_AREAS=["High-Seismic","High-rise Towers","ETABS / 3D Modelling","Detailing & BIM","Bridges (Eurocode)","Peer Review"];
+const CMD_ACOL={"High-Seismic":"#C0553A","High-rise Towers":"#1E5B8A","ETABS / 3D Modelling":"#0A7C6E","Detailing & BIM":"#6B3A7D","Bridges (Eurocode)":"#A8762A","Peer Review":"#1B6B35"};
+const CMD_OFF={NY:{n:"New York",c:"#1E5B8A",ppl:7,cov:75,forte:"High-Seismic"},TO:{n:"Toronto",c:"#0EBEA8",ppl:12,cov:95,forte:"ETABS / 3D Modelling"},PA:{n:"Paris",c:"#C6973F",ppl:10,cov:86,forte:"Detailing & BIM"}};
+const CMD_FORTE={NY:[69,69,61,62,44,69],TO:[37,65,88,88,37,38],PA:[39,40,62,90,69,40]};
+const CMD_MEAN=[48,58,70,80,50,49];
+const CMD_FLOWS=[["High-Seismic","NY",69,["TO","PA"]],["High-rise Towers","NY",69,["PA"]],["ETABS / 3D Modelling","TO",88,[]],["Detailing & BIM","PA",90,[]],["Bridges (Eurocode)","PA",69,["NY","TO"]],["Peer Review","NY",69,["TO","PA"]]];
+const CMD_P={"Robert Hayes":["NY","Senior",100],"Aisha Khan":["NY","Senior",100],"Tomas Rivera":["NY","Engineer",88],"Grace Lin":["NY","Engineer",88],"Daniel Park":["NY","Graduate",40],"Maria Lopez":["NY","Graduate",40],"Sofia Bauer":["NY","Technician",67],"Daniel Wong":["TO","Senior",100],"Priya Shah":["TO","Senior",100],"Mohammed Ali":["TO","Engineer",83],"Emma Clarke":["TO","Engineer",88],"Raj Patel":["TO","Engineer",88],"Olivia Brown":["TO","Engineer",83],"Lucas Meyer":["TO","Graduate",100],"Hannah Reed":["TO","Graduate",100],"Ethan Wright":["TO","Graduate",100],"Sofia Mendez":["TO","Technician",100],"Liam Tremblay":["TO","Technician",100],"Noah Kim":["TO","Technician",100],"Julien Moreau":["PA","Senior",100],"Camille Laurent":["PA","Senior",100],"Antoine Dubois":["PA","Engineer",79],"Lea Martin":["PA","Engineer",75],"Chloe Petit":["PA","Engineer",83],"Emma Rousseau":["PA","Engineer",75],"Hugo Bernard":["PA","Graduate",70],"Louis Faure":["PA","Graduate",80],"Mathis Roy":["PA","Technician",100],"Ines Garnier":["PA","Technician",100]};
+const CMD_LU=[["Lucas Meyer","TO","Graduate","Engineer",94],["Hannah Reed","TO","Graduate","Engineer",94],["Ethan Wright","TO","Graduate","Engineer",94],["Tomas Rivera","NY","Engineer","Senior",92],["Raj Patel","TO","Engineer","Senior",92],["Grace Lin","NY","Engineer","Senior",92]];
+const CMD_LENDS={NY:["High-Seismic","High-rise Towers","Peer Review"],TO:["ETABS / 3D Modelling"],PA:["Detailing & BIM","Bridges (Eurocode)"]};
+const CMD_BORROWS={NY:["Bridges (Eurocode)"],TO:["High-Seismic","Bridges (Eurocode)","Peer Review"],PA:["High-Seismic","High-rise Towers","Peer Review"]};
+const CMD_CARD={name:"Lucas Meyer",off:"TO",level:"Graduate",ready:94,rec:"Level-up candidate: Engineer",stages:[
+["Concept",[["Tower system & stability scheme","High-rise Towers",3,5,4],["Seismic force-resisting system (high SDC)","High-Seismic",1,1,4],["Preliminary sizing & load takedown","General",3,2,3]]],
+["Detailed Design",[["Tall-building lateral design","High-rise Towers",2,3,4],["PT floor design","High-rise Towers",2,4,4],["Special seismic detailing ACI 318 Ch.18","High-Seismic",2,2,4]]],
+["Analysis",[["Build & run ETABS model","ETABS / 3D Modelling",4,3,3],["ETABS shear-wall / 3D modelling","ETABS / 3D Modelling",4,4,3],["Wind & seismic response analysis","High-rise Towers",3,4,4]]],
+["Modelling & BIM",[["Revit structural authoring","Detailing & BIM",4,4,2],["Federated BIM coordination","Detailing & BIM",4,4,3],["3D parametric / Grasshopper","ETABS / 3D Modelling",4,4,3]]],
+["Drawings & QA",[["General arrangement drawings","Detailing & BIM",4,4,2],["Special seismic detailing drawings","Detailing & BIM",4,3,3],["Tall-building peer review (LATBSDC/PEER TBI)","Peer Review",1,0,4]]]]};
+const CMD_INK="#2A3642", CMD_DIM="#5A6B7A", CMD_BRD="1px solid rgba(20,40,64,.1)";
+function CmdDot({k}){return <span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:CMD_OFF[k].c,marginRight:5,flexShrink:0}}/>;}
+function CmdDonut({v,color,size=40,label}){const r=size*0.36,c=2*Math.PI*r;return(
+  <svg width={size} height={size} viewBox={"0 0 "+size+" "+size} role="img" aria-label={(label||"coverage")+" "+v+" percent"}>
+    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(20,40,64,.12)" strokeWidth={size*0.09}/>
+    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={size*0.09} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-v/100)} transform={"rotate(-90 "+size/2+" "+size/2+")"}/>
+    <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill={CMD_INK} fontWeight="800" fontSize={size*0.3} fontFamily="'Fraunces',serif">{v}</text>
+  </svg>);}
+function CMDash(){
+  const [tab,setTab]=useState("exec");
+  const [off,setOff]=useState("NY");
+  const [sel,setSel]=useState(null);
+  const P5=sel!=null?CMD_VOR[sel]:null;
+  const panel={background:"#fff",border:CMD_BRD,borderRadius:12,padding:14};
+  const h3s={fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:CMD_INK,margin:0};
+  const take={fontSize:".7rem",color:"#8a93a0",margin:"3px 0 10px"};
+  return(
+    <article className="card glass" style={{marginTop:14,borderTop:"4px solid #0EBEA8"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"#0A7C6E"}}>Capacity Mesh · live MVP dashboard</div>
+          <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:CMD_INK,marginTop:6,lineHeight:1.25}}>One firm, three offices, 29 engineers, every number computed</div>
+        </div>
+        <span style={{fontSize:".58rem",fontWeight:800,letterSpacing:".07em",textTransform:"uppercase",color:"#A8762A",border:"1px solid #C6973F66",borderRadius:6,padding:"4px 8px"}}>Simulated demo · gold-gate validated</span>
+      </div>
+      <div role="tablist" aria-label="Dashboard views" style={{display:"flex",gap:8,flexWrap:"wrap",margin:"14px 0"}}>
+        {[["exec","Executive"],["office","Office"],["emp","Employee Card"]].map(([k,l])=>(
+          <button key={k} role="tab" aria-selected={tab===k} className={"cmx-tab"+(tab===k?" on":"")} onClick={()=>setTab(k)}>{l}</button>))}
+      </div>
+
+      {tab==="exec" && (<div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {[["3","Offices"],["29","Engineers"],["87%","Avg coverage"],["18","Level-up cands"],["0","Firm gaps"],["0","Succession flags"]].map(([v,l])=>(
+            <div key={l} className="cmx-kpi"><div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.35rem",color:"#0A7C6E",lineHeight:1}}>{v}</div><div style={{fontSize:".58rem",color:CMD_DIM,textTransform:"uppercase",letterSpacing:".07em",fontWeight:700,marginTop:3}}>{l}</div></div>))}
+        </div>
+        <div className="cmx-grid2" style={{marginTop:12}}>
+          <div style={panel}>
+            <h4 style={h3s}>The mesh</h4>
+            <div style={take}>Each cell is one engineer. Color = office, shade = coverage. Tap a cell.</div>
+            <svg viewBox="0 0 640 360" width="100%" style={{display:"block",borderRadius:10,background:"#0C1B2E"}} role="group" aria-label="Voronoi map of 29 engineers">
+              {CMD_VOR.map((c,i)=>{const cov=CMD_P[c[1]][2];return(
+                <polygon key={c[1]} points={c[2]} fill={CMD_OFF[c[0]].c} fillOpacity={0.18+0.55*cov/100}
+                  stroke={sel===i?"#fff":"#0C1B2E"} strokeWidth={sel===i?2.5:1.6} style={{cursor:"pointer"}}
+                  tabIndex={0} role="button" aria-label={c[1]+", "+CMD_OFF[c[0]].n+", coverage "+cov+" percent"}
+                  onClick={()=>setSel(sel===i?null:i)}
+                  onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSel(sel===i?null:i);}}}/>);})}
+              {Object.keys(CMD_OFF).map((k,i)=><text key={k} x={30+i*193+96} y={22} textAnchor="middle" fill="#fff" fontWeight="800" fontSize="13" fontFamily="'Fraunces',serif" style={{pointerEvents:"none",paintOrder:"stroke",stroke:"#0C1B2E",strokeWidth:4}}>{CMD_OFF[k].n}</text>)}
+            </svg>
+            <div aria-live="polite" style={{marginTop:8,minHeight:40,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:CMD_BRD,borderRadius:9,padding:"7px 10px",fontSize:".74rem"}}>
+              {P5?(<><CmdDot k={P5[0]}/><b style={{color:CMD_INK}}>{P5[1]}</b><span style={{color:CMD_DIM}}>{CMD_P[P5[1]][1]} · {CMD_OFF[P5[0]].n}</span><b style={{marginLeft:"auto",color:"#0A7C6E"}}>coverage {CMD_P[P5[1]][2]}%</b></>)
+              :(<span style={{color:CMD_DIM}}>Firm avg coverage 87% · New York 75 · Toronto 95 · Paris 86</span>)}
+            </div>
+          </div>
+          <div style={panel}>
+            <h4 style={h3s}>Capability heatmap · office x area</h4>
+            <div style={take}>Mean proficiency 0-100. Star = lead office. Right: who supports whom.</div>
+            {CMD_AREAS.map((a,ai)=>(
+              <div key={a} style={{display:"grid",gridTemplateColumns:"minmax(96px,1.4fr) repeat(3,minmax(34px,1fr)) 1.6fr",gap:4,alignItems:"center",marginBottom:4}}>
+                <div style={{fontSize:".66rem",color:CMD_DIM,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:CMD_ACOL[a],flexShrink:0}}/>{a}</div>
+                {["NY","TO","PA"].map(k=>{const v=CMD_FORTE[k][ai];return <div key={k} style={{textAlign:"center",padding:"6px 2px",borderRadius:6,fontWeight:800,fontSize:".72rem",background:"rgba(10,124,110,"+(0.06+0.5*v/100).toFixed(2)+")",color:v>=60?"#fff":CMD_DIM}}>{v}{CMD_FLOWS[ai][1]===k?" ★":""}</div>;})}
+                <div style={{fontSize:".62rem",color:CMD_FLOWS[ai][3].length?"#A8762A":"#1B6B35",fontWeight:700}}>{CMD_FLOWS[ai][3].length?CMD_OFF[CMD_FLOWS[ai][1]].n+" → "+CMD_FLOWS[ai][3].map(x=>CMD_OFF[x].n).join(", "):"self-sufficient"}</div>
+              </div>))}
+            <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".9rem",color:CMD_INK,margin:"12px 0 6px"}}>Level-up board</div>
+            {CMD_LU.map(([n,o,f,t,r])=>(
+              <div key={n} style={{display:"grid",gridTemplateColumns:"minmax(96px,1.4fr) minmax(86px,1fr) 1.6fr 30px",gap:6,alignItems:"center",marginBottom:5,fontSize:".72rem"}}>
+                <div style={{display:"flex",alignItems:"center",fontWeight:700,color:CMD_INK,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}><CmdDot k={o}/>{n}</div>
+                <div style={{color:CMD_DIM,fontSize:".64rem"}}>{f} → <b style={{color:"#0A7C6E"}}>{t}</b></div>
+                <div style={{height:7,borderRadius:4,background:"rgba(20,40,64,.08)"}}><div style={{width:r+"%",height:"100%",borderRadius:4,background:"linear-gradient(90deg,#0A7C6E,#0EBEA8)"}}/></div>
+                <b style={{fontFamily:"'Fraunces',serif",color:"#0A7C6E",textAlign:"right"}}>{r}</b>
+              </div>))}
+            <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:4}}>Top of 18 candidates (technician promotions listed in the full engine).</div>
+          </div>
+        </div>
+      </div>)}
+
+      {tab==="office" && (<div>
+        <div role="tablist" aria-label="Select office" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {["NY","TO","PA"].map(k=>(
+            <button key={k} role="tab" aria-selected={off===k} className={"cmx-tab"+(off===k?" on":"")} style={{flex:"1 1 100px"}} onClick={()=>setOff(k)}><CmdDot k={k}/>{CMD_OFF[k].n}</button>))}
+        </div>
+        <div className="cmx-grid2" style={{marginTop:12}}>
+          <div style={panel}>
+            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+              <CmdDonut v={CMD_OFF[off].cov} color={CMD_OFF[off].c} size={56} label={CMD_OFF[off].n+" coverage"}/>
+              <div><h4 style={h3s}>{CMD_OFF[off].n} · {CMD_OFF[off].ppl} people</h4>
+              <div style={{fontSize:".7rem",color:CMD_DIM,marginTop:2}}>Forte: <b style={{color:CMD_OFF[off].c}}>{CMD_OFF[off].forte}</b> · avg coverage {CMD_OFF[off].cov}%</div></div>
+            </div>
+            <div style={{...take,marginTop:10}}>Bars = this office · tick = firm mean.</div>
+            {CMD_AREAS.map((a,ai)=>{const v=CMD_FORTE[off][ai];return(
+              <div key={a} style={{marginBottom:7}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:".66rem",marginBottom:2}}>
+                  <span style={{color:CMD_DIM}}>{a}{CMD_FLOWS[ai][1]===off?" ★":""}</span><b style={{color:CMD_INK}}>{v}</b></div>
+                <div style={{position:"relative",height:9,borderRadius:5,background:"rgba(20,40,64,.08)"}}>
+                  <div style={{width:v+"%",height:"100%",borderRadius:5,background:CMD_OFF[off].c,opacity:.9}}/>
+                  <div style={{position:"absolute",left:CMD_MEAN[ai]+"%",top:-2,width:2,height:13,background:CMD_INK,opacity:.5}}/>
+                </div>
+              </div>);})}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:12,fontSize:".7rem"}}>
+              <div><div style={{fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:"#1B6B35",fontSize:".6rem",marginBottom:4}}>Lends</div>{CMD_LENDS[off].map(a=><div key={a} style={{color:CMD_DIM,padding:"3px 0"}}>{a}</div>)}</div>
+              <div><div style={{fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:"#C0553A",fontSize:".6rem",marginBottom:4}}>Borrows</div>{CMD_BORROWS[off].map(a=><div key={a} style={{color:CMD_DIM,padding:"3px 0"}}>{a}</div>)}</div>
+            </div>
+          </div>
+          <div style={panel}>
+            <h4 style={h3s}>Roster · retained capability</h4>
+            <div style={take}>Per-person coverage of level-expected tasks.</div>
+            <div className="cmx-roster">
+              {Object.entries(CMD_P).filter(([,v])=>v[0]===off).map(([n,[,lvl,cov]])=>(
+                <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:"#F7F5F0",border:CMD_BRD,borderRadius:9,padding:"7px 9px",minHeight:46}}>
+                  <CmdDonut v={cov} color={CMD_OFF[off].c} size={36} label={n+" coverage"}/>
+                  <div style={{minWidth:0}}><div style={{fontSize:".7rem",fontWeight:700,color:CMD_INK,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n}</div><div style={{fontSize:".58rem",color:CMD_DIM}}>{lvl}</div></div>
+                </div>))}
+            </div>
+          </div>
+        </div>
+      </div>)}
+
+      {tab==="emp" && (<div className="cmx-grid2">
+        <div style={panel}>
+          <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <CmdDonut v={CMD_CARD.ready} color="#0EBEA8" size={62} label="readiness"/>
+            <div style={{flex:1,minWidth:150}}>
+              <div style={{fontSize:".6rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"#0A7C6E"}}>Career Development Card</div>
+              <h4 style={{...h3s,fontSize:"1.15rem"}}>{CMD_CARD.name}</h4>
+              <div style={{fontSize:".7rem",color:CMD_DIM,marginTop:2}}><CmdDot k={CMD_CARD.off}/>{CMD_OFF[CMD_CARD.off].n} · {CMD_CARD.level} · coverage 100%</div>
+            </div>
+            <span style={{fontSize:".62rem",fontWeight:700,padding:"4px 9px",borderRadius:6,background:"rgba(10,124,110,.1)",color:"#0A7C6E",border:"1px solid rgba(10,124,110,.35)"}}>{CMD_CARD.rec}</span>
+          </div>
+          <div style={{...take,marginTop:8}}>Excerpt, 15 of 31 tracked tasks. P = Proficiency 0-5 · F = Frequency 0-5 · C = Challenge 1-5. Every employee receives this card after each run.</div>
+        </div>
+        {CMD_CARD.stages.map(([st,rows])=>(
+          <div key={st} style={panel}>
+            <div style={{fontSize:".62rem",fontWeight:800,letterSpacing:".1em",textTransform:"uppercase",color:CMD_DIM,marginBottom:8}}>{st}</div>
+            {rows.map(([act,ar,p,f,c])=>(
+              <div key={act} style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",background:"#F7F5F0",border:CMD_BRD,borderRadius:8,padding:"6px 9px",marginBottom:6}}>
+                <div style={{flex:"1 1 170px",minWidth:0}}>
+                  <div style={{fontSize:".7rem",fontWeight:600,color:CMD_INK,lineHeight:1.3}}>{act}</div>
+                  <div style={{fontSize:".56rem",fontWeight:700,color:CMD_ACOL[ar]||CMD_DIM}}>{ar}</div>
+                </div>
+                <div style={{display:"flex",gap:6,flex:"1 1 120px",maxWidth:190}}>
+                  {[[p,p>=3?"#0EBEA8":p>=2?"#C6973F":"#C0553A","P"],[f,"#6db3e6","F"],[c,"#c39bd8","C"]].map(([v,col,lab])=>(
+                    <span key={lab} style={{flex:1}} title={lab+" "+v+"/5"}>
+                      <i style={{fontStyle:"normal",fontSize:".5rem",color:CMD_DIM,fontWeight:700}}>{lab}{v}</i>
+                      <span style={{display:"block",height:4,borderRadius:2,background:"rgba(20,40,64,.08)",marginTop:1}}><span style={{display:"block",height:"100%",width:(v/5*100)+"%",borderRadius:2,background:col}}/></span>
+                    </span>))}
+                </div>
+              </div>))}
+          </div>))}
+      </div>)}
+
+      <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:12,fontStyle:"italic"}}>Simulated demonstration data, not real personnel records. Source: Capacity Mesh Engine v2.1, 11,257 live formulas, gold-gate 45/45 PASS, June 2026. Deterministic core computes all numbers; AI layer is advisory only.</div>
+    </article>);
+}
 
 export default function App() {
   const [page, setPage] = useState("home");
   const [opacity] = useState(0.12);
   const [drawer, setDrawer] = useState(false);
+  const [svcOpen, setSvcOpen] = useState(false);
+
+  useEffect(() => {
+    document.title = "iStructural Group Inc. · Structural Solutions · Management · AI";
+    var metas = [["name","description","Advanced structural engineering, management and AI services. Free Knowledge Hub and free NPPE Study Tutor for Canadian P.Eng candidates. Capacity Mesh workforce capability intelligence."],["name","theme-color","#0C1B2E"],["property","og:title","iStructural Group Inc."],["property","og:description","Structural Solutions · Management · AI. Free Knowledge Hub · Free NPPE Study Tutor (Canada) · Capacity Mesh."],["property","og:type","website"]];
+    metas.forEach(function(m){var el=document.querySelector("meta["+m[0]+"='"+m[1]+"']");if(!el){el=document.createElement("meta");el.setAttribute(m[0],m[1]);document.head.appendChild(el);}el.setAttribute("content",m[2]);});
+    if(!document.querySelector("link[rel='icon']")){var l=document.createElement("link");l.rel="icon";l.href="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='#0C1B2E'/><path d='M10 24h12M16 8v16M12 24l4-9 4 9' stroke='#0EBEA8' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");document.head.appendChild(l);}
+  }, []);
+
   const [hubOpen, setHubOpen] = useState(null);
   const [owner, setOwner] = useState(false);
   // Owner sign-in via Google, restricted to the whitelist. No password is shared with the site. No DNS/email needed.
@@ -775,13 +985,7 @@ export default function App() {
 
   const [cm, setCm] = useState({});
   const [cmStatus, setCmStatus] = useState("idle");
-  const [cmEx, setCmEx] = useState(false);
-  useEffect(() => {
-    if (!cmEx) return;
-    const onKey = (e) => { if (e.key === "Escape") setCmEx(false); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [cmEx]);
+  useEffect(() => { document.body.style.overflow = drawer ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [drawer]);
   const submitCapMesh = async () => {
     const missing = ["Full name","Company / Organization","Email"].some(k=>!String(cm[k]||"").trim());
     const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(cm["Email"]||"").trim());
@@ -791,7 +995,7 @@ export default function App() {
     try { const ok = await postForm(payload); setCmStatus(ok ? "success" : "error"); }
     catch (e) { setCmStatus("error"); }
   };
-  const go = (id) => { setPage(id); setDrawer(false); window.scrollTo({top:0}); };
+  const go = (id) => { setPage(id); setDrawer(false); setSvcOpen(false); window.scrollTo({top:0}); };
   const isSvc = ["s1","s2","s3"].includes(page);
 
   const projF = PROJECTS.filter(p => {
@@ -817,7 +1021,7 @@ export default function App() {
           </div>
           <div className="navlinks">
             <button className={"lk"+(page==="home"?" active":"")} onClick={()=>go("home")}>Home</button>
-            <span className="dd"><span className={"lk"+(isSvc?" active":"")}>Services ▾</span>
+            <span className={"dd"+(svcOpen?" open":"")}><button className={"lk"+(isSvc?" active":"")} aria-haspopup="true" aria-expanded={svcOpen} onClick={()=>setSvcOpen(o=>!o)}>Services ▾</button>
               <span className="dd-menu">
                 <button className="lk" onClick={()=>go("s1")}>Management</button>
                 <button className="lk" onClick={()=>go("s2")}>Design</button>
@@ -840,7 +1044,7 @@ export default function App() {
         {page==="home" && (
           <div className="page">
             <div className="phero glass">
-              <div className="eyebrow">Since 2010 · Structural Solutions · Management · AI Assessment</div>
+              <div className="eyebrow">Since 2010 · Structural Solutions · Management · AI · Free NPPE Tutor & Knowledge Hub</div>
               <h1>Engineering intelligence<br/>for the built world</h1>
               <p>iStructural Group Inc. has championed advanced structural engineering for complex and unconventional projects for over two decades. Hybrid structural systems, structural forensics, seismic and wind engineering, and finite element modeling, now powered by AI-driven assessment and next-generation digital tools.</p>
               <div className="acts">
@@ -869,6 +1073,11 @@ export default function App() {
               <div><div className="lead" style={{color:"#1B6B35"}}>Knowledge Hub, free for every engineer, architect, safety officer, and developer</div>
               <div className="meta">Forms, crack library, calculators, software directory, standards, management templates</div></div>
               <button className="go" style={{background:P.greenD}}>Browse →</button>
+            </div>
+            <div className="strip glass" onClick={()=>go("nppe")} style={{borderLeft:"4px solid #C6973F"}}>
+              <div><div className="lead" style={{color:"#A8762A"}}>NPPE Study Tutor, free for Canadian P.Eng candidates</div>
+              <div className="meta">Students and engineers: bring your own materials, get grounded answers with citations and an honest readiness verdict. Powered by the iStructural Hybrid RAG engine.</div></div>
+              <button className="go" style={{background:"#C6973F"}}>Request free access →</button>
             </div>
             <div className="strip glass" onClick={()=>go("resources")}>
               <div><div className="lead" style={{color:P.tealL}}>Resources Management, a growing collection of iStructural apps</div>
@@ -1050,99 +1259,8 @@ export default function App() {
               <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in below ↓</div>
             </article>
 
-            {/* ===== Capacity Mesh teaser: compact Voronoi card + slide-in drawer ===== */}
-            <article className="card glass" style={{marginTop:14,padding:0,overflow:"hidden",borderTop:`4px solid ${P.tealL}`}}>
-              <div style={{display:"flex",flexWrap:"wrap"}}>
-                <div style={{flex:"1 1 240px",position:"relative",background:"#0C1B2E",minHeight:180}}>
-                  <div dangerouslySetInnerHTML={{__html:CM_VORONOI}} style={{height:"100%",minHeight:180}} />
-                  <span style={{position:"absolute",left:12,bottom:10,fontSize:".6rem",fontWeight:700,color:"#cfe0f0",background:"rgba(6,14,24,.55)",padding:"3px 8px",borderRadius:5}}>Each cell = one engineer · 29 across 3 offices</span>
-                </div>
-                <div style={{flex:"1 1 300px",padding:"20px 22px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
-                    <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:P.teal}}>Live example</div>
-                    <span style={{fontSize:".58rem",fontWeight:800,letterSpacing:".07em",textTransform:"uppercase",color:P.gold,border:`1px solid ${P.gold}66`,borderRadius:6,padding:"4px 8px"}}>Simulated demo</span>
-                  </div>
-                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:"#2A3642",marginTop:8,lineHeight:1.25}}>One firm, three offices, each strong somewhere</div>
-                  <p style={{fontSize:".88rem",color:"#5A6B7A",lineHeight:1.6,marginTop:8}}>Toronto, New York and Paris, scored across six capability areas. One map shows each office forte and where the next project should go.</p>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
-                    {[["New York","#1E5B8A",68],["Toronto","#0EBEA8",100],["Paris","#C6973F",95]].map(([n,c,v])=>(
-                      <div key={n} style={{display:"flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid rgba(20,40,64,.12)",borderRadius:9,padding:"7px 11px"}}>
-                        <span style={{width:9,height:9,borderRadius:2,background:c}} />
-                        <span style={{fontSize:".74rem",color:"#5A6B7A"}}>{n}</span>
-                        <b style={{fontFamily:"'Fraunces',serif",color:"#2A3642",fontSize:".92rem"}}>{v}</b>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{fontSize:".66rem",color:"#8a93a0",marginTop:6}}>Office coverage, share of tracked capabilities the team can deliver.</div>
-                  <button className="btn" style={{background:P.teal,marginTop:16}} onClick={()=>setCmEx(true)}>See how projects get routed →</button>
-                </div>
-              </div>
-            </article>
+            <CMDash />
 
-            {/* slide-in drawer (always mounted, animated via inline styles) */}
-            <div role="dialog" aria-modal="true" aria-label="Capacity Mesh three-office example"
-              style={{position:"fixed",inset:0,zIndex:1200,visibility:cmEx?"visible":"hidden",opacity:cmEx?1:0,transition:"opacity .25s ease"}}>
-              <div onClick={()=>setCmEx(false)} style={{position:"absolute",inset:0,background:"rgba(20,40,64,.45)",backdropFilter:"blur(2px)",WebkitBackdropFilter:"blur(2px)"}} />
-              <div style={{position:"absolute",top:0,right:0,height:"100%",width:"min(470px,93vw)",background:"#F7F5F0",borderLeft:"1px solid rgba(20,40,64,.12)",boxShadow:"-20px 0 60px rgba(20,40,64,.28)",transform:cmEx?"translateX(0)":"translateX(100%)",transition:"transform .3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",padding:"22px 24px"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-                  <div>
-                    <div style={{fontSize:".64rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:P.teal}}>Capacity Mesh · live example</div>
-                    <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:"#2A3642",marginTop:4}}>Office forte and project routing</div>
-                  </div>
-                  <button onClick={()=>setCmEx(false)} aria-label="Close" style={{background:"#fff",border:"1px solid rgba(20,40,64,.15)",color:"#2A3642",width:32,height:32,borderRadius:8,cursor:"pointer",fontSize:"1.1rem",lineHeight:1,flexShrink:0,fontFamily:"inherit"}}>×</button>
-                </div>
-
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6,marginTop:16}}>
-                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:"#2A3642"}}>Office forte by capability area</div>
-                  <div style={{display:"flex",gap:10,fontSize:".66rem",color:"#5A6B7A",flexWrap:"wrap"}}>
-                    <span><span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:"#1E5B8A",marginRight:4}} />NY</span>
-                    <span><span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:"#0EBEA8",marginRight:4}} />TO</span>
-                    <span><span style={{display:"inline-block",width:9,height:9,borderRadius:2,background:"#C6973F",marginRight:4}} />PA</span>
-                    <span>★ lead</span>
-                  </div>
-                </div>
-                <div style={{fontSize:".7rem",color:"#8a93a0",margin:"4px 0 14px"}}>Mean experience, scaled 0 to 100.</div>
-
-                {CM_AREAS.map((g,gi)=>(
-                  <div key={g.a} style={{marginBottom:gi<CM_AREAS.length-1?13:4}}>
-                    <div style={{fontSize:".78rem",fontWeight:700,color:"#2A3642",marginBottom:5}}>{g.a}</div>
-                    <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                      {g.rows.map(([code,col,val,lead])=>(
-                        <div key={code} style={{display:"grid",gridTemplateColumns:"30px 1fr 44px",gap:8,alignItems:"center"}}>
-                          <div style={{fontSize:".62rem",fontWeight:800,color:CM_LABEL[code]}}>{code}</div>
-                          <div style={{background:"rgba(20,40,64,.08)",borderRadius:5,height:14}}>
-                            <div style={{height:"100%",width:val+"%",background:col,borderRadius:5,opacity:lead?1:.5}} />
-                          </div>
-                          <div style={{fontSize:".66rem",fontWeight:lead?800:700,color:lead?"#2A3642":"#7a8694"}}>{lead?val+" ★":val}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                <div style={{marginTop:20,borderTop:"1px solid rgba(20,40,64,.12)",paddingTop:16}}>
-                  <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:"#2A3642",marginBottom:4}}>Routing advisor · who leads, who borrows</div>
-                  <div style={{fontSize:".7rem",color:"#8a93a0",marginBottom:10}}>When a project comes in, where does it go.</div>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:".78rem"}}>
-                    <thead><tr style={{textAlign:"left",color:P.teal,fontSize:".64rem",letterSpacing:".06em",textTransform:"uppercase"}}>
-                      <th style={{padding:"7px 10px",borderBottom:"1px solid rgba(20,40,64,.15)"}}>Capability</th>
-                      <th style={{padding:"7px 10px",borderBottom:"1px solid rgba(20,40,64,.15)"}}>Lead</th>
-                      <th style={{padding:"7px 10px",borderBottom:"1px solid rgba(20,40,64,.15)"}}>Route to</th>
-                    </tr></thead>
-                    <tbody>
-                      {CM_ROUTING.map((r,ri)=>(
-                        <tr key={r[0]}>
-                          <td style={{padding:"8px 10px",borderBottom:ri<CM_ROUTING.length-1?"1px solid rgba(20,40,64,.08)":"none",color:"#2A3642"}}>{r[0]}</td>
-                          <td style={{padding:"8px 10px",borderBottom:ri<CM_ROUTING.length-1?"1px solid rgba(20,40,64,.08)":"none",fontWeight:700,color:r[1]}}>{r[2]}</td>
-                          <td style={{padding:"8px 10px",borderBottom:ri<CM_ROUTING.length-1?"1px solid rgba(20,40,64,.08)":"none",color:"#5A6B7A"}}>{r[3]}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{fontSize:".66rem",color:"#8a93a0",marginTop:14,fontStyle:"italic"}}>Capacity Mesh simulated demonstration data, not real personnel records. Source: iStructural Capacity Mesh MVP Corporate demo.</div>
-              </div>
-            </div>
             <article className="card glass" style={{marginTop:14,borderTop:`3px solid ${P.gold}88`,cursor:"pointer",opacity:.92}} onClick={()=>go("nppe")}>
               <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>
                 <h3 style={{color:"#e0b65f",fontSize:"1.1rem"}}>NPPE Study Tutor</h3>

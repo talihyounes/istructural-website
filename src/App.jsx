@@ -265,6 +265,17 @@ const CSS = `
 .lg .cmx-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
 .lg .cmx-kpi{flex:1 1 90px;background:#fff;border:1px solid rgba(20,40,64,.1);border-radius:10px;padding:10px;text-align:center}
 .lg .cmx-roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.lg .cmx-rib{position:sticky;top:8px;z-index:30;background:#0C1B2E;border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:0;margin:0 0 12px;display:flex;gap:0;align-items:stretch;box-shadow:0 8px 24px rgba(0,0,0,.3);overflow:hidden}
+.lg .cmx-rib .rbar{width:5px;flex-shrink:0}
+.lg .cmx-rib .rin{padding:9px 13px;display:flex;gap:10px;align-items:flex-start;min-width:0}
+.lg .cmx-rib .rl{font-size:.52rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;padding:3px 7px;border-radius:5px;color:#fff;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.lg .cmx-rib .rt{font-size:.74rem;font-weight:800;color:#fff;font-family:'Fraunces',serif;line-height:1.2}
+.lg .cmx-rib .rb{font-size:.66rem;color:#c3cdd8;line-height:1.45;margin-top:3px}
+.lg .cmx-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.3px solid currentColor;font-size:.55rem;font-weight:800;font-style:normal;cursor:pointer;background:none;padding:0;line-height:1;flex-shrink:0;vertical-align:middle}
+.lg .cmx-i:hover{background:currentColor}
+.lg .cmx-i:hover span{color:#fff}
+.lg .cmx-chip{display:inline-flex;align-items:center;font-size:.48rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 5px;border-radius:4px;color:#fff;vertical-align:middle;white-space:nowrap}
+.lg .cmx-prov{display:inline-flex;align-items:center;gap:5px;margin-left:6px;vertical-align:middle}
 @media(max-width:680px){.lg .chip{padding:7px 13px;font-size:.85rem}.lg .drawer .lk{padding:14px 12px;font-size:1.05rem}.lg .nav-cta{padding:9px 16px}.lg .lk{padding:8px 12px}}
 `;
 
@@ -736,8 +747,40 @@ function CmdDonut({v,color,size=40,label}){const r=size*0.36,c=2*Math.PI*r;retur
     <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={size*0.09} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-v/100)} transform={"rotate(-90 "+size/2+" "+size/2+")"}/>
     <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill={CMD_INK} fontWeight="800" fontSize={size*0.3} fontFamily="'Fraunces',serif">{v}</text>
   </svg>);}
+// ===== Value Explainer Ribbon: provenance states + explanation registry =====
+const CM_PROV={
+  ref:   {k:"REFERENCE",  c:"#0A7C6E"}, // cited default (teal)
+  calc:  {k:"ARGO CALC",  c:"#1E5B8A"}, // deterministic core output (blue)
+  assume:{k:"ASSUMPTION",  c:"#C6973F"}, // estimate, no external source (amber)
+  user:  {k:"BY USER",    c:"#C9A227"}  // any value the user changed (gold)
+};
+const CM_EXPL={
+  offices:   {p:"calc",  t:"Offices = 3",              b:"Distinct offices in the loaded roster. ARGO Calc: COUNT(DISTINCT office) over the 06_Clients roster."},
+  engineers: {p:"calc",  t:"Engineers = 29",           b:"Headcount across all offices. ARGO Calc: COUNT(person) over the roster. NY 7, TO 12, PA 10."},
+  avgcov:    {p:"calc",  t:"Avg coverage = 87%",        b:"Headcount-weighted mean of every engineer's coverage. ARGO Calc: sum(coverage_i) / 29. Inputs: per-person coverage cells."},
+  levelup:   {p:"calc",  t:"Level-up candidates = 18",  b:"Engineers whose readiness for the next level clears the promotion threshold. ARGO Calc: COUNT(readiness_i >= level_gate)."},
+  gaps:      {p:"calc",  t:"Firm gaps = 0",             b:"Capability areas where no office reaches the firm-mean proficiency. ARGO Calc: COUNT(area where MAX(office score) < firm mean). Zero = every area is covered somewhere."},
+  succession:{p:"calc",  t:"Succession flags = 0",      b:"Senior roles with no ready backup in the same office. ARGO Calc: COUNT(role with 0 successors at readiness gate). Zero = every lead has a successor."},
+  mesh:      {p:"calc",  t:"The mesh",                  b:"One cell per engineer; colour = office, shade = that person's coverage. ARGO Calc: shade = 0.18 + 0.55 x coverage/100. Geometry is a Voronoi layout, not a metric."},
+  heat:      {p:"calc",  t:"Capability heatmap",        b:"Office x area mean proficiency, 0-100. ARGO Calc: mean of member proficiencies in each area. Star = lead office (highest score). Area names are a REFERENCE taxonomy."},
+  levelboard:{p:"calc",  t:"Level-up board",            b:"Readiness score for each promotion candidate, 0-100. ARGO Calc: weighted coverage of the target level's expected tasks. Sorted high to low."},
+  offcov:    {p:"calc",  t:"Office coverage",           b:"Office-level mean coverage shown in the donut. ARGO Calc: mean(coverage) over the office's people. Forte = the area with this office's highest score."},
+  roster:    {p:"calc",  t:"Retained capability",       b:"Per-person coverage of the tasks expected at that person's level. ARGO Calc: covered level-tasks / expected level-tasks."},
+  ready:     {p:"calc",  t:"Readiness = 94",            b:"This engineer's readiness for the recommended next level. ARGO Calc: weighted coverage of the next level's task set. Deterministic; the AI layer only explains it."},
+  pfc:       {p:"assume",t:"P / F / C inputs",          b:"Proficiency and Frequency (0-5) are entered per person and become BY USER in the live engine; here they are simulated (Assumption). Challenge (1-5) is a REFERENCE rubric. The core computes coverage and readiness from these, never the AI."}
+};
+function CmProv({id,setRib,stop=true}){
+  const e=CM_EXPL[id]; if(!e) return null; const pv=CM_PROV[e.p];
+  return(
+    <span className="cmx-prov">
+      <span className="cmx-chip" style={{background:pv.c}}>{pv.k}</span>
+      <button type="button" className="cmx-i" style={{color:pv.c}} aria-label={"Explain: "+e.t}
+        onClick={(ev)=>{if(stop)ev.stopPropagation();setRib(e);}}><span style={{color:pv.c}}>i</span></button>
+    </span>);
+}
 function CMDash(){
   const [tab,setTab]=useState("exec");
+  const [rib,setRib]=useState(null);
   const [off,setOff]=useState("NY");
   const [sel,setSel]=useState(null);
   const P5=sel!=null?CMD_VOR[sel]:null;
@@ -749,7 +792,8 @@ function CMDash(){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
         <div>
           <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"#0A7C6E"}}>Capacity Mesh · live MVP dashboard</div>
-          <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:CMD_INK,marginTop:6,lineHeight:1.25}}>One firm, three offices, 29 engineers, every number computed</div>
+          <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:CMD_INK,marginTop:6,lineHeight:1.25}}>An example workforce: one firm, three offices, 29 engineers, every number computed</div>
+          <div style={{fontSize:".72rem",color:"#8a93a0",marginTop:4}}>The same mesh maps any workforce, any discipline, trade, or role, in any field. This 3-office engineering demo is one example.</div>
         </div>
         <span style={{fontSize:".58rem",fontWeight:800,letterSpacing:".07em",textTransform:"uppercase",color:"#A8762A",border:"1px solid #C6973F66",borderRadius:6,padding:"4px 8px"}}>Simulated demo · gold-gate validated</span>
       </div>
@@ -758,14 +802,25 @@ function CMDash(){
           <button key={k} role="tab" aria-selected={tab===k} className={"cmx-tab"+(tab===k?" on":"")} onClick={()=>setTab(k)}>{l}</button>))}
       </div>
 
+      <div className="cmx-rib" role="status" aria-live="polite">
+        <div className="rbar" style={{background:rib?CM_PROV[rib.p].c:"#0A7C6E"}}/>
+        <div className="rin">
+          <span className="rl" style={{background:rib?CM_PROV[rib.p].c:"#0A7C6E"}}>{rib?CM_PROV[rib.p].k:"Guide"}</span>
+          <div style={{minWidth:0}}>
+            <div className="rt">{rib?rib.t:"Value Explainer"}</div>
+            <div className="rb">{rib?rib.b:"Tap any ⓘ to read what a number is, where it came from, and how it was computed. Colour shows provenance: Reference (teal, cited), ARGO Calc (blue, computed), Assumption (amber, estimate), By User (gold, you changed it). Edit a value in the full engine and it flips to By User."}</div>
+          </div>
+        </div>
+      </div>
+
       {tab==="exec" && (<div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {[["3","Offices"],["29","Engineers"],["87%","Avg coverage"],["18","Level-up cands"],["0","Firm gaps"],["0","Succession flags"]].map(([v,l])=>(
-            <div key={l} className="cmx-kpi"><div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.35rem",color:"#0A7C6E",lineHeight:1}}>{v}</div><div style={{fontSize:".58rem",color:CMD_DIM,textTransform:"uppercase",letterSpacing:".07em",fontWeight:700,marginTop:3}}>{l}</div></div>))}
+          {[["3","Offices","offices"],["29","Engineers","engineers"],["87%","Avg coverage","avgcov"],["18","Level-up cands","levelup"],["0","Firm gaps","gaps"],["0","Succession flags","succession"]].map(([v,l,id])=>(
+            <div key={l} className="cmx-kpi"><div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.35rem",color:"#0A7C6E",lineHeight:1}}>{v}</div><div style={{fontSize:".58rem",color:CMD_DIM,textTransform:"uppercase",letterSpacing:".07em",fontWeight:700,marginTop:3,display:"flex",alignItems:"center",justifyContent:"center"}}>{l}<CmProv id={id} setRib={setRib}/></div></div>))}
         </div>
         <div className="cmx-grid2" style={{marginTop:12}}>
           <div style={panel}>
-            <h4 style={h3s}>The mesh</h4>
+            <h4 style={h3s}>The mesh<CmProv id="mesh" setRib={setRib}/></h4>
             <div style={take}>Each cell is one engineer. Color = office, shade = coverage. Tap a cell.</div>
             <svg viewBox="0 0 640 360" width="100%" style={{display:"block",borderRadius:10,background:"#0C1B2E"}} role="group" aria-label="Voronoi map of 29 engineers">
               {CMD_VOR.map((c,i)=>{const cov=CMD_P[c[1]][2];return(
@@ -782,7 +837,7 @@ function CMDash(){
             </div>
           </div>
           <div style={panel}>
-            <h4 style={h3s}>Capability heatmap · office x area</h4>
+            <h4 style={h3s}>Capability heatmap · office x area<CmProv id="heat" setRib={setRib}/></h4>
             <div style={take}>Mean proficiency 0-100. Star = lead office. Right: who supports whom.</div>
             {CMD_AREAS.map((a,ai)=>(
               <div key={a} style={{display:"grid",gridTemplateColumns:"minmax(96px,1.4fr) repeat(3,minmax(34px,1fr)) 1.6fr",gap:4,alignItems:"center",marginBottom:4}}>
@@ -790,7 +845,7 @@ function CMDash(){
                 {["NY","TO","PA"].map(k=>{const v=CMD_FORTE[k][ai];return <div key={k} style={{textAlign:"center",padding:"6px 2px",borderRadius:6,fontWeight:800,fontSize:".72rem",background:"rgba(10,124,110,"+(0.06+0.5*v/100).toFixed(2)+")",color:v>=60?"#fff":CMD_DIM}}>{v}{CMD_FLOWS[ai][1]===k?" ★":""}</div>;})}
                 <div style={{fontSize:".62rem",color:CMD_FLOWS[ai][3].length?"#A8762A":"#1B6B35",fontWeight:700}}>{CMD_FLOWS[ai][3].length?CMD_OFF[CMD_FLOWS[ai][1]].n+" → "+CMD_FLOWS[ai][3].map(x=>CMD_OFF[x].n).join(", "):"self-sufficient"}</div>
               </div>))}
-            <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".9rem",color:CMD_INK,margin:"12px 0 6px"}}>Level-up board</div>
+            <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".9rem",color:CMD_INK,margin:"12px 0 6px",display:"flex",alignItems:"center"}}>Level-up board<CmProv id="levelboard" setRib={setRib}/></div>
             {CMD_LU.map(([n,o,f,t,r])=>(
               <div key={n} style={{display:"grid",gridTemplateColumns:"minmax(96px,1.4fr) minmax(86px,1fr) 1.6fr 30px",gap:6,alignItems:"center",marginBottom:5,fontSize:".72rem"}}>
                 <div style={{display:"flex",alignItems:"center",fontWeight:700,color:CMD_INK,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}><CmdDot k={o}/>{n}</div>
@@ -812,7 +867,7 @@ function CMDash(){
           <div style={panel}>
             <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
               <CmdDonut v={CMD_OFF[off].cov} color={CMD_OFF[off].c} size={56} label={CMD_OFF[off].n+" coverage"}/>
-              <div><h4 style={h3s}>{CMD_OFF[off].n} · {CMD_OFF[off].ppl} people</h4>
+              <div><h4 style={{...h3s,display:"flex",alignItems:"center"}}>{CMD_OFF[off].n} · {CMD_OFF[off].ppl} people<CmProv id="offcov" setRib={setRib}/></h4>
               <div style={{fontSize:".7rem",color:CMD_DIM,marginTop:2}}>Forte: <b style={{color:CMD_OFF[off].c}}>{CMD_OFF[off].forte}</b> · avg coverage {CMD_OFF[off].cov}%</div></div>
             </div>
             <div style={{...take,marginTop:10}}>Bars = this office · tick = firm mean.</div>
@@ -831,7 +886,7 @@ function CMDash(){
             </div>
           </div>
           <div style={panel}>
-            <h4 style={h3s}>Roster · retained capability</h4>
+            <h4 style={{...h3s,display:"flex",alignItems:"center"}}>Roster · retained capability<CmProv id="roster" setRib={setRib}/></h4>
             <div style={take}>Per-person coverage of level-expected tasks.</div>
             <div className="cmx-roster">
               {Object.entries(CMD_P).filter(([,v])=>v[0]===off).map(([n,[,lvl,cov]])=>(
@@ -850,12 +905,12 @@ function CMDash(){
             <CmdDonut v={CMD_CARD.ready} color="#0EBEA8" size={62} label="readiness"/>
             <div style={{flex:1,minWidth:150}}>
               <div style={{fontSize:".6rem",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"#0A7C6E"}}>Career Development Card</div>
-              <h4 style={{...h3s,fontSize:"1.15rem"}}>{CMD_CARD.name}</h4>
+              <h4 style={{...h3s,fontSize:"1.15rem",display:"flex",alignItems:"center"}}>{CMD_CARD.name}<CmProv id="ready" setRib={setRib}/></h4>
               <div style={{fontSize:".7rem",color:CMD_DIM,marginTop:2}}><CmdDot k={CMD_CARD.off}/>{CMD_OFF[CMD_CARD.off].n} · {CMD_CARD.level} · coverage 100%</div>
             </div>
             <span style={{fontSize:".62rem",fontWeight:700,padding:"4px 9px",borderRadius:6,background:"rgba(10,124,110,.1)",color:"#0A7C6E",border:"1px solid rgba(10,124,110,.35)"}}>{CMD_CARD.rec}</span>
           </div>
-          <div style={{...take,marginTop:8}}>Excerpt, 15 of 31 tracked tasks. P = Proficiency 0-5 · F = Frequency 0-5 · C = Challenge 1-5. Every employee receives this card after each run.</div>
+          <div style={{...take,marginTop:8,display:"flex",alignItems:"center",flexWrap:"wrap"}}>Excerpt, 15 of 31 tracked tasks. P = Proficiency 0-5 · F = Frequency 0-5 · C = Challenge 1-5. Every employee receives this card after each run.<CmProv id="pfc" setRib={setRib}/></div>
         </div>
         {CMD_CARD.stages.map(([st,rows])=>(
           <div key={st} style={panel}>
@@ -940,6 +995,22 @@ export default function App() {
   const [npStatus, setNpStatus] = useState("idle"); // idle | sending | success | error
   const npValid = NPPE_FIELDS.every(f => !f.req || (f.t==="preset") || (npf[f.k] && String(npf[f.k]).trim())) && npConsent;
 
+  // ── Anti-spam captcha (shared, dependency-free) + hidden honeypot on every request ──
+  const [capA] = useState(() => 2 + Math.floor(Math.random() * 7));
+  const [capB] = useState(() => 2 + Math.floor(Math.random() * 7));
+  const [capIn, setCapIn] = useState("");
+  const [hp, setHp] = useState(""); // honeypot: real users never fill this
+  const [capErr, setCapErr] = useState("");
+  const capOk = parseInt(capIn, 10) === (capA + capB);
+  const captchaBlock = () => (
+    <div className="fld full" style={{marginTop:6}}>
+      <label>Anti-spam check: what is {capA} + {capB}? *</label>
+      <input inputMode="numeric" value={capIn} onChange={e=>{setCapIn(e.target.value); if(capErr) setCapErr("");}} placeholder="Type the answer" aria-label={"What is "+capA+" plus "+capB+"?"} style={{maxWidth:220}} />
+      <input type="text" tabIndex={-1} autoComplete="off" value={hp} onChange={e=>setHp(e.target.value)} aria-hidden="true" style={{position:"absolute",left:"-9999px",width:1,height:1,opacity:0}} />
+      {capErr && <div style={{fontSize:".78rem",color:"#d65a5a",marginTop:6,fontWeight:600}}>{capErr}</div>}
+    </div>
+  );
+
   // ── Email delivery via FormSubmit (no account needed; the first POST triggers a one-time activation email to info@istructgroup.com that must be confirmed once) ──
   const FORM_ENDPOINT = "https://formsubmit.co/ajax/info@istructgroup.com";
   const postForm = async (payload) => {
@@ -952,9 +1023,11 @@ export default function App() {
   };
 
   const submitNppe = async () => {
+    if (hp) { setNpStatus("success"); return; } // honeypot tripped: silently drop bot
     if (!npValid) { setNpErr("Please complete all required fields and tick the consent box."); return; }
-    setNpErr(""); setNpStatus("sending");
-    const payload = { _subject: "NPPE Study Tutor - access request", _template: "table" };
+    if (!capOk) { setCapErr("Please answer the anti-spam question correctly."); return; }
+    setNpErr(""); setCapErr(""); setNpStatus("sending");
+    const payload = { _subject: "NPPE Study Tutor - access request", _template: "table", _honey: hp };
     NPPE_FIELDS.forEach(f => { payload[f.l.replace(" (optional)","")] = f.t==="preset" ? (f.v||"NPPE") : (npf[f.k]||""); });
     payload["Consent"] = "Yes - " + NPPE_CONSENT;
     try {
@@ -973,9 +1046,11 @@ export default function App() {
     const missing = fields.some(f => f[1]!=="ta" && !String(svc[tab+":"+f[0]]||"").trim());
     const emailVal = String(svc[tab+":Email Address"]||"");
     const needsEmail = fields.some(f => f[0]==="Email Address");
+    if (hp) { setSvcStatus("success"); return; } // honeypot tripped: silently drop bot
     if (missing || (needsEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailVal))) { setSvcStatus("error"); return; }
-    setSvcStatus("sending");
-    const payload = { _subject: "Service inquiry - " + tabName, _template: "table" };
+    if (!capOk) { setCapErr("Please answer the anti-spam question correctly."); return; }
+    setCapErr(""); setSvcStatus("sending");
+    const payload = { _subject: "Service inquiry - " + tabName, _template: "table", _honey: hp };
     fields.forEach(f => { payload[f[0]] = svc[tab+":"+f[0]] || ""; });
     try {
       const ok = await postForm(payload);
@@ -987,11 +1062,13 @@ export default function App() {
   const [cmStatus, setCmStatus] = useState("idle");
   useEffect(() => { document.body.style.overflow = drawer ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [drawer]);
   const submitCapMesh = async () => {
+    if (hp) { setCmStatus("success"); return; } // honeypot tripped: silently drop bot
     const missing = ["Full name","Company / Organization","Email"].some(k=>!String(cm[k]||"").trim());
     const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(cm["Email"]||"").trim());
     if (missing || !emailOk) { setCmStatus("error"); return; }
-    setCmStatus("sending");
-    const payload = { _subject: "Capacity Mesh access request", _template: "table", ...cm };
+    if (!capOk) { setCapErr("Please answer the anti-spam question correctly."); return; }
+    setCapErr(""); setCmStatus("sending");
+    const payload = { _subject: "Capacity Mesh access request", _template: "table", _honey: hp, ...cm };
     try { const ok = await postForm(payload); setCmStatus(ok ? "success" : "error"); }
     catch (e) { setCmStatus("error"); }
   };
@@ -1251,8 +1328,10 @@ export default function App() {
                 <h3 style={{color:P.tealL,fontSize:"1.45rem"}}>Capacity Mesh</h3>
                 <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:P.tealL,border:`1px solid ${P.tealL}66`,borderRadius:20,padding:"3px 9px"}}>Primary tool</span>
               </div>
-              <div className="tag">Workforce capability intelligence</div>
-              <div style={{fontSize:".94rem",color:"#3a4654",lineHeight:1.65,marginTop:4}}>Stop guessing who can do the work. Capacity Mesh maps every office and every person, surfaces each office's true forte, and reroutes each project to the people who can actually deliver it, on evidence, not hunches. A live corporate dashboard turns raw capability into staffing decisions in seconds. A deterministic core you can audit, with an AI advisory layer that explains and never invents.</div>
+              <div className="tag">Workforce capability intelligence you can audit</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:6}}><b style={{color:CMD_INK}}>What it is.</b> Capacity Mesh scores every office and every engineer against the skills a project actually needs, then shows who can deliver, who is ready to level up, and which office should lead, lend, or borrow.</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> One live dashboard turns a roster into a staffing decision in seconds, every capability gap and succession risk surfaced before it costs you a deadline. It is not for engineers or offices alone: the same engine maps any workforce, any discipline, trade, or role, in any field. The demo below runs a three-office, twenty-nine-engineer firm as one example.</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Every number carries its origin. A deterministic core computes each score and you can trace it to its inputs; the AI layer only explains and finds precedent, it never invents. Tap the <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:14,height:14,borderRadius:"50%",border:"1.3px solid #0A7C6E",color:"#0A7C6E",fontSize:".55rem",fontWeight:800,fontStyle:"normal"}}>i</span> on any value in the dashboard below to see what it is, where it came from, and how it was worked out.</div>
               <div className="acts">
                 <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request access →</button>
               </div>
@@ -1351,6 +1430,7 @@ export default function App() {
                 <input type="checkbox" checked={npConsent} onChange={e=>setNpConsent(e.target.checked)} style={{marginTop:3,width:16,height:16,flexShrink:0,accentColor:P.gold}} />
                 <span>{NPPE_CONSENT}</span>
               </label>
+              {captchaBlock()}
               {npErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{npErr}</div>}
               {npStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
               <button className="btn" disabled={npStatus==="sending"} style={{background:P.gold,marginTop:16,width:"100%",opacity:(npValid&&npStatus!=="sending")?1:.6,cursor:npStatus==="sending"?"wait":"pointer"}} onClick={submitNppe}>{npStatus==="sending"?"Sending...":"Submit request"}</button>
@@ -1376,6 +1456,7 @@ export default function App() {
                 ))}
                 <div className="fld full"><label>What do you want Capacity Mesh to do for you?</label><textarea value={cm["Message"]||""} onChange={e=>setCm(sx=>({...sx,Message:e.target.value}))} placeholder="Your goals..." /></div>
               </div>
+              {captchaBlock()}
               <button className="btn" disabled={cmStatus==="sending"} onClick={submitCapMesh} style={{background:P.tealL,marginTop:14,width:"100%",opacity:cmStatus==="sending"?.6:1,cursor:cmStatus==="sending"?"wait":"pointer"}}>{cmStatus==="sending"?"Sending...":"Request access"}</button>
               {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
               {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#ffb4a8",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
@@ -1388,6 +1469,7 @@ export default function App() {
             <div className="phero glass"><h1>Start a Project</h1><p>Choose your service. We respond within 24 hours with scope, timeline, and proposal.</p></div>
             <div className="ftabs">{START_TABS.map(t=><button key={t[0]} className={"ft"+(t[0]===tab?" on":"")} onClick={()=>setTab(t[0])}>{t[1]}</button>)}</div>
             <div className="fbody glass">
+              <div style={{fontSize:".74rem",color:"#5A6B7A",marginBottom:10}}>Fields marked <b style={{color:"#C0553A"}}>*</b> are required.</div>
               <div className="fgrid">
                 {START_FIELDS[tab].map((f,i)=>{
                   const isTa=f[1]==="ta", isSel=f[1]&&f[1]!=="ta";
@@ -1396,7 +1478,7 @@ export default function App() {
                   const upd=e=>{ setSvc(s=>({...s,[k]:e.target.value})); if(svcStatus!=="idle") setSvcStatus("idle"); };
                   return (
                     <div key={i} className={"fld"+(isTa?" full":"")}>
-                      <label>{f[0]}</label>
+                      <label>{f[0]}{f[1]!=="ta"?" *":""}</label>
                       {isTa ? <textarea placeholder={f[0]+"..."} value={val} onChange={upd} /> :
                        isSel ? <select value={val} onChange={upd}><option value="">Select...</option>{f[1].split("|").map(o=><option key={o}>{o}</option>)}</select> :
                        <input placeholder={f[0]} value={val} onChange={upd} />}
@@ -1404,6 +1486,7 @@ export default function App() {
                   );
                 })}
               </div>
+              {captchaBlock()}
               <button className="btn" disabled={svcStatus==="sending"} onClick={submitSvc} style={{background:START_TABS.find(t=>t[0]===tab)[2],marginTop:14,width:"100%",opacity:svcStatus==="sending"?.6:1,cursor:svcStatus==="sending"?"wait":"pointer"}}>{svcStatus==="sending"?"Sending...":"Submit Inquiry"}</button>
               {svcStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your inquiry was sent. We respond within 24 hours.</div>}
               {svcStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#d65a5a",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Please complete every field with a valid email address, then try again. If it keeps failing, email info@istructgroup.com.</div>}

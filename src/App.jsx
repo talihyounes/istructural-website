@@ -936,6 +936,83 @@ function CMDash(){
     </article>);
 }
 
+// ===== Capacity Mesh · Trust Ledger — sample Decision Record (working sample) =====
+const CM_DRP={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"ARGO CALC",c:"#1E5B8A"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#C9A227"}};
+const CM_DR={
+  schema_version:"1.0", record_id:"sample-a1f3c8", issued_at:"2026-07-09T14:22:05Z",
+  actor:{name:"owner",role:"decision-maker"}, org:"Demo Global Structures Inc.", unit:"Toronto",
+  decision_type:"LEVEL-UP",
+  subject:{person:"Lucas Meyer",from_level:"Graduate",to_level:"Engineer"},
+  drivers:[
+    {key:"Readiness",value:"94",provenance:"calc",evidence:"readiness = 0.6·coverage + 0.4·next_level_coverage"},
+    {key:"Coverage",value:"100",provenance:"calc",evidence:"covered ÷ expected level tasks"},
+    {key:"P / F / C inputs",value:"set",provenance:"user",evidence:"entered by Toronto lead, 2026-06-30"}
+  ],
+  engine:{version:"v2.1",gold_gate:"45/45 PASS (2026-06)"},
+  reproducibility:{input_snapshot_hash:"sha256:7c9b… (sample)"},
+  recommendation:{engine_recommended:"Level-up candidate → Engineer",human_decision:"Approved",followed:true},
+  rag_note:{text:"Precedent: 3 Toronto graduates promoted at readiness ≥ 90 last cycle.",advisory:true},
+  seal:{tier:"Tier-2 advisory",retrieval_ran:false},
+  integrity:{record_hash:"sha256:a1f3… (sample)",algo:"sha256"}
+};
+function CMDecisionSample(){
+  const ink="#2A3642", dim="#5A6B7A", brd="1px solid rgba(20,40,64,.1)";
+  const cols="minmax(88px,1fr) 44px minmax(96px,1.1fr) minmax(120px,1.7fr)";
+  const chip=(pk)=>{const x=CM_DRP[pk];return <span style={{display:"inline-flex",alignItems:"center",fontSize:".5rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"2px 6px",borderRadius:4,color:"#fff",background:x.c,whiteSpace:"nowrap"}}>{x.k}</span>;};
+  const dl=()=>{try{const blob=new Blob([JSON.stringify(CM_DR,null,2)],{type:"application/json"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="capacity-mesh-decision-record-sample.json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}catch(e){}};
+  const cell={padding:"7px 9px",borderBottom:brd,fontSize:".72rem",color:ink};
+  return(
+    <article className="card glass" style={{marginTop:14,borderTop:"4px solid #1E5B8A",padding:0,overflow:"hidden"}}>
+      <div style={{background:"#0C1B2E",padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontSize:".6rem",fontWeight:800,letterSpacing:".16em",textTransform:"uppercase",color:"#0EBEA8"}}>Capacity Mesh · Trust Ledger</div>
+          <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:"#fff",marginTop:4}}>Decision Record · working sample</div>
+        </div>
+        <div style={{textAlign:"right",color:"#c3cdd8",fontSize:".62rem",lineHeight:1.5}}>
+          <div>#{CM_DR.record_id}</div><div>{CM_DR.issued_at}</div>
+          <span style={{display:"inline-block",marginTop:3,fontSize:".54rem",fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:"#e0b65f",border:"1px solid rgba(224,182,95,.5)",borderRadius:5,padding:"2px 6px"}}>Seal · {CM_DR.seal.tier}</span>
+        </div>
+      </div>
+      <div style={{padding:"14px 16px"}}>
+        <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.05rem",color:ink}}>{CM_DR.decision_type} · {CM_DR.recommendation.human_decision}</div>
+        <div style={{fontSize:".82rem",color:dim,marginTop:2}}>{CM_DR.subject.person} · {CM_DR.subject.from_level} → {CM_DR.subject.to_level} · {CM_DR.unit} · {CM_DR.org}</div>
+        <div style={{fontSize:".6rem",fontWeight:800,letterSpacing:".1em",textTransform:"uppercase",color:"#0A7C6E",margin:"14px 0 6px"}}>The numbers behind this decision</div>
+        <div style={{border:brd,borderRadius:9,overflow:"hidden"}}>
+          <div style={{display:"grid",gridTemplateColumns:cols,background:"#F7F5F0",fontSize:".56rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",color:dim}}>
+            <div style={{padding:"6px 9px"}}>Value</div><div style={{padding:"6px 9px",textAlign:"center"}}>=</div><div style={{padding:"6px 9px"}}>Provenance</div><div style={{padding:"6px 9px"}}>Evidence</div>
+          </div>
+          {CM_DR.drivers.map((d,i)=>(
+            <div key={i} style={{display:"grid",gridTemplateColumns:cols,alignItems:"center"}}>
+              <div style={cell}>{d.key}</div>
+              <div style={{...cell,textAlign:"center",fontWeight:800,color:"#0A7C6E"}}>{d.value}</div>
+              <div style={cell}>{chip(d.provenance)}</div>
+              <div style={{...cell,color:dim,fontSize:".66rem"}}>{d.evidence}</div>
+            </div>))}
+        </div>
+        <div style={{fontSize:".62rem",color:dim,marginTop:6}}>Engine {CM_DR.engine.version} · gold-gate {CM_DR.engine.gold_gate}</div>
+        <div className="cmx-grid2" style={{marginTop:14}}>
+          <div style={{background:"#F7F5F0",border:brd,borderRadius:9,padding:"9px 11px"}}>
+            <div style={{fontSize:".58rem",fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:dim,marginBottom:4}}>Engine vs human</div>
+            <div style={{fontSize:".7rem",color:ink}}>Engine: {CM_DR.recommendation.engine_recommended}</div>
+            <div style={{fontSize:".7rem",color:ink,marginTop:2}}>Human: {CM_DR.recommendation.human_decision} · followed ✓</div>
+            <div style={{fontSize:".64rem",color:dim,marginTop:6,fontStyle:"italic"}}>AI note (non-binding): {CM_DR.rag_note.text}</div>
+          </div>
+          <div style={{background:"#F7F5F0",border:brd,borderRadius:9,padding:"9px 11px"}}>
+            <div style={{fontSize:".58rem",fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:dim,marginBottom:4}}>Verify</div>
+            <div style={{fontSize:".62rem",color:ink}}>Inputs snapshot</div><div style={{fontSize:".6rem",color:"#1E5B8A"}}>{CM_DR.reproducibility.input_snapshot_hash}</div>
+            <div style={{fontSize:".62rem",color:ink,marginTop:4}}>Record hash</div><div style={{fontSize:".6rem",color:"#1E5B8A"}}>{CM_DR.integrity.record_hash}</div>
+            <div style={{fontSize:".6rem",color:dim,marginTop:5}}>Re-run the engine on the snapshot to reproduce every number.</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginTop:14}}>
+          <button className="btn" style={{background:"#1E5B8A"}} onClick={dl}>Download this record (JSON)</button>
+          <div style={{fontSize:".6rem",color:dim}}>Provenance: <b style={{color:"#0A7C6E"}}>Reference</b> · <b style={{color:"#1E5B8A"}}>ARGO Calc</b> · <b style={{color:"#C6973F"}}>Assumption</b> · <b style={{color:"#C9A227"}}>By User</b>. Deterministic core computed every number; the AI layer only explains.</div>
+        </div>
+        <div style={{fontSize:".58rem",color:"#8a93a0",marginTop:10,fontStyle:"italic"}}>Sample record from simulated demo data. iStructural Group Inc. · Capacity Mesh · Trust Ledger (Phase 1).</div>
+      </div>
+    </article>);
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [opacity] = useState(0.12);
@@ -995,17 +1072,20 @@ export default function App() {
   const [npStatus, setNpStatus] = useState("idle"); // idle | sending | success | error
   const npValid = NPPE_FIELDS.every(f => !f.req || (f.t==="preset") || (npf[f.k] && String(npf[f.k]).trim())) && npConsent;
 
-  // ── Anti-spam captcha (shared, dependency-free) + hidden honeypot on every request ──
-  const [capA] = useState(() => 2 + Math.floor(Math.random() * 7));
-  const [capB] = useState(() => 2 + Math.floor(Math.random() * 7));
-  const [capIn, setCapIn] = useState("");
+  // ── Anti-spam puzzle (shared, dependency-free slide-to-align) + hidden honeypot on every request ──
+  const [capTarget] = useState(() => 62 + Math.floor(Math.random() * 26)); // star sits at 62..87 %
+  const [capVal, setCapVal] = useState(0);
   const [hp, setHp] = useState(""); // honeypot: real users never fill this
   const [capErr, setCapErr] = useState("");
-  const capOk = parseInt(capIn, 10) === (capA + capB);
+  const capOk = Math.abs(capVal - capTarget) <= 5;
   const captchaBlock = () => (
     <div className="fld full" style={{marginTop:6}}>
-      <label>Anti-spam check: what is {capA} + {capB}? *</label>
-      <input inputMode="numeric" value={capIn} onChange={e=>{setCapIn(e.target.value); if(capErr) setCapErr("");}} placeholder="Type the answer" aria-label={"What is "+capA+" plus "+capB+"?"} style={{maxWidth:220}} />
+      <label>Verify you are human: slide the handle under the star &#9733; *</label>
+      <div style={{position:"relative",height:26,marginTop:4}}>
+        <div aria-hidden="true" style={{position:"absolute",top:0,left:`calc(${capTarget}% - 6px)`,fontSize:"1rem",lineHeight:1,color:capOk?"#1B6B35":"#0A7C6E"}}>&#9733;</div>
+        <input type="range" min="0" max="100" value={capVal} onChange={e=>{setCapVal(+e.target.value); if(capErr) setCapErr("");}} aria-label="Slide the handle under the star to verify you are human" style={{position:"absolute",bottom:0,left:0,width:"100%",margin:0,accentColor:capOk?"#1B6B35":"#0EBEA8"}} />
+      </div>
+      <div style={{fontSize:".74rem",fontWeight:700,color:capOk?"#1B6B35":"#8a93a0",marginTop:2}}>{capOk?"\u2713 Verified":"Drag the handle until it sits under the star"}</div>
       <input type="text" tabIndex={-1} autoComplete="off" value={hp} onChange={e=>setHp(e.target.value)} aria-hidden="true" style={{position:"absolute",left:"-9999px",width:1,height:1,opacity:0}} />
       {capErr && <div style={{fontSize:".78rem",color:"#d65a5a",marginTop:6,fontWeight:600}}>{capErr}</div>}
     </div>
@@ -1025,7 +1105,7 @@ export default function App() {
   const submitNppe = async () => {
     if (hp) { setNpStatus("success"); return; } // honeypot tripped: silently drop bot
     if (!npValid) { setNpErr("Please complete all required fields and tick the consent box."); return; }
-    if (!capOk) { setCapErr("Please answer the anti-spam question correctly."); return; }
+    if (!capOk) { setCapErr("Please complete the slide-to-verify check."); return; }
     setNpErr(""); setCapErr(""); setNpStatus("sending");
     const payload = { _subject: "NPPE Study Tutor - access request", _template: "table", _honey: hp };
     NPPE_FIELDS.forEach(f => { payload[f.l.replace(" (optional)","")] = f.t==="preset" ? (f.v||"NPPE") : (npf[f.k]||""); });
@@ -1048,7 +1128,7 @@ export default function App() {
     const needsEmail = fields.some(f => f[0]==="Email Address");
     if (hp) { setSvcStatus("success"); return; } // honeypot tripped: silently drop bot
     if (missing || (needsEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailVal))) { setSvcStatus("error"); return; }
-    if (!capOk) { setCapErr("Please answer the anti-spam question correctly."); return; }
+    if (!capOk) { setCapErr("Please complete the slide-to-verify check."); return; }
     setCapErr(""); setSvcStatus("sending");
     const payload = { _subject: "Service inquiry - " + tabName, _template: "table", _honey: hp };
     fields.forEach(f => { payload[f[0]] = svc[tab+":"+f[0]] || ""; });
@@ -1066,7 +1146,7 @@ export default function App() {
     const missing = ["Full name","Company / Organization","Email"].some(k=>!String(cm[k]||"").trim());
     const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(cm["Email"]||"").trim());
     if (missing || !emailOk) { setCmStatus("error"); return; }
-    if (!capOk) { setCapErr("Please answer the anti-spam question correctly."); return; }
+    if (!capOk) { setCapErr("Please complete the slide-to-verify check."); return; }
     setCapErr(""); setCmStatus("sending");
     const payload = { _subject: "Capacity Mesh access request", _template: "table", _honey: hp, ...cm };
     try { const ok = await postForm(payload); setCmStatus(ok ? "success" : "error"); }
@@ -1339,6 +1419,7 @@ export default function App() {
             </article>
 
             <CMDash />
+            <CMDecisionSample />
 
             <article className="card glass" style={{marginTop:14,borderTop:`3px solid ${P.gold}88`,cursor:"pointer",opacity:.92}} onClick={()=>go("nppe")}>
               <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>

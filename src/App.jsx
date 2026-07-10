@@ -959,7 +959,6 @@ function CMDecisionSample(){
   const ink="#2A3642", dim="#5A6B7A", brd="1px solid rgba(20,40,64,.1)";
   const cols="minmax(88px,1fr) 44px minmax(96px,1.1fr) minmax(120px,1.7fr)";
   const chip=(pk)=>{const x=CM_DRP[pk];return <span style={{display:"inline-flex",alignItems:"center",fontSize:".5rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"2px 6px",borderRadius:4,color:"#fff",background:x.c,whiteSpace:"nowrap"}}>{x.k}</span>;};
-  const dl=()=>{try{const blob=new Blob([JSON.stringify(CM_DR,null,2)],{type:"application/json"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="capacity-mesh-decision-record-sample.json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}catch(e){}};
   const cell={padding:"7px 9px",borderBottom:brd,fontSize:".72rem",color:ink};
   return(
     <article className="card glass" style={{marginTop:14,borderTop:"4px solid #1E5B8A",padding:0,overflow:"hidden"}}>
@@ -1005,11 +1004,112 @@ function CMDecisionSample(){
           </div>
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginTop:14}}>
-          <button className="btn" style={{background:"#1E5B8A"}} onClick={dl}>Download this record (JSON)</button>
           <div style={{fontSize:".6rem",color:dim}}>Provenance: <b style={{color:"#0A7C6E"}}>Reference</b> · <b style={{color:"#1E5B8A"}}>ARGO Calc</b> · <b style={{color:"#C6973F"}}>Assumption</b> · <b style={{color:"#C9A227"}}>By User</b>. Deterministic core computed every number; the AI layer only explains.</div>
         </div>
         <div style={{fontSize:".58rem",color:"#8a93a0",marginTop:10,fontStyle:"italic"}}>Sample record from simulated demo data. iStructural Group Inc. · Capacity Mesh · Trust Ledger (Phase 1).</div>
       </div>
+    </article>);
+}
+
+// ===== ARGO · Bid-Decision War Room — teaser (real opportunity, redacted; no download) =====
+const ARGO_WIN={cap:0.80,den:0.55,pos:0.70};
+const ARGO_DELIV=[["DBB","High","#0A7C6E",true],["CMAR","Med","#C6973F",false],["Design-Build","Low","#C0553A",false]];
+const ARGO_COMM=[["Hybrid stage + hourly","Best","#1B6B35",true],["Retainer","Med","#C6973F",false],["Lump sum","Poor","#C0553A",false]];
+const ARGO_RISK=[["Schedule / SLA",4,4,true],["Commercial / fee",3,4,false],["Scope & brief",2,3,false],["Technical / design",2,3,false],["Contractual",2,3,false],["Client / owner",2,2,false],["Authority / external",2,3,false],["Resourcing",2,3,false]];
+const ARGO_FEE=[["Lane A · bottom-up","governing","feeA","calc"],["Lane B · % of construction value","governing","feeB","ref"],["Lane C · precedent","reference only, expired","feeC","assume"]];
+const ARGO_EXPL={
+  verdict:{p:"calc",t:"Verdict: CONDITIONAL GO",b:"ARGO Calc: 8-phase tally plus risk math. Bid only if review cycles are capped per stage and priced on review man-hours; treat extra cycles as additional services."},
+  win:{p:"calc",t:"Win probability = 31% (estimate)",b:"ARGO Calc: win = capability(0.80) x density(0.55) x posture(0.70) = 0.31. A reasoned estimate, never a guarantee (rule 3)."},
+  cap:{p:"calc",t:"Capability = 0.80",b:"ARGO Calc: fit of the firm's stated experience to this review-only DRC scope."},
+  sla:{p:"calc",t:"Controlling risk: Schedule / SLA",b:"ARGO Calc P x I x D: a 10-day SLA against an uncapped submission count is the top risk; it drives the conditional verdict."},
+  feeA:{p:"calc",t:"Lane A, bottom-up (governing)",b:"ARGO Calc: hours x deliverables x loaded review rate. Figure redacted in this public demo."},
+  feeB:{p:"ref",t:"Lane B, percent of construction value",b:"Reference: review-only % band from a dated market source, tiered. Figure redacted."},
+  feeC:{p:"assume",t:"Lane C, precedent (reference only)",b:"Precedent is expired and not like-for-like: shown for context only, never governing (rule 27). Figure redacted."}
+};
+function ARGOTeaser(){
+  const [rib,setRib]=useState(null);
+  const ink="#2A3642",dim="#5A6B7A",brd="1px solid rgba(20,40,64,.1)";
+  const panel={background:"#fff",border:brd,borderRadius:12,padding:14};
+  const h3s={fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:ink,margin:0,display:"flex",alignItems:"center"};
+  const chip=(pk)=>{const x=CM_DRP[pk];return <span style={{display:"inline-flex",alignItems:"center",fontSize:".5rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"2px 6px",borderRadius:4,color:"#fff",background:x.c,whiteSpace:"nowrap"}}>{x.k}</span>;};
+  const Iaff=({id})=>{const e=ARGO_EXPL[id];if(!e)return null;const c=CM_DRP[e.p].c;return <button type="button" onClick={()=>setRib(e)} aria-label={"Explain: "+e.t} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:"50%",border:"1.3px solid "+c,color:c,background:"none",fontSize:".55rem",fontWeight:800,cursor:"pointer",marginLeft:5,verticalAlign:"middle",lineHeight:1,flexShrink:0}}>i</button>;};
+  const Shade=({w=74})=> <span title="Confidential, redacted in this demo" style={{display:"inline-block",minWidth:w,height:12,borderRadius:3,background:"repeating-linear-gradient(45deg,#c3ccd6,#c3ccd6 4px,#e6ebf0 4px,#e6ebf0 8px)",filter:"blur(.6px)",verticalAlign:"middle"}}/>;
+  const win=Math.round(ARGO_WIN.cap*ARGO_WIN.den*ARGO_WIN.pos*100);
+  return(
+    <article className="card glass" style={{marginTop:14,borderTop:"4px solid #1E5B8A"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"#1E5B8A"}}>ARGO · Bid-Decision War Room · live MVP teaser</div>
+          <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:ink,marginTop:6,lineHeight:1.25}}>One RFP in, a GO / CONDITIONAL GO / NO-GO out</div>
+          <div style={{fontSize:".7rem",color:dim,marginTop:3}}>Example: a real review-only (DRC) opportunity, KSA. Owner, location and all fees are redacted.</div>
+        </div>
+        <span style={{fontSize:".58rem",fontWeight:800,letterSpacing:".07em",textTransform:"uppercase",color:"#8B2020",border:"1px solid #8B202066",borderRadius:6,padding:"4px 8px"}}>Redacted demo · confidential bid</span>
+      </div>
+
+      <div style={{position:"sticky",top:8,zIndex:20,background:"#0C1B2E",borderRadius:11,padding:"9px 12px",margin:"12px 0",display:"flex",gap:10,alignItems:"flex-start",boxShadow:"0 8px 24px rgba(0,0,0,.3)"}}>
+        <span style={{fontSize:".52rem",fontWeight:800,letterSpacing:".11em",textTransform:"uppercase",color:"#fff",background:rib?CM_DRP[rib.p].c:"#1E5B8A",borderRadius:5,padding:"3px 7px",whiteSpace:"nowrap",marginTop:1}}>{rib?CM_DRP[rib.p].k:"Guide"}</span>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:".74rem",fontWeight:800,color:"#fff",fontFamily:"'Fraunces',serif"}}>{rib?rib.t:"Value explainer"}</div>
+          <div style={{fontSize:".66rem",color:"#c3cdd8",lineHeight:1.45,marginTop:2}}>{rib?rib.b:"Tap any circled i to see what a number is, where it came from, and how it was worked out. Deterministic core computes every figure; the AI layer only explains. Nothing here is downloadable."}</div>
+        </div>
+      </div>
+
+      <div style={{background:"#0C1B2E",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.35rem",color:"#e0b65f",display:"flex",alignItems:"center"}}>CONDITIONAL GO<Iaff id="verdict"/></div>
+        <div style={{flex:1,minWidth:220,fontSize:".72rem",color:"#c3cdd8",lineHeight:1.5}}>Deciding factor: bid only with assumptions that cap review cycles per stage and price on review man-hours. Controlling risk: 10-day SLA vs uncapped submissions. Runway: 4 days.</div>
+      </div>
+
+      <div className="cmx-grid2" style={{marginTop:12}}>
+        <div style={panel}>
+          <h4 style={h3s}>Win probability<Iaff id="win"/></h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 10px"}}>A reasoned estimate, never a guarantee.</div>
+          <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+            <CmdDonut v={win} color="#1E5B8A" size={66} label="win probability"/>
+            <div style={{flex:1,minWidth:150,fontSize:".72rem"}}>
+              {[["Capability",ARGO_WIN.cap,"cap"],["Competitive density",ARGO_WIN.den,null],["Owner posture",ARGO_WIN.pos,null]].map(([n,v,id])=>(
+                <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0",color:dim}}>
+                  <span style={{display:"flex",alignItems:"center"}}>{n}{chip("calc")}</span><b style={{color:ink}}>{v.toFixed(2)}</b>
+                </div>))}
+              <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:4}}>win = 0.80 x 0.55 x 0.70 = {(win/100).toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+        <div style={panel}>
+          <h4 style={h3s}>Delivery + commercial model ranking</h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Ranked to this role and scope. ★ = best fit.</div>
+          <div style={{fontSize:".58rem",fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:dim,marginBottom:3}}>Delivery</div>
+          {ARGO_DELIV.map(([n,r,c,best])=>(
+            <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".72rem",padding:"3px 0"}}><span style={{color:ink}}>{best?"★ ":""}{n}</span><b style={{color:c}}>{r}</b></div>))}
+          <div style={{fontSize:".58rem",fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:dim,margin:"8px 0 3px"}}>Commercial</div>
+          {ARGO_COMM.map(([n,r,c,best])=>(
+            <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".72rem",padding:"3px 0"}}><span style={{color:ink}}>{best?"★ ":""}{n}</span><b style={{color:c}}>{r}</b></div>))}
+        </div>
+      </div>
+
+      <div className="cmx-grid2" style={{marginTop:12}}>
+        <div style={panel}>
+          <h4 style={h3s}>Risk register · P x I x D<Iaff id="sla"/></h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>8 categories. Bar = P x I. The controlling risk sets the verdict.</div>
+          {ARGO_RISK.map(([n,P,I,ctrl])=>{const v=P*I;return(
+            <div key={n} style={{display:"grid",gridTemplateColumns:"minmax(96px,1.3fr) 1fr 34px",gap:8,alignItems:"center",marginBottom:4}}>
+              <span style={{fontSize:".66rem",color:ctrl?"#8B2020":dim,fontWeight:ctrl?800:400}}>{n}{ctrl?" ●":""}</span>
+              <span style={{height:8,borderRadius:4,background:"rgba(20,40,64,.08)"}}><span style={{display:"block",height:"100%",width:(v/25*100)+"%",borderRadius:4,background:ctrl?"#C0553A":"#1E5B8A"}}/></span>
+              <b style={{fontSize:".64rem",color:ink,textAlign:"right"}}>{v}</b>
+            </div>);})}
+        </div>
+        <div style={panel}>
+          <h4 style={h3s}>Fee · three-lane triangulation</h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Three cited lanes reconcile; divergence is flagged. Figures redacted (confidential bid).</div>
+          {ARGO_FEE.map(([n,note,id,pk])=>(
+            <div key={n} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:brd,borderRadius:9,padding:"7px 9px",marginBottom:6}}>
+              <div style={{flex:"1 1 150px",minWidth:0}}><div style={{fontSize:".7rem",fontWeight:700,color:ink,display:"flex",alignItems:"center"}}>{n}<Iaff id={id}/></div><div style={{fontSize:".58rem",color:dim}}>{note}</div></div>
+              <Shade w={80}/>{chip(pk)}
+            </div>))}
+          <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:2}}>Governing fee is hours-based, independent of construction value. Nothing here is downloadable.</div>
+        </div>
+      </div>
+
+      <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:12,fontStyle:"italic"}}>ARGO is decision support for construction bids. It does not guarantee any award, does not set binding prices, and gives no legal advice. Win probability is a reasoned estimate. Redacted demo from one real opportunity; your documents stay private to you. Deterministic core computes all numbers; the AI layer is advisory only.</div>
     </article>);
 }
 
@@ -1401,8 +1501,20 @@ export default function App() {
             <div className="phero glass">
               <div className="eyebrow">Resources Management · A growing collection of iStructural apps</div>
               <h1>Resources Management — iStructural Apps</h1>
-              <p>A growing collection of iStructural tools. Deterministic cores, AI advisory layers. Open Capacity Mesh, or request access to the NPPE Study Tutor.</p>
+              <p>A growing collection of iStructural tools. Deterministic cores, AI advisory layers. Open ARGO or Capacity Mesh, or request access to the NPPE Study Tutor.</p>
             </div>
+            <article className="card glass" style={{marginTop:18,borderTop:"4px solid #1E5B8A",boxShadow:"0 10px 34px rgba(30,91,138,.18),0 6px 22px rgba(0,0,0,.3)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <h3 style={{color:"#1E5B8A",fontSize:"1.45rem"}}>ARGO</h3>
+                <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:"#1E5B8A",border:"1px solid #1E5B8A66",borderRadius:20,padding:"3px 9px"}}>Bid-decision war room</span>
+              </div>
+              <div className="tag">GO / CONDITIONAL GO / NO-GO on any RFP</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:6}}><b style={{color:CMD_INK}}>What it is.</b> ARGO turns an RFP, tender, or scope into a structured GO / CONDITIONAL GO / NO-GO decision, with delivery and commercial model ranking, 8-category risk math (P x I x D), a three-lane fee triangulation, and a win-probability estimate. For any party to a bid: consultant, contractor, sub-consultant, sub-contractor, supplier, or client.</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> A bid decision in one cockpit, before you commit a team. Every figure carries its origin; the deterministic core does the math, the AI layer only explains and finds precedent, it never invents. Your RFP and pricing stay private to you.</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Win probability is a reasoned estimate, never a guarantee; fees triangulate three cited lanes and flag divergence; risk is P x I x D you can audit. The teaser below runs a real, redacted opportunity as one example.</div>
+              <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("start")}>Request access →</button></div>
+            </article>
+            <ARGOTeaser />
             <article className="card glass" style={{marginTop:18,borderTop:`4px solid ${P.tealL}`,boxShadow:"0 10px 34px rgba(14,190,168,.18),0 6px 22px rgba(0,0,0,.3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
                 <h3 style={{color:P.tealL,fontSize:"1.45rem"}}>Capacity Mesh</h3>

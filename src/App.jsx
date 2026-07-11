@@ -750,7 +750,7 @@ function CmdDonut({v,color,size=40,label}){const r=size*0.36,c=2*Math.PI*r;retur
 // ===== Value Explainer Ribbon: provenance states + explanation registry =====
 const CM_PROV={
   ref:   {k:"REFERENCE",  c:"#0A7C6E"}, // cited default (teal)
-  calc:  {k:"ARGO CALC",  c:"#1E5B8A"}, // deterministic core output (blue)
+  calc:  {k:"MESH CALC",  c:"#1E5B8A"}, // deterministic core output (blue)
   assume:{k:"ASSUMPTION",  c:"#C6973F"}, // estimate, no external source (amber)
   user:  {k:"BY USER",    c:"#C9A227"}  // any value the user changed (gold)
 };
@@ -808,7 +808,7 @@ function CMDash(){
           <span className="rl" style={{background:rib?CM_PROV[rib.p].c:"#0A7C6E"}}>{rib?CM_PROV[rib.p].k:"Guide"}</span>
           <div style={{minWidth:0}}>
             <div className="rt">{rib?rib.t:"Value Explainer"}</div>
-            <div className="rb">{rib?rib.b:"Tap any ⓘ to read what a number is, where it came from, and how it was computed. Colour shows provenance: Reference (teal, cited), ARGO Calc (blue, computed), Assumption (amber, estimate), By User (gold, you changed it). Edit a value in the full engine and it flips to By User."}</div>
+            <div className="rb">{rib?rib.b:"Tap any ⓘ to read what a number is, where it came from, and how it was computed. Colour shows provenance: Reference (teal, cited), Mesh Calc (blue, computed), Assumption (amber, estimate), By User (gold, you changed it). Edit a value in the full engine and it flips to By User."}</div>
           </div>
         </div>
       </div>
@@ -937,7 +937,7 @@ function CMDash(){
 }
 
 // ===== Capacity Mesh · Trust Ledger — sample Decision Record (working sample) =====
-const CM_DRP={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"ARGO CALC",c:"#1E5B8A"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#C9A227"}};
+const CM_DRP={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"MESH CALC",c:"#1E5B8A"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#C9A227"}};
 const CM_DR={
   schema_version:"1.0", record_id:"sample-a1f3c8", issued_at:"2026-07-09T14:22:05Z",
   actor:{name:"owner",role:"decision-maker"}, org:"Demo Global Structures Inc.", unit:"Toronto",
@@ -1004,7 +1004,7 @@ function CMDecisionSample(){
           </div>
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginTop:14}}>
-          <div style={{fontSize:".6rem",color:dim}}>Provenance: <b style={{color:"#0A7C6E"}}>Reference</b> · <b style={{color:"#1E5B8A"}}>ARGO Calc</b> · <b style={{color:"#C6973F"}}>Assumption</b> · <b style={{color:"#C9A227"}}>By User</b>. Deterministic core computed every number; the AI layer only explains.</div>
+          <div style={{fontSize:".6rem",color:dim}}>Provenance: <b style={{color:"#0A7C6E"}}>Reference</b> · <b style={{color:"#1E5B8A"}}>Mesh Calc</b> · <b style={{color:"#C6973F"}}>Assumption</b> · <b style={{color:"#C9A227"}}>By User</b>. Deterministic core computed every number; the AI layer only explains.</div>
         </div>
         <div style={{fontSize:".58rem",color:"#8a93a0",marginTop:10,fontStyle:"italic"}}>Sample record from simulated demo data. iStructural Group Inc. · Capacity Mesh · Trust Ledger (Phase 1).</div>
       </div>
@@ -1026,13 +1026,14 @@ const ARGO_EXPL={
   feeB:{p:"ref",t:"Lane B, percent of construction value",b:"Reference: review-only % band from a dated market source, tiered. Figure redacted."},
   feeC:{p:"assume",t:"Lane C, precedent (reference only)",b:"Precedent is expired and not like-for-like: shown for context only, never governing (rule 27). Figure redacted."}
 };
+const ARGO_PROV={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"ARGO CALC",c:"#1E5B8A"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#C9A227"}};
 function ARGOTeaser(){
   const [rib,setRib]=useState(null);
   const ink="#2A3642",dim="#5A6B7A",brd="1px solid rgba(20,40,64,.1)";
   const panel={background:"#fff",border:brd,borderRadius:12,padding:14};
   const h3s={fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:ink,margin:0,display:"flex",alignItems:"center"};
-  const chip=(pk)=>{const x=CM_DRP[pk];return <span style={{display:"inline-flex",alignItems:"center",fontSize:".5rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"2px 6px",borderRadius:4,color:"#fff",background:x.c,whiteSpace:"nowrap"}}>{x.k}</span>;};
-  const Iaff=({id})=>{const e=ARGO_EXPL[id];if(!e)return null;const c=CM_DRP[e.p].c;return <button type="button" onClick={()=>setRib(e)} aria-label={"Explain: "+e.t} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:"50%",border:"1.3px solid "+c,color:c,background:"none",fontSize:".55rem",fontWeight:800,cursor:"pointer",marginLeft:5,verticalAlign:"middle",lineHeight:1,flexShrink:0}}>i</button>;};
+  const chip=(pk)=>{const x=ARGO_PROV[pk];return <span style={{display:"inline-flex",alignItems:"center",fontSize:".5rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"2px 6px",borderRadius:4,color:"#fff",background:x.c,whiteSpace:"nowrap"}}>{x.k}</span>;};
+  const Iaff=({id})=>{const e=ARGO_EXPL[id];if(!e)return null;const c=ARGO_PROV[e.p].c;return <button type="button" onClick={()=>setRib(e)} aria-label={"Explain: "+e.t} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:"50%",border:"1.3px solid "+c,color:c,background:"none",fontSize:".55rem",fontWeight:800,cursor:"pointer",marginLeft:5,verticalAlign:"middle",lineHeight:1,flexShrink:0}}>i</button>;};
   const Shade=({w=74})=> <span title="Confidential, redacted in this demo" style={{display:"inline-block",minWidth:w,height:12,borderRadius:3,background:"repeating-linear-gradient(45deg,#c3ccd6,#c3ccd6 4px,#e6ebf0 4px,#e6ebf0 8px)",filter:"blur(.6px)",verticalAlign:"middle"}}/>;
   const win=Math.round(ARGO_WIN.cap*ARGO_WIN.den*ARGO_WIN.pos*100);
   return(
@@ -1047,7 +1048,7 @@ function ARGOTeaser(){
       </div>
 
       <div style={{position:"sticky",top:8,zIndex:20,background:"#0C1B2E",borderRadius:11,padding:"9px 12px",margin:"12px 0",display:"flex",gap:10,alignItems:"flex-start",boxShadow:"0 8px 24px rgba(0,0,0,.3)"}}>
-        <span style={{fontSize:".52rem",fontWeight:800,letterSpacing:".11em",textTransform:"uppercase",color:"#fff",background:rib?CM_DRP[rib.p].c:"#1E5B8A",borderRadius:5,padding:"3px 7px",whiteSpace:"nowrap",marginTop:1}}>{rib?CM_DRP[rib.p].k:"Guide"}</span>
+        <span style={{fontSize:".52rem",fontWeight:800,letterSpacing:".11em",textTransform:"uppercase",color:"#fff",background:rib?ARGO_PROV[rib.p].c:"#1E5B8A",borderRadius:5,padding:"3px 7px",whiteSpace:"nowrap",marginTop:1}}>{rib?ARGO_PROV[rib.p].k:"Guide"}</span>
         <div style={{minWidth:0}}>
           <div style={{fontSize:".74rem",fontWeight:800,color:"#fff",fontFamily:"'Fraunces',serif"}}>{rib?rib.t:"Value explainer"}</div>
           <div style={{fontSize:".66rem",color:"#c3cdd8",lineHeight:1.45,marginTop:2}}>{rib?rib.b:"Tap any circled i to see what a number is, where it came from, and how it was worked out. Deterministic core computes every figure; the AI layer only explains. Nothing here is downloadable."}</div>

@@ -1532,7 +1532,7 @@ export default function App() {
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:6}}><b style={{color:CMD_INK}}>What it is.</b> ARGO turns an RFP, tender, or scope into a structured GO / CONDITIONAL GO / NO-GO decision, with delivery and commercial model ranking, 8-category risk math (P x I x D), a three-lane fee triangulation, and a win-probability estimate. For any party to a bid: consultant, contractor, sub-consultant, sub-contractor, supplier, or client.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> A bid decision in one cockpit, before you commit a team. Every figure carries its origin; the deterministic core does the math, the AI layer only explains and finds precedent, it never invents. Your RFP and pricing stay private to you.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Win probability is a reasoned estimate, never a guarantee; fees triangulate three cited lanes and flag divergence; risk is P x I x D you can audit. The teaser below runs a real, redacted opportunity as one example.</div>
-              <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("start")}>Request access →</button></div>
+              <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("start")}>Request service →</button></div>
             </article>
             <ARGOTeaser />
             <article id="app-mesh" className="card glass" style={{marginTop:18,borderTop:`4px solid ${P.tealL}`,boxShadow:"0 10px 34px rgba(14,190,168,.18),0 6px 22px rgba(0,0,0,.3)"}}>
@@ -1545,25 +1545,13 @@ export default function App() {
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> One live dashboard turns a roster into a staffing decision in seconds, every capability gap and succession risk surfaced before it costs you a deadline. It is not for engineers or offices alone: the same engine maps any workforce, any discipline, trade, or role, in any field. The demo below runs a three-office, twenty-nine-engineer firm as one example.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Every number carries its origin. A deterministic core computes each score and you can trace it to its inputs; the AI layer only explains and finds precedent, it never invents. Tap the <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:14,height:14,borderRadius:"50%",border:"1.3px solid #0A7C6E",color:"#0A7C6E",fontSize:".55rem",fontWeight:800,fontStyle:"normal"}}>i</span> on any value in the dashboard below to see what it is, where it came from, and how it was worked out.</div>
               <div className="acts">
-                <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request access →</button>
+                <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request service →</button>
               </div>
               <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in below ↓</div>
             </article>
 
             <CMDash />
             <CMDecisionSample />
-
-            <article id="app-nppe" className="card glass" style={{marginTop:18,borderTop:"4px solid #C6973F",boxShadow:"0 10px 34px rgba(198,151,63,.18),0 6px 22px rgba(0,0,0,.3)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                <h3 style={{color:"#C6973F",fontSize:"1.45rem"}}>NPPE Study Tutor</h3>
-                <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:"#A8762A",border:"1px solid #C6973F66",borderRadius:20,padding:"3px 9px"}}>Free · Canada P.Eng</span>
-              </div>
-              <div className="tag">Grounded exam study, built on your own materials</div>
-              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:6}}><b style={{color:CMD_INK}}>What it is.</b> A free NPPE study engine for Canadian P.Eng candidates. Bring your own course materials and your own Claude account; the tutor answers only from your material and cites every source.</div>
-              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> An honest readiness check that stays red until you are genuinely ready, and a pace that tracks your exam date. No invented examples, no filler.</div>
-              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Powered by the iStructural Hybrid RAG engine: it retrieves the governing rule before answering and refuses to guess. Your materials stay in your own Drive, never shared.</div>
-              <div className="acts"><button className="btn" style={{background:"#C6973F"}} onClick={()=>go("nppe")}>Open NPPE Tutor →</button></div>
-            </article>
             <h2 className="sec">Open Capacity Mesh, owner access</h2>
             {owner ? (
               <div style={{marginTop:18}}>
@@ -1582,6 +1570,19 @@ export default function App() {
                 <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
               </div>
             )}
+
+            <article id="app-nppe" className="card glass" style={{marginTop:18,borderTop:"4px solid #C6973F",boxShadow:"0 10px 34px rgba(198,151,63,.18),0 6px 22px rgba(0,0,0,.3)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <h3 style={{color:"#C6973F",fontSize:"1.45rem"}}>NPPE Study Tutor</h3>
+                <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:"#A8762A",border:"1px solid #C6973F66",borderRadius:20,padding:"3px 9px"}}>Free · Canada P.Eng</span>
+              </div>
+              <div className="tag">Grounded exam study, built on your own materials</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:6}}><b style={{color:CMD_INK}}>What it is.</b> A free NPPE study engine for Canadian P.Eng candidates. Bring your own course materials and your own Claude account; the tutor answers only from your material and cites every source.</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> An honest readiness check that stays red until you are genuinely ready, and a pace that tracks your exam date. No invented examples, no filler.</div>
+              <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Powered by the iStructural Hybrid RAG engine: it retrieves the governing rule before answering and refuses to guess. Your materials stay in your own Drive, never shared.</div>
+              <div className="acts"><button className="btn" style={{background:"#C6973F"}} onClick={()=>go("nppereq")}>Request service →</button></div>
+            </article>
+
           </div>
         )}
 

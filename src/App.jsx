@@ -1122,6 +1122,225 @@ function ARGOTeaser(){
     </article>);
 }
 
+// ===== ARGO · Owner MVP mini-cockpit (deterministic core, client-side; rules 22/24) =====
+const AOP_SVC=[
+  ["Design (Full Services)",12,20,"RIBA 2026 / Cambridge 2018 · Tier 2","ref"],
+  ["Design Review (Full Services)",0.30,0.60,"ARGO-derived · Tier 3","assume"],
+  ["Design (Structural)",1.0,2.5,"ASCE / ACEC / Zweig 2026 · Tier 2","ref"],
+  ["Design Review (Structural)",0.20,0.45,"ARGO-derived · Tier 3","assume"]];
+const AOP_JUR={
+  KSA:{cur:"SAR",tax:"VAT 15% (ZATCA)",codes:"SBC + Mostadam + Civil Defense · SCE",ver:true},
+  Canada:{cur:"CAD",tax:"GST 5% (CRA)",codes:"NBC 2020 + CSA A23.3 / S16 / O86",ver:true}};
+const AOP_PROVS={
+  Ontario:{tax:"HST 13%",reg:"PEO (P.Eng + C of A) · OBC 2024 · Construction Act",ver:true},
+  Alberta:{tax:"GST 5% + prov. (verify)",reg:"APEGA · ABC (verify)",ver:false},
+  "British Columbia":{tax:"GST + PST (verify)",reg:"EGBC · BCBC (verify)",ver:false},
+  Quebec:{tax:"GST + QST (verify)",reg:"OIQ · RBQ (verify)",ver:false}};
+const AOP_RISK0=[["Schedule / SLA",4,4,3],["Commercial / fee",3,4,3],["Scope & brief",2,3,3],["Technical / design",2,3,2],["Contractual",2,3,3],["Client / owner",2,2,2],["Authority / external",2,3,3],["Resourcing",2,3,2]];
+const AOP_BAND=(r)=> r>=45?["HIGH","#C0553A"]:r>=20?["MED","#C6973F"]:["LOW","#1B6B35"];
+
+function ARGOOwnerPanel(){
+  const [rib,setRib]=useState(null);
+  const [opp,setOpp]=useState("Untitled opportunity");
+  const [svc,setSvc]=useState(2);
+  const [country,setCountry]=useState("KSA");
+  const [prov,setProv]=useState("Ontario");
+  const [win,setWin]=useState({cap:0.80,den:0.55,pos:0.70});
+  const [risk,setRisk]=useState(AOP_RISK0.map(r=>[r[1],r[2],r[3]]));
+  const [hours,setHours]=useState(2400);
+  const [rate,setRate]=useState(140);
+  const [cv,setCv]=useState(20000000);
+  const [laneC,setLaneC]=useState(320000);
+  const [touched,setTouched]=useState({});
+  const mark=(id)=>setTouched((t)=>({...t,[id]:true}));
+  const pkOf=(id,dflt)=>touched[id]?"user":dflt;
+
+  const jur=AOP_JUR[country];
+  const pv=country==="Canada"?AOP_PROVS[prov]:null;
+  const [sn,lo,hi,src,bpk]=AOP_SVC[svc];
+  const mid=(lo+hi)/2;
+  const laneA=hours*rate;
+  const laneB=Math.round(cv*mid/100);
+  const lanes=[laneA,laneB,laneC];
+  const mn=Math.min(...lanes),mx=Math.max(...lanes);
+  const spread=mn>0?Math.round(((mx-mn)/mn)*100):0;
+  const Rs=risk.map(([p,i,d])=>p*i*d);
+  const sig=Rs.reduce((a,b)=>a+b,0);
+  const maxR=Math.max(...Rs),maxRi=Rs.indexOf(maxR);
+  const wp=win.cap*win.den*win.pos;
+  let verdict="GO",vc="#4fc47f",factor="All gates clear: win >= 15%, Sigma R < 400, every R < 45, lane spread <= 30%.";
+  if(wp<0.15||sig>=400){verdict="NO-GO";vc="#ff8a70";factor=wp<0.15?("Win probability "+Math.round(wp*100)+"% is below the 15% floor."):("Sigma R = "+sig+" is at or above 400.");}
+  else if(maxR>=45||spread>30){verdict="CONDITIONAL GO";vc="#e0b65f";factor=maxR>=45?("Controlling risk: "+AOP_RISK0[maxRi][0]+", R = "+maxR+" >= 45."):("Fee lane spread "+spread+"% exceeds 30% of the smallest lane.");}
+
+  const ink="#2A3642",dim="#5A6B7A",brd="1px solid rgba(20,40,64,.1)";
+  const panel={background:"#fff",border:brd,borderRadius:12,padding:14};
+  const h3s={fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:ink,margin:0,display:"flex",alignItems:"center",flexWrap:"wrap",gap:4};
+  const nin={width:96,padding:"4px 6px",borderRadius:6,border:"1px solid rgba(20,40,64,.25)",fontSize:".74rem",fontFamily:"inherit",color:ink,background:"#fff"};
+  const sel={padding:"6px 8px",borderRadius:8,border:"1px solid rgba(20,40,64,.25)",fontSize:".78rem",fontFamily:"inherit",color:ink,background:"#fff",cursor:"pointer"};
+  const chip=(pk)=>{const x=ARGO_PROV[pk];return <span style={{display:"inline-flex",alignItems:"center",fontSize:".5rem",fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"2px 6px",borderRadius:4,color:"#fff",background:x.c,whiteSpace:"nowrap"}}>{x.k}</span>;};
+  const Iaff=({p,t,b})=>{const c=ARGO_PROV[p].c;return <button type="button" onClick={()=>setRib({p,t,b})} aria-label={"Explain: "+t} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:"50%",border:"1.3px solid "+c,color:c,background:"none",fontSize:".55rem",fontWeight:800,cursor:"pointer",marginLeft:5,verticalAlign:"middle",lineHeight:1,flexShrink:0}}>i</button>;};
+  const fmt=(n)=>jur.cur+" "+Math.round(n).toLocaleString("en-US");
+  const jurPk=(pv?pv.ver:jur.ver)?"ref":"assume";
+  const rules=[
+    ["Win probability >= 15%",wp>=0.15,Math.round(wp*100)+"%"],
+    ["Sigma R < 400",sig<400,String(sig)],
+    ["Every category R < 45",maxR<45,"max R = "+maxR],
+    ["Lane spread <= 30%",spread<=30,spread+"%"]];
+
+  return(
+    <article className="card glass" style={{marginTop:14,borderTop:"4px solid #1E5B8A"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+        <div style={{flex:"1 1 300px",minWidth:0}}>
+          <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"#1E5B8A"}}>ARGO · owner MVP cockpit · deterministic core, client-side</div>
+          <input value={opp} onChange={(e)=>setOpp(e.target.value)} aria-label="Opportunity name" style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.15rem",color:ink,marginTop:6,border:"none",borderBottom:"1.5px dashed rgba(30,91,138,.4)",background:"none",width:"100%",maxWidth:420,padding:"2px 0"}}/>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+          <select value={svc} onChange={(e)=>{setSvc(+e.target.value);mark("svc");}} style={sel} aria-label="Service">
+            {AOP_SVC.map((s,i)=>(<option key={s[0]} value={i}>{s[0]}</option>))}
+          </select>
+          <select value={country} onChange={(e)=>{setCountry(e.target.value);mark("jur");}} style={sel} aria-label="Project country">
+            {Object.keys(AOP_JUR).map((c)=>(<option key={c} value={c}>{c}</option>))}
+          </select>
+          {country==="Canada" && (
+            <select value={prov} onChange={(e)=>{setProv(e.target.value);mark("jur");}} style={sel} aria-label="Project province">
+              {Object.keys(AOP_PROVS).map((p)=>(<option key={p} value={p}>{p}</option>))}
+            </select>)}
+        </div>
+      </div>
+      <div style={{fontSize:".68rem",color:dim,marginTop:8,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+        <span><b style={{color:ink}}>{country}{pv?" · "+prov:""}</b> · {pv?pv.tax:jur.tax} · {jur.cur} · {pv?pv.reg:jur.codes}</span>
+        {chip(jurPk)}
+        <Iaff p={jurPk} t={"Jurisdiction pack: "+country+(pv?" / "+prov:"")} b={(pv&&!pv.ver)?"ASSUMPTION placeholder pack (amber): tax and regulator lines must be web-verified before pricing (rule 3). Ontario is the only verified province pack.":"Verified pack: tax base, currency, codes and regulator carry dated sources in the master workbook. Switching country or province repopulates every dependent line."}/>
+      </div>
+
+      <ExplainerRibbon rib={rib} prov={ARGO_PROV} />
+
+      <div style={{background:"#0C1B2E",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+        <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.35rem",color:vc,display:"flex",alignItems:"center"}}>{verdict}
+          <Iaff p="calc" t={"Verdict: "+verdict+" (Verdict Rule v1)"} b={"ARGO Calc: NO-GO if win < 0.15 or Sigma R >= 400; else CONDITIONAL GO if any R >= 45 or lane spread > 30%; else GO. Deciding factor: "+factor}/>
+        </div>
+        <div style={{flex:1,minWidth:220,fontSize:".72rem",color:"#c3cdd8",lineHeight:1.5}}>{factor}</div>
+        <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+          {[["Win",Math.round(wp*100)+"%"],["Sigma R",sig],["Max R",maxR],["Spread",spread+"%"]].map(([l,v])=>(
+            <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.05rem",color:"#fff"}}>{v}</div><div style={{fontSize:".56rem",color:"#8ba0b5",textTransform:"uppercase",letterSpacing:".08em"}}>{l}</div></div>))}
+        </div>
+      </div>
+
+      <div className="cmx-grid2" style={{marginTop:12}}>
+        <div style={panel}>
+          <h4 style={h3s}>Win probability{chip("calc")}
+            <Iaff p="calc" t={"Win probability = "+Math.round(wp*100)+"% (estimate)"} b={"ARGO Calc: win = capability("+win.cap.toFixed(2)+") x density("+win.den.toFixed(2)+") x posture("+win.pos.toFixed(2)+") = "+wp.toFixed(2)+". A reasoned estimate, never a guarantee (rule 3). Each factor is an editable assumption."}/>
+          </h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 10px"}}>A reasoned estimate, never a guarantee. Slide to test.</div>
+          <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+            <CmdDonut v={Math.round(wp*100)} color="#1E5B8A" size={66} label="win probability"/>
+            <div style={{flex:1,minWidth:170,fontSize:".72rem"}}>
+              {[["Capability fit","cap"],["Competitive density","den"],["Owner posture","pos"]].map(([n,k])=>(
+                <div key={k} style={{display:"grid",gridTemplateColumns:"minmax(90px,1fr) 1fr 34px",gap:8,alignItems:"center",padding:"3px 0",color:dim}}>
+                  <span style={{display:"flex",alignItems:"center",gap:4}}>{n}{chip(pkOf("w"+k,"assume"))}</span>
+                  <input type="range" min="0" max="1" step="0.05" value={win[k]} aria-label={n} onChange={(e)=>{const v=+e.target.value;setWin((w)=>({...w,[k]:v}));mark("w"+k);}} style={{width:"100%",accentColor:"#1E5B8A"}}/>
+                  <b style={{color:ink,textAlign:"right"}}>{win[k].toFixed(2)}</b>
+                </div>))}
+              <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:4}}>win = {win.cap.toFixed(2)} x {win.den.toFixed(2)} x {win.pos.toFixed(2)} = {wp.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+        <div style={panel}>
+          <h4 style={h3s}>Fee · three-lane triangulation
+            <Iaff p="calc" t="Three-lane fee triangulation" b={"Lane A bottom-up = hours x loaded rate (ARGO Calc from your inputs). Lane B top-down = CV x band midpoint "+mid.toFixed(2)+"% for "+sn+" ("+src+"). Lane C = precedent, dated (rule 27 expiry applies). Divergence over 30% of the smallest lane is flagged, never hidden; you pick the governing lane."}/>
+          </h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Service band: <b style={{color:ink}}>{sn}</b> · {lo}%–{hi}% of CV {chip(bpk)}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:brd,borderRadius:9,padding:"7px 9px",marginBottom:6}}>
+            <div style={{flex:"1 1 140px"}}><div style={{fontSize:".7rem",fontWeight:700,color:ink}}>Lane A · bottom-up</div>
+              <div style={{fontSize:".62rem",color:dim,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:3}}>
+                <input type="number" min="0" value={hours} aria-label="Hours" onChange={(e)=>{setHours(Math.max(0,+e.target.value||0));mark("hours");}} style={nin}/> h x
+                <input type="number" min="0" value={rate} aria-label="Loaded rate" onChange={(e)=>{setRate(Math.max(0,+e.target.value||0));mark("rate");}} style={nin}/> /h {chip(pkOf("hours","assume"))}
+              </div></div>
+            <b style={{fontSize:".76rem",color:ink}}>{fmt(laneA)}</b>{chip("calc")}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:brd,borderRadius:9,padding:"7px 9px",marginBottom:6}}>
+            <div style={{flex:"1 1 140px"}}><div style={{fontSize:".7rem",fontWeight:700,color:ink}}>Lane B · % of construction value</div>
+              <div style={{fontSize:".62rem",color:dim,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:3}}>CV
+                <input type="number" min="0" value={cv} aria-label="Construction value" onChange={(e)=>{setCv(Math.max(0,+e.target.value||0));mark("cv");}} style={{...nin,width:130}}/> x {mid.toFixed(2)}% {chip(bpk)}
+              </div></div>
+            <b style={{fontSize:".76rem",color:ink}}>{fmt(laneB)}</b>{chip("calc")}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:brd,borderRadius:9,padding:"7px 9px",marginBottom:6}}>
+            <div style={{flex:"1 1 140px"}}><div style={{fontSize:".7rem",fontWeight:700,color:ink}}>Lane C · precedent</div>
+              <div style={{fontSize:".62rem",color:dim,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:3}}>
+                <input type="number" min="0" value={laneC} aria-label="Precedent fee" onChange={(e)=>{setLaneC(Math.max(0,+e.target.value||0));mark("laneC");}} style={{...nin,width:130}}/> {chip(pkOf("laneC","assume"))}
+              </div></div>
+            <b style={{fontSize:".76rem",color:ink}}>{fmt(laneC)}</b>
+          </div>
+          <div style={{fontSize:".64rem",fontWeight:700,color:spread>30?"#C0553A":"#1B6B35"}}>Lane spread = {spread}% {spread>30?"· FLAGGED, exceeds 30% (feeds the verdict)":"· within 30%, reconciled"}</div>
+          <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:2}}>The governing fee is hours-based; it does not depend on the construction value. Rate library lives in the master workbook, not in this browser MVP.</div>
+        </div>
+      </div>
+
+      <div className="cmx-grid2" style={{marginTop:12}}>
+        <div style={panel}>
+          <h4 style={h3s}>Risk register · R = P x I x D
+            <Iaff p="assume" t="FMEA / RPN risk math, 1-5 scale" b="R = Probability x Impact x Detectability, each 1-5, R max 125. Bands: LOW < 20, MED 20-44, HIGH >= 45 (ARGO's chosen granularity, ASSUMPTION, locked to the sealed gold set). Reference: IEC 60812:2018, AIAG-VDA 2019. Every P/I/D is an editable assumption at its reference default; editing flips it BY USER and recomputes R, band, Sigma R and the verdict."/>
+          </h4>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(88px,1.5fr) 38px 38px 38px 36px 46px",gap:6,alignItems:"center",fontSize:".58rem",fontWeight:800,letterSpacing:".06em",textTransform:"uppercase",color:dim,margin:"8px 0 4px"}}>
+            <span>Category</span><span>P</span><span>I</span><span>D</span><span style={{textAlign:"right"}}>R</span><span/>
+          </div>
+          {AOP_RISK0.map(([n],ri)=>{const r=Rs[ri];const[bl,bc]=AOP_BAND(r);const ctrl=ri===maxRi&&maxR>=45;return(
+            <div key={n} style={{display:"grid",gridTemplateColumns:"minmax(88px,1.5fr) 38px 38px 38px 36px 46px",gap:6,alignItems:"center",marginBottom:4}}>
+              <span style={{fontSize:".66rem",color:ctrl?"#8B2020":dim,fontWeight:ctrl?800:400,display:"flex",alignItems:"center",gap:3}}>{n}{ctrl?" ●":""}{touched["r"+ri]?chip("user"):null}</span>
+              {[0,1,2].map((ci)=>(
+                <select key={ci} value={risk[ri][ci]} aria-label={n+" "+["P","I","D"][ci]} onChange={(e)=>{const v=+e.target.value;setRisk((rs)=>rs.map((row,i)=>i===ri?row.map((x,j)=>j===ci?v:x):row));mark("r"+ri);}} style={{...sel,padding:"3px 4px",fontSize:".7rem"}}>
+                  {[1,2,3,4,5].map((v)=>(<option key={v} value={v}>{v}</option>))}
+                </select>))}
+              <b style={{fontSize:".68rem",color:ink,textAlign:"right"}}>{r}</b>
+              <span style={{fontSize:".52rem",fontWeight:800,color:"#fff",background:bc,borderRadius:4,padding:"2px 4px",textAlign:"center"}}>{bl}</span>
+            </div>);})}
+          <div style={{display:"flex",justifyContent:"space-between",borderTop:brd,paddingTop:6,marginTop:6,fontSize:".72rem",color:ink}}>
+            <b>Sigma R (8 categories)</b><b style={{display:"flex",alignItems:"center"}}>{sig}{chip("calc")}</b>
+          </div>
+        </div>
+        <div style={panel}>
+          <h4 style={h3s}>Verdict Rule v1 · trace{chip("calc")}
+            <Iaff p="calc" t="Verdict Rule v1 (deterministic, auditable)" b="NO-GO if win < 0.15 or Sigma R >= 400; otherwise CONDITIONAL GO if any category R >= 45 or the lane spread exceeds 30% of the smallest lane; otherwise GO. Applied to computed outputs only; any revision is versioned and re-runs the gold set before adoption."/>
+          </h4>
+          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Every gate, its threshold, and its current reading.</div>
+          {rules.map(([n,ok,v])=>(
+            <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".72rem",padding:"5px 0",borderBottom:"1px solid rgba(20,40,64,.06)"}}>
+              <span style={{color:dim}}>{n}</span>
+              <span style={{display:"flex",gap:8,alignItems:"center"}}><b style={{color:ink}}>{v}</b>
+                <span style={{fontSize:".54rem",fontWeight:800,color:"#fff",background:ok?"#1B6B35":"#C0553A",borderRadius:4,padding:"2px 6px"}}>{ok?"PASS":"FIRES"}</span></span>
+            </div>))}
+          <div style={{fontSize:".66rem",color:dim,marginTop:10,lineHeight:1.5}}><b style={{color:ink}}>Deciding factor.</b> {factor}</div>
+          <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:8}}>This MVP recomputes on every edit. The full engine (workbook spine, gates C1 G1 B1 S0, rate library, legal and timeline tabs) runs in the ARGO war room; this cockpit mirrors its deterministic rules.</div>
+        </div>
+      </div>
+
+      <div style={{marginTop:12}}><ProvLegend prov={ARGO_PROV} /></div>
+      <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:12,fontStyle:"italic"}}>ARGO is decision support for construction bids. It does not guarantee any award, does not set binding prices, and gives no legal or contractual advice. Win probability is a reasoned estimate. Owner MVP: inputs stay in this browser session only; nothing is uploaded. Deterministic core computes all numbers; the AI layer is advisory only.</div>
+    </article>);
+}
+
+// ===== Owner access gate (shared Google sign-in, rendered inside each app section) =====
+function OwnerGate({owner,ownerEmail,signIn,signOut,authErr,app,accent,children}){
+  if(owner) return(
+    <div style={{marginTop:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
+        <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:accent}}>{app} · owner access · unlocked</span>
+        <button className="lk" onClick={signOut}>Sign out ({ownerEmail})</button>
+      </div>
+      {children}
+    </div>);
+  return(
+    <div className="card glass" style={{maxWidth:520,margin:"14px 0 0",padding:20,borderTop:"3px solid "+accent}}>
+      <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
+      <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.1rem"}}>Sign in to {app}</h3>
+      <p style={{color:"#5A6B7A",fontSize:".86rem",lineHeight:1.6,margin:"8px 0 12px"}}>Owner only. Sign in with the Google account <b style={{color:accent}}>info@istructgroup.com</b>. No password is shared with this site. One sign-in unlocks all owner tools.</p>
+      <button onClick={signIn} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"#fff",color:"#2A3642",border:"1px solid rgba(20,40,64,.18)",fontWeight:700,fontSize:".9rem",cursor:"pointer",fontFamily:"inherit"}}><svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
+      {authErr && <div style={{fontSize:".8rem",color:"#C0553A",marginTop:10}}>{authErr}</div>}
+      <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
+    </div>);
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [opacity] = useState(0.12);
@@ -1533,7 +1752,11 @@ export default function App() {
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> A bid decision in one cockpit, before you commit a team. Every figure carries its origin; the deterministic core does the math, the AI layer only explains and finds precedent, it never invents. Your RFP and pricing stay private to you.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Win probability is a reasoned estimate, never a guarantee; fees triangulate three cited lanes and flag divergence; risk is P x I x D you can audit. The teaser below runs a real, redacted opportunity as one example.</div>
               <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("start")}>Request service →</button></div>
+              <div className="more" style={{color:"#1E5B8A",marginTop:10}}>Owner sign-in directly below ↓</div>
             </article>
+            <OwnerGate owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="ARGO" accent="#1E5B8A">
+              <ARGOOwnerPanel/>
+            </OwnerGate>
             <ARGOTeaser />
             <article id="app-mesh" className="card glass" style={{marginTop:18,borderTop:`4px solid ${P.tealL}`,boxShadow:"0 10px 34px rgba(14,190,168,.18),0 6px 22px rgba(0,0,0,.3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -1547,29 +1770,14 @@ export default function App() {
               <div className="acts">
                 <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request service →</button>
               </div>
-              <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in below ↓</div>
+              <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in directly below ↓</div>
             </article>
+            <OwnerGate owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="Capacity Mesh" accent={P.tealL}>
+              <CapacityMeshPanel/>
+            </OwnerGate>
 
             <CMDash />
             <CMDecisionSample />
-            <h2 className="sec">Open Capacity Mesh, owner access</h2>
-            {owner ? (
-              <div style={{marginTop:18}}>
-                <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-                  <button className="lk" onClick={signOutOwner}>Sign out ({ownerEmail})</button>
-                </div>
-                <CapacityMeshPanel/>
-              </div>
-            ) : (
-              <div className="card glass" style={{maxWidth:520,margin:"18px 0 0",padding:24}}>
-                <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
-                <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.2rem"}}>Sign in to Capacity Mesh</h3>
-                <p style={{color:"#5A6B7A",fontSize:".88rem",lineHeight:1.6,margin:"8px 0 14px"}}>Owner only. Sign in with the Google account <b style={{color:"#0EBEA8"}}>info@istructgroup.com</b>. No password is shared with this site.</p>
-                <button onClick={signInGoogle} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"#fff",color:"#2A3642",border:"none",fontWeight:700,fontSize:".9rem",cursor:"pointer",fontFamily:"inherit"}}><svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
-                {authErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{authErr}</div>}
-                <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
-              </div>
-            )}
 
             <article id="app-nppe" className="card glass" style={{marginTop:18,borderTop:"4px solid #C6973F",boxShadow:"0 10px 34px rgba(198,151,63,.18),0 6px 22px rgba(0,0,0,.3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>

@@ -1320,24 +1320,24 @@ function ARGOOwnerPanel(){
     </article>);
 }
 
-// ===== Owner access gate (shared Google sign-in, rendered inside each app section) =====
-function OwnerGate({owner,ownerEmail,signIn,signOut,authErr,app,accent,children}){
-  if(owner) return(
-    <div style={{marginTop:14}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
-        <span style={{fontSize:".62rem",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",color:accent}}>{app} · owner access · unlocked</span>
-        <button className="lk" onClick={signOut}>Sign out ({ownerEmail})</button>
-      </div>
-      {children}
-    </div>);
+// ===== Owner access gate (shared Google sign-in, rendered INSIDE each app card) =====
+function OwnerInline({owner,ownerEmail,signIn,signOut,authErr,app,accent}){
   return(
-    <div className="card glass" style={{maxWidth:520,margin:"14px 0 0",padding:20,borderTop:"3px solid "+accent}}>
-      <div className="eyebrow" style={{marginBottom:6}}>Owner access</div>
-      <h3 style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.1rem"}}>Sign in to {app}</h3>
-      <p style={{color:"#5A6B7A",fontSize:".86rem",lineHeight:1.6,margin:"8px 0 12px"}}>Owner only. Sign in with the Google account <b style={{color:accent}}>info@istructgroup.com</b>. No password is shared with this site. One sign-in unlocks all owner tools.</p>
-      <button onClick={signIn} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:9,background:"#fff",color:"#2A3642",border:"1px solid rgba(20,40,64,.18)",fontWeight:700,fontSize:".9rem",cursor:"pointer",fontFamily:"inherit"}}><svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
-      {authErr && <div style={{fontSize:".8rem",color:"#C0553A",marginTop:10}}>{authErr}</div>}
-      <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12}}>Only info@istructgroup.com unlocks the tools. Other access types are postponed.</div>
+    <div style={{marginTop:14,border:"1px solid "+accent+"44",background:"rgba(20,40,64,.045)",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 240px",minWidth:0}}>
+        <div style={{fontSize:".6rem",fontWeight:800,letterSpacing:".14em",textTransform:"uppercase",color:accent}}>Owner access{owner?" · unlocked":""}</div>
+        {owner ? (
+          <div style={{fontSize:".78rem",color:"#5A6B7A",marginTop:3}}>Signed in as <b style={{color:"#2A3642"}}>{ownerEmail}</b>. The {app} owner tool is open directly below this card.</div>
+        ) : (
+          <div style={{fontSize:".78rem",color:"#5A6B7A",marginTop:3,lineHeight:1.5}}>Owner only: <b style={{color:"#2A3642"}}>info@istructgroup.com</b>. One sign-in unlocks ARGO and Capacity Mesh. No password is shared with this site.</div>
+        )}
+        {authErr && <div style={{fontSize:".74rem",color:"#C0553A",marginTop:4}}>{authErr}</div>}
+      </div>
+      {owner ? (
+        <button className="lk" onClick={signOut} style={{flexShrink:0}}>Sign out</button>
+      ) : (
+        <button onClick={signIn} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"9px 14px",borderRadius:9,background:"#fff",color:"#2A3642",border:"1px solid rgba(20,40,64,.18)",fontWeight:700,fontSize:".84rem",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}><svg width="15" height="15" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.6z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.32A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.71A5.41 5.41 0 0 1 3.7 9c0-.59.1-1.17.28-1.71V4.96H.96A8.97 8.97 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.02-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0 9 9 0 0 0 .96 4.96L3.98 7.3C4.68 5.16 6.66 3.58 9 3.58z"/></svg> Sign in with Google</button>
+      )}
     </div>);
 }
 
@@ -1752,11 +1752,9 @@ export default function App() {
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> A bid decision in one cockpit, before you commit a team. Every figure carries its origin; the deterministic core does the math, the AI layer only explains and finds precedent, it never invents. Your RFP and pricing stay private to you.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Win probability is a reasoned estimate, never a guarantee; fees triangulate three cited lanes and flag divergence; risk is P x I x D you can audit. The teaser below runs a real, redacted opportunity as one example.</div>
               <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("start")}>Request service →</button></div>
-              <div className="more" style={{color:"#1E5B8A",marginTop:10}}>Owner sign-in directly below ↓</div>
+              <OwnerInline owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="ARGO" accent="#1E5B8A"/>
             </article>
-            <OwnerGate owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="ARGO" accent="#1E5B8A">
-              <ARGOOwnerPanel/>
-            </OwnerGate>
+            {owner && <ARGOOwnerPanel/>}
             <ARGOTeaser />
             <article id="app-mesh" className="card glass" style={{marginTop:18,borderTop:`4px solid ${P.tealL}`,boxShadow:"0 10px 34px rgba(14,190,168,.18),0 6px 22px rgba(0,0,0,.3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -1770,11 +1768,9 @@ export default function App() {
               <div className="acts">
                 <button className="btn" style={{background:P.teal}} onClick={()=>go("capmeshreq")}>Request service →</button>
               </div>
-              <div className="more" style={{color:P.tealL,marginTop:10}}>Owner sign-in directly below ↓</div>
+              <OwnerInline owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="Capacity Mesh" accent={P.tealL}/>
             </article>
-            <OwnerGate owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="Capacity Mesh" accent={P.tealL}>
-              <CapacityMeshPanel/>
-            </OwnerGate>
+            {owner && <CapacityMeshPanel/>}
 
             <CMDash />
             <CMDecisionSample />

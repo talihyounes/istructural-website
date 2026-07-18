@@ -756,7 +756,7 @@ const CM_PROV={
   ref:   {k:"REFERENCE",  c:"#0A7C6E"}, // cited default (teal)
   calc:  {k:"MESH CALC",  c:"#1E5B8A", name:"Mesh Calc"}, // deterministic core output (blue)
   assume:{k:"ASSUMPTION",  c:"#C6973F"}, // estimate, no external source (amber)
-  user:  {k:"BY USER",    c:"#C9A227"}  // any value the user changed (gold)
+  user:  {k:"BY USER",    c:"#8F6E12"}  // any value the user changed (gold)
 };
 const CM_EXPL={
   offices:   {p:"calc",  t:"Offices = 3",              b:"Distinct offices in the loaded roster. ARGO Calc: COUNT(DISTINCT office) over the 06_Clients roster."},
@@ -808,14 +808,14 @@ function CMDash(){
   const P5=sel!=null?CMD_VOR[sel]:null;
   const panel={background:"#fff",border:CMD_BRD,borderRadius:12,padding:14};
   const h3s={fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:".98rem",color:CMD_INK,margin:0};
-  const take={fontSize:".7rem",color:"#8a93a0",margin:"3px 0 10px"};
+  const take={fontSize:".7rem",color:"#64748B",margin:"3px 0 10px"};
   return(
     <article className="card glass" style={{marginTop:14,borderTop:"4px solid #0EBEA8"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
         <div>
           <div style={{fontSize:".66rem",fontWeight:700,letterSpacing:".16em",textTransform:"uppercase",color:"#0A7C6E"}}>Capacity Mesh · live MVP dashboard</div>
           <div style={{fontFamily:"'Fraunces',serif",fontWeight:800,fontSize:"1.22rem",color:CMD_INK,marginTop:6,lineHeight:1.25}}>An example workforce: one firm, three offices, 29 engineers, every number computed</div>
-          <div style={{fontSize:".72rem",color:"#8a93a0",marginTop:4}}>The same mesh maps any workforce, any discipline, trade, or role, in any field. This 3-office engineering demo is one example.</div>
+          <div style={{fontSize:".72rem",color:"#64748B",marginTop:4}}>The same mesh maps any workforce, any discipline, trade, or role, in any field. This 3-office engineering demo is one example.</div>
         </div>
         <span style={{fontSize:".58rem",fontWeight:800,letterSpacing:".07em",textTransform:"uppercase",color:"#A8762A",border:"1px solid #C6973F66",borderRadius:6,padding:"4px 8px"}}>Simulated demo · gold-gate validated</span>
       </div>
@@ -866,7 +866,7 @@ function CMDash(){
                 <div style={{height:7,borderRadius:4,background:"rgba(20,40,64,.08)"}}><div style={{width:r+"%",height:"100%",borderRadius:4,background:"linear-gradient(90deg,#0A7C6E,#0EBEA8)"}}/></div>
                 <b style={{fontFamily:"'Fraunces',serif",color:"#0A7C6E",textAlign:"right"}}>{r}</b>
               </div>))}
-            <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:4}}>Top of 18 candidates (technician promotions listed in the full engine).</div>
+            <div style={{fontSize:".6rem",color:"#64748B",marginTop:4}}>Top of 18 candidates (technician promotions listed in the full engine).</div>
           </div>
         </div>
       </div>)}
@@ -945,12 +945,12 @@ function CMDash(){
           </div>))}
       </div>)}
 
-      <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:12,fontStyle:"italic"}}>Simulated demonstration data, not real personnel records. Source: Capacity Mesh Engine v2.1, 11,257 live formulas, gold-gate 45/45 PASS, June 2026. Deterministic core computes all numbers; AI layer is advisory only.</div>
+      <div style={{fontSize:".62rem",color:"#64748B",marginTop:12,fontStyle:"italic"}}>Simulated demonstration data, not real personnel records. Source: Capacity Mesh Engine v2.1, 11,257 live formulas, gold-gate 45/45 PASS, June 2026. Deterministic core computes all numbers; AI layer is advisory only.</div>
     </article>);
 }
 
 // ===== Capacity Mesh · Trust Ledger — sample Decision Record (working sample) =====
-const CM_DRP={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"MESH CALC",c:"#1E5B8A",name:"Mesh Calc"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#C9A227"}};
+const CM_DRP={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"MESH CALC",c:"#1E5B8A",name:"Mesh Calc"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#8F6E12"}};
 const CM_DR={
   schema_version:"1.0", record_id:"sample-a1f3c8", issued_at:"2026-07-09T14:22:05Z",
   actor:{name:"owner",role:"decision-maker"}, org:"Demo Global Structures Inc.", unit:"Toronto",
@@ -1019,7 +1019,7 @@ function CMDecisionSample(){
         <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginTop:14}}>
           <ProvLegend prov={CM_DRP} />
         </div>
-        <div style={{fontSize:".58rem",color:"#8a93a0",marginTop:10,fontStyle:"italic"}}>Sample record from simulated demo data. iStructural Group Inc. · Capacity Mesh · Trust Ledger (Phase 1).</div>
+        <div style={{fontSize:".58rem",color:"#64748B",marginTop:10,fontStyle:"italic"}}>Sample record from simulated demo data. iStructural Group Inc. · Capacity Mesh · Trust Ledger (Phase 1).</div>
       </div>
     </article>);
 }
@@ -1039,7 +1039,7 @@ const ARGO_EXPL={
   feeB:{p:"ref",t:"Lane B, percent of construction value",b:"Reference: review-only % band from a dated market source, tiered. Figure redacted."},
   feeC:{p:"assume",t:"Lane C, precedent (reference only)",b:"Precedent is expired and not like-for-like: shown for context only, never governing (rule 27). Figure redacted."}
 };
-const ARGO_PROV={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"ARGO CALC",c:"#1E5B8A",name:"ARGO Calc"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#C9A227"}};
+const ARGO_PROV={ref:{k:"REFERENCE",c:"#0A7C6E"},calc:{k:"ARGO CALC",c:"#1E5B8A",name:"ARGO Calc"},assume:{k:"ASSUMPTION",c:"#C6973F"},user:{k:"BY USER",c:"#8F6E12"}};
 function ARGOTeaser(){
   const [rib,setRib]=useState(null);
   const ink="#2A3642",dim="#5A6B7A",brd="1px solid rgba(20,40,64,.1)";
@@ -1070,7 +1070,7 @@ function ARGOTeaser(){
       <div className="cmx-grid2" style={{marginTop:12}}>
         <div style={panel}>
           <h4 style={h3s}>Win probability<Iaff id="win"/></h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 10px"}}>A reasoned estimate, never a guarantee.</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 10px"}}>A reasoned estimate, never a guarantee.</div>
           <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
             <CmdDonut v={win} color="#1E5B8A" size={66} label="win probability"/>
             <div style={{flex:1,minWidth:150,fontSize:".72rem"}}>
@@ -1078,13 +1078,13 @@ function ARGOTeaser(){
                 <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0",color:dim}}>
                   <span style={{display:"flex",alignItems:"center"}}>{n}{chip("calc")}</span><b style={{color:ink}}>{v.toFixed(2)}</b>
                 </div>))}
-              <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:4}}>win = 0.80 x 0.55 x 0.70 = {(win/100).toFixed(2)}</div>
+              <div style={{fontSize:".62rem",color:"#64748B",marginTop:4}}>win = 0.80 x 0.55 x 0.70 = {(win/100).toFixed(2)}</div>
             </div>
           </div>
         </div>
         <div style={panel}>
           <h4 style={h3s}>Delivery + commercial model ranking</h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Ranked to this role and scope. ★ = best fit.</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 8px"}}>Ranked to this role and scope. ★ = best fit.</div>
           <div style={{fontSize:".58rem",fontWeight:800,letterSpacing:".08em",textTransform:"uppercase",color:dim,marginBottom:3}}>Delivery</div>
           {ARGO_DELIV.map(([n,r,c,best])=>(
             <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".72rem",padding:"3px 0"}}><span style={{color:ink}}>{best?"★ ":""}{n}</span><b style={{color:c}}>{r}</b></div>))}
@@ -1097,7 +1097,7 @@ function ARGOTeaser(){
       <div className="cmx-grid2" style={{marginTop:12}}>
         <div style={panel}>
           <h4 style={h3s}>Risk register · P x I x D<Iaff id="sla"/></h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>8 categories. Bar = P x I. The controlling risk sets the verdict.</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 8px"}}>8 categories. Bar = P x I. The controlling risk sets the verdict.</div>
           {ARGO_RISK.map(([n,P,I,ctrl])=>{const v=P*I;return(
             <div key={n} style={{display:"grid",gridTemplateColumns:"minmax(96px,1.3fr) 1fr 34px",gap:8,alignItems:"center",marginBottom:4}}>
               <span style={{fontSize:".66rem",color:ctrl?"#8B2020":dim,fontWeight:ctrl?800:400}}>{n}{ctrl?" ●":""}</span>
@@ -1107,18 +1107,18 @@ function ARGOTeaser(){
         </div>
         <div style={panel}>
           <h4 style={h3s}>Fee · three-lane triangulation</h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Three cited lanes reconcile; divergence is flagged. Figures redacted (confidential bid).</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 8px"}}>Three cited lanes reconcile; divergence is flagged. Figures redacted (confidential bid).</div>
           {ARGO_FEE.map(([n,note,id,pk])=>(
             <div key={n} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:brd,borderRadius:9,padding:"7px 9px",marginBottom:6}}>
               <div style={{flex:"1 1 150px",minWidth:0}}><div style={{fontSize:".7rem",fontWeight:700,color:ink,display:"flex",alignItems:"center"}}>{n}<Iaff id={id}/></div><div style={{fontSize:".58rem",color:dim}}>{note}</div></div>
               <Shade w={80}/>{chip(pk)}
             </div>))}
-          <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:2}}>Governing fee is hours-based, independent of construction value. Nothing here is downloadable.</div>
+          <div style={{fontSize:".6rem",color:"#64748B",marginTop:2}}>Governing fee is hours-based, independent of construction value. Nothing here is downloadable.</div>
         </div>
       </div>
 
       <div style={{marginTop:12}}><ProvLegend prov={ARGO_PROV} /></div>
-      <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:12,fontStyle:"italic"}}>ARGO is decision support for construction bids. It does not guarantee any award, does not set binding prices, and gives no legal advice. Win probability is a reasoned estimate. Redacted demo from one real opportunity; your documents stay private to you. Deterministic core computes all numbers; the AI layer is advisory only.</div>
+      <div style={{fontSize:".62rem",color:"#64748B",marginTop:12,fontStyle:"italic"}}>ARGO is decision support for construction bids. It does not guarantee any award, does not set binding prices, and gives no legal advice. Win probability is a reasoned estimate. Redacted demo from one real opportunity; your documents stay private to you. Deterministic core computes all numbers; the AI layer is advisory only.</div>
     </article>);
 }
 
@@ -1231,7 +1231,7 @@ function ARGOOwnerPanel(){
           <h4 style={h3s}>Win probability{chip("calc")}
             <Iaff p="calc" t={"Win probability = "+Math.round(wp*100)+"% (estimate)"} b={"ARGO Calc: win = capability("+win.cap.toFixed(2)+") x density("+win.den.toFixed(2)+") x posture("+win.pos.toFixed(2)+") = "+wp.toFixed(2)+". A reasoned estimate, never a guarantee (rule 3). Each factor is an editable assumption."}/>
           </h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 10px"}}>A reasoned estimate, never a guarantee. Slide to test.</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 10px"}}>A reasoned estimate, never a guarantee. Slide to test.</div>
           <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
             <CmdDonut v={Math.round(wp*100)} color="#1E5B8A" size={66} label="win probability"/>
             <div style={{flex:1,minWidth:170,fontSize:".72rem"}}>
@@ -1241,7 +1241,7 @@ function ARGOOwnerPanel(){
                   <input type="range" min="0" max="1" step="0.05" value={win[k]} aria-label={n} onChange={(e)=>{const v=+e.target.value;setWin((w)=>({...w,[k]:v}));mark("w"+k);}} style={{width:"100%",accentColor:"#1E5B8A"}}/>
                   <b style={{color:ink,textAlign:"right"}}>{win[k].toFixed(2)}</b>
                 </div>))}
-              <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:4}}>win = {win.cap.toFixed(2)} x {win.den.toFixed(2)} x {win.pos.toFixed(2)} = {wp.toFixed(2)}</div>
+              <div style={{fontSize:".62rem",color:"#64748B",marginTop:4}}>win = {win.cap.toFixed(2)} x {win.den.toFixed(2)} x {win.pos.toFixed(2)} = {wp.toFixed(2)}</div>
             </div>
           </div>
         </div>
@@ -1249,7 +1249,7 @@ function ARGOOwnerPanel(){
           <h4 style={h3s}>Fee · three-lane triangulation
             <Iaff p="calc" t="Three-lane fee triangulation" b={"Lane A bottom-up = hours x loaded rate (ARGO Calc from your inputs). Lane B top-down = CV x band midpoint "+mid.toFixed(2)+"% for "+sn+" ("+src+"). Lane C = precedent, dated (rule 27 expiry applies). Divergence over 30% of the smallest lane is flagged, never hidden; you pick the governing lane."}/>
           </h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Service band: <b style={{color:ink}}>{sn}</b> · {lo}%–{hi}% of CV {chip(bpk)}</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 8px"}}>Service band: <b style={{color:ink}}>{sn}</b> · {lo}%–{hi}% of CV {chip(bpk)}</div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#F7F5F0",border:brd,borderRadius:9,padding:"7px 9px",marginBottom:6}}>
             <div style={{flex:"1 1 140px"}}><div style={{fontSize:".7rem",fontWeight:700,color:ink}}>Lane A · bottom-up</div>
               <div style={{fontSize:".62rem",color:dim,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:3}}>
@@ -1273,7 +1273,7 @@ function ARGOOwnerPanel(){
             <b style={{fontSize:".76rem",color:ink}}>{fmt(laneC)}</b>
           </div>
           <div style={{fontSize:".64rem",fontWeight:700,color:spread>30?"#C0553A":"#1B6B35"}}>Lane spread = {spread}% {spread>30?"· FLAGGED, exceeds 30% (feeds the verdict)":"· within 30%, reconciled"}</div>
-          <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:2}}>The governing fee is hours-based; it does not depend on the construction value. Rate library lives in the master workbook, not in this browser MVP.</div>
+          <div style={{fontSize:".6rem",color:"#64748B",marginTop:2}}>The governing fee is hours-based; it does not depend on the construction value. Rate library lives in the master workbook, not in this browser MVP.</div>
         </div>
       </div>
 
@@ -1303,7 +1303,7 @@ function ARGOOwnerPanel(){
           <h4 style={h3s}>Verdict Rule v1 · trace{chip("calc")}
             <Iaff p="calc" t="Verdict Rule v1 (deterministic, auditable)" b="NO-GO if win < 0.15 or Sigma R >= 400; otherwise CONDITIONAL GO if any category R >= 45 or the lane spread exceeds 30% of the smallest lane; otherwise GO. Applied to computed outputs only; any revision is versioned and re-runs the gold set before adoption."/>
           </h4>
-          <div style={{fontSize:".7rem",color:"#8a93a0",margin:"3px 0 8px"}}>Every gate, its threshold, and its current reading.</div>
+          <div style={{fontSize:".7rem",color:"#64748B",margin:"3px 0 8px"}}>Every gate, its threshold, and its current reading.</div>
           {rules.map(([n,ok,v])=>(
             <div key={n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:".72rem",padding:"5px 0",borderBottom:"1px solid rgba(20,40,64,.06)"}}>
               <span style={{color:dim}}>{n}</span>
@@ -1311,12 +1311,12 @@ function ARGOOwnerPanel(){
                 <span style={{fontSize:".54rem",fontWeight:800,color:"#fff",background:ok?"#1B6B35":"#C0553A",borderRadius:4,padding:"2px 6px"}}>{ok?"PASS":"FIRES"}</span></span>
             </div>))}
           <div style={{fontSize:".66rem",color:dim,marginTop:10,lineHeight:1.5}}><b style={{color:ink}}>Deciding factor.</b> {factor}</div>
-          <div style={{fontSize:".6rem",color:"#8a93a0",marginTop:8}}>This MVP recomputes on every edit. The full engine (workbook spine, gates C1 G1 B1 S0, rate library, legal and timeline tabs) runs in the ARGO war room; this cockpit mirrors its deterministic rules.</div>
+          <div style={{fontSize:".6rem",color:"#64748B",marginTop:8}}>This MVP recomputes on every edit. The full engine (workbook spine, gates C1 G1 B1 S0, rate library, legal and timeline tabs) runs in the ARGO war room; this cockpit mirrors its deterministic rules.</div>
         </div>
       </div>
 
       <div style={{marginTop:12}}><ProvLegend prov={ARGO_PROV} /></div>
-      <div style={{fontSize:".62rem",color:"#8a93a0",marginTop:12,fontStyle:"italic"}}>ARGO is decision support for construction bids. It does not guarantee any award, does not set binding prices, and gives no legal or contractual advice. Win probability is a reasoned estimate. Owner MVP: inputs stay in this browser session only; nothing is uploaded. Deterministic core computes all numbers; the AI layer is advisory only.</div>
+      <div style={{fontSize:".62rem",color:"#64748B",marginTop:12,fontStyle:"italic"}}>ARGO is decision support for construction bids. It does not guarantee any award, does not set binding prices, and gives no legal or contractual advice. Win probability is a reasoned estimate. Owner MVP: inputs stay in this browser session only; nothing is uploaded. Deterministic core computes all numbers; the AI layer is advisory only.</div>
     </article>);
 }
 
@@ -1353,6 +1353,28 @@ export default function App() {
     metas.forEach(function(m){var el=document.querySelector("meta["+m[0]+"='"+m[1]+"']");if(!el){el=document.createElement("meta");el.setAttribute(m[0],m[1]);document.head.appendChild(el);}el.setAttribute("content",m[2]);});
     if(!document.querySelector("link[rel='icon']")){var l=document.createElement("link");l.rel="icon";l.href="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='#0C1B2E'/><path d='M10 24h12M16 8v16M12 24l4-9 4 9' stroke='#0EBEA8' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");document.head.appendChild(l);}
   }, []);
+
+  // ── Analytics (off by default; no tracking while provider is "none").
+  // To enable: set provider to "plausible" (id = "istructgroup.com") or "ga4" (id = "G-XXXXXXX").
+  // vercel.json CSP already allows plausible.io and Google Analytics domains.
+  const ANALYTICS = { provider: "none", id: "" };
+  useEffect(() => {
+    if (typeof window === "undefined" || ANALYTICS.provider === "none" || !ANALYTICS.id) return;
+    if (document.getElementById("ist-analytics")) return;
+    const s = document.createElement("script");
+    s.id = "ist-analytics"; s.defer = true;
+    if (ANALYTICS.provider === "plausible") { s.src = "https://plausible.io/js/script.hash.js"; s.setAttribute("data-domain", ANALYTICS.id); }
+    else if (ANALYTICS.provider === "ga4") {
+      s.src = "https://www.googletagmanager.com/gtag/js?id=" + ANALYTICS.id;
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function(){ window.dataLayer.push(arguments); };
+      window.gtag("js", new Date()); window.gtag("config", ANALYTICS.id, { anonymize_ip: true });
+    }
+    document.head.appendChild(s);
+  }, []);
+  useEffect(() => { // SPA pageview per page change (GA4; Plausible hash script auto-tracks)
+    if (typeof window !== "undefined" && ANALYTICS.provider === "ga4" && window.gtag) window.gtag("event", "page_view", { page_path: "/" + page });
+  }, [page]);
 
   const [hubOpen, setHubOpen] = useState(null);
   const [owner, setOwner] = useState(false);
@@ -1413,9 +1435,9 @@ export default function App() {
         <div aria-hidden="true" style={{position:"absolute",top:0,left:`calc(${capTarget}% - 6px)`,fontSize:"1rem",lineHeight:1,color:capOk?"#1B6B35":"#0A7C6E"}}>&#9733;</div>
         <input type="range" min="0" max="100" value={capVal} onChange={e=>{setCapVal(+e.target.value); if(capErr) setCapErr("");}} aria-label="Slide the handle under the star to verify you are human" style={{position:"absolute",bottom:0,left:0,width:"100%",margin:0,accentColor:capOk?"#1B6B35":"#0EBEA8"}} />
       </div>
-      <div style={{fontSize:".74rem",fontWeight:700,color:capOk?"#1B6B35":"#8a93a0",marginTop:2}}>{capOk?"\u2713 Verified":"Drag the handle until it sits under the star"}</div>
+      <div style={{fontSize:".74rem",fontWeight:700,color:capOk?"#1B6B35":"#64748B",marginTop:2}}>{capOk?"\u2713 Verified":"Drag the handle until it sits under the star"}</div>
       <input type="text" tabIndex={-1} autoComplete="off" value={hp} onChange={e=>setHp(e.target.value)} aria-hidden="true" style={{position:"absolute",left:"-9999px",width:1,height:1,opacity:0}} />
-      {capErr && <div style={{fontSize:".78rem",color:"#d65a5a",marginTop:6,fontWeight:600}}>{capErr}</div>}
+      {capErr && <div style={{fontSize:".78rem",color:"#B0413E",marginTop:6,fontWeight:600}}>{capErr}</div>}
     </div>
   );
 
@@ -1469,6 +1491,20 @@ export default function App() {
   const [cm, setCm] = useState({});
   const [cmStatus, setCmStatus] = useState("idle");
   useEffect(() => { document.body.style.overflow = drawer ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [drawer]);
+  // ── ARGO access request (argoreq) ──
+  const [ag, setAg] = useState({});
+  const [agStatus, setAgStatus] = useState("idle");
+  const submitArgo = async () => {
+    if (hp) { setAgStatus("success"); return; } // honeypot tripped: silently drop bot
+    const missing = ["Full name","Company / Organization","Email"].some(k=>!String(ag[k]||"").trim());
+    const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(ag["Email"]||"").trim());
+    if (missing || !emailOk) { setAgStatus("error"); return; }
+    if (!capOk) { setCapErr("Please complete the slide-to-verify check."); return; }
+    setCapErr(""); setAgStatus("sending");
+    const payload = { _subject: "ARGO access request", _template: "table", _honey: hp, ...ag };
+    try { const ok = await postForm(payload); setAgStatus(ok ? "success" : "error"); }
+    catch (e) { setAgStatus("error"); }
+  };
   const submitCapMesh = async () => {
     if (hp) { setCmStatus("success"); return; } // honeypot tripped: silently drop bot
     const missing = ["Full name","Company / Organization","Email"].some(k=>!String(cm[k]||"").trim());
@@ -1480,7 +1516,22 @@ export default function App() {
     try { const ok = await postForm(payload); setCmStatus(ok ? "success" : "error"); }
     catch (e) { setCmStatus("error"); }
   };
-  const go = (id) => { setPage(id); setDrawer(false); setSvcOpen(false); window.scrollTo({top:0}); };
+  // ── Hash routing: deep links (#/resources), browser back/forward, refresh keeps place ──
+  const VALID_PAGES = ["home","s1","s2","s3","projects","training","hub","resources","contact","start","nppe","nppereq","capmeshreq","argoreq"];
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const read = () => { const h = window.location.hash.replace(/^#\/?/, ""); return VALID_PAGES.includes(h) ? h : "home"; };
+    const initial = read();
+    if (initial !== "home") setPage(initial);
+    const onHash = () => { setPage(read()); setDrawer(false); setSvcOpen(false); window.scrollTo({top:0}); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const go = (id) => {
+    setPage(id); setDrawer(false); setSvcOpen(false);
+    if (typeof window !== "undefined" && window.location.hash !== "#/"+id) { try { window.location.hash = "#/"+id; } catch (e) {} }
+    window.scrollTo({top:0});
+  };
   const isSvc = ["s1","s2","s3"].includes(page);
 
   const projF = PROJECTS.filter(p => {
@@ -1751,7 +1802,7 @@ export default function App() {
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:6}}><b style={{color:CMD_INK}}>What it is.</b> ARGO turns an RFP, tender, or scope into a structured GO / CONDITIONAL GO / NO-GO decision, with delivery and commercial model ranking, 8-category risk math (P x I x D), a three-lane fee triangulation, and a win-probability estimate. For any party to a bid: consultant, contractor, sub-consultant, sub-contractor, supplier, or client.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why you want it.</b> A bid decision in one cockpit, before you commit a team. Every figure carries its origin; the deterministic core does the math, the AI layer only explains and finds precedent, it never invents. Your RFP and pricing stay private to you.</div>
               <div style={{fontSize:".95rem",color:"#3a4654",lineHeight:1.65,marginTop:8}}><b style={{color:CMD_INK}}>Why it is different.</b> Win probability is a reasoned estimate, never a guarantee; fees triangulate three cited lanes and flag divergence; risk is P x I x D you can audit. The teaser below runs a real, redacted opportunity as one example.</div>
-              <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("start")}>Request service →</button></div>
+              <div className="acts"><button className="btn" style={{background:"#1E5B8A"}} onClick={()=>go("argoreq")}>Request service →</button></div>
               <OwnerInline owner={owner} ownerEmail={ownerEmail} signIn={signInGoogle} signOut={signOutOwner} authErr={authErr} app="ARGO" accent="#1E5B8A"/>
             </article>
             {owner && <ARGOOwnerPanel/>}
@@ -1851,8 +1902,8 @@ export default function App() {
                 <span>{NPPE_CONSENT}</span>
               </label>
               {captchaBlock()}
-              {npErr && <div style={{fontSize:".8rem",color:"#ffd1c9",marginTop:10}}>{npErr}</div>}
-              {npStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
+              {npErr && <div style={{fontSize:".8rem",color:"#C0553A",marginTop:10}}>{npErr}</div>}
+              {npStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#1B6B35",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
               <button className="btn" disabled={npStatus==="sending"} style={{background:P.gold,marginTop:16,width:"100%",opacity:(npValid&&npStatus!=="sending")?1:.6,cursor:npStatus==="sending"?"wait":"pointer"}} onClick={submitNppe}>{npStatus==="sending"?"Sending...":"Submit request"}</button>
               <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12,lineHeight:1.6}}>Your details are used only to provide the engine and follow up on your setup. They are not shared. Submitting sends your request directly to info@istructgroup.com.</div>
             </div>
@@ -1862,6 +1913,36 @@ export default function App() {
           </div>
         )}
 
+        {/* ARGO REQUEST ACCESS (intake) */}
+        {page==="argoreq" && (
+          <div className="page">
+            <div className="phero glass" style={{borderTop:"4px solid #1E5B8A"}}>
+              <div className="eyebrow" style={{color:"#6db3e6"}}>Resources · ARGO · Request access</div>
+              <h1>Request ARGO access</h1>
+              <p>Tell us about your opportunity and your role on it. We respond within 24 hours with a walkthrough or early access. Your RFP and pricing stay private to you.</p>
+            </div>
+            <div className="fbody glass" style={{borderRadius:14,marginTop:18}}>
+              <div className="fgrid">
+                {[["Full name",true],["Company / Organization",true],["Email",true],["Mobile",false]].map(([k,req])=>(
+                  <div key={k} className="fld"><label>{k}{req?" *":""}</label><input value={ag[k]||""} onChange={e=>{setAg(sx=>({...sx,[k]:e.target.value})); if(agStatus!=="idle") setAgStatus("idle");}} placeholder={k} /></div>
+                ))}
+                <div className="fld"><label>Your role on the bid</label>
+                  <select value={ag["Role on the bid"]||""} onChange={e=>setAg(sx=>({...sx,"Role on the bid":e.target.value}))}><option value="">Select...</option>{["Consultant","Contractor","Sub-consultant","Sub-contractor","Supplier","Client"].map(o=><option key={o}>{o}</option>)}</select>
+                </div>
+                <div className="fld"><label>Project country</label>
+                  <select value={ag["Project country"]||""} onChange={e=>setAg(sx=>({...sx,"Project country":e.target.value}))}><option value="">Select...</option>{["KSA","Canada","UAE","Qatar","Other"].map(o=><option key={o}>{o}</option>)}</select>
+                </div>
+                <div className="fld"><label>RFP / submission deadline (if known)</label><input value={ag["RFP deadline"]||""} onChange={e=>setAg(sx=>({...sx,"RFP deadline":e.target.value}))} placeholder="e.g. 2026-08-01" /></div>
+                <div className="fld full"><label>What decision do you need?</label><textarea value={ag["Message"]||""} onChange={e=>setAg(sx=>({...sx,Message:e.target.value}))} placeholder="Scope, sector, what is at stake in the GO / NO-GO..." /></div>
+              </div>
+              {captchaBlock()}
+              <button className="btn" disabled={agStatus==="sending"} onClick={submitArgo} style={{background:"#1E5B8A",marginTop:14,width:"100%",opacity:agStatus==="sending"?.6:1,cursor:agStatus==="sending"?"wait":"pointer"}}>{agStatus==="sending"?"Sending...":"Request access"}</button>
+              {agStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#1B6B35",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
+              {agStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#C0553A",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
+              <div style={{fontSize:".72rem",color:"#6b7c8c",marginTop:12,lineHeight:1.6}}>Your details are used only to follow up on this request. They are not shared. ARGO is decision support; it does not guarantee any award and gives no legal advice.</div>
+            </div>
+          </div>
+        )}
         {page==="capmeshreq" && (
           <div className="page">
             <div className="phero glass" style={{borderTop:`4px solid ${P.tealL}`}}>
@@ -1878,8 +1959,8 @@ export default function App() {
               </div>
               {captchaBlock()}
               <button className="btn" disabled={cmStatus==="sending"} onClick={submitCapMesh} style={{background:P.tealL,marginTop:14,width:"100%",opacity:cmStatus==="sending"?.6:1,cursor:cmStatus==="sending"?"wait":"pointer"}}>{cmStatus==="sending"?"Sending...":"Request access"}</button>
-              {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
-              {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#ffb4a8",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
+              {cmStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#1B6B35",fontSize:".82rem",fontWeight:600}}>Thank you. Your request was sent. We respond within 24 hours.</div>}
+              {cmStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#C0553A",fontSize:".82rem",fontWeight:600}}>Please complete name, company and a valid email, then try again.</div>}
             </div>
           </div>
         )}
@@ -1908,8 +1989,8 @@ export default function App() {
               </div>
               {captchaBlock()}
               <button className="btn" disabled={svcStatus==="sending"} onClick={submitSvc} style={{background:START_TABS.find(t=>t[0]===tab)[2],marginTop:14,width:"100%",opacity:svcStatus==="sending"?.6:1,cursor:svcStatus==="sending"?"wait":"pointer"}}>{svcStatus==="sending"?"Sending...":"Submit Inquiry"}</button>
-              {svcStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#2EA078",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your inquiry was sent. We respond within 24 hours.</div>}
-              {svcStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#d65a5a",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Please complete every field with a valid email address, then try again. If it keeps failing, email info@istructgroup.com.</div>}
+              {svcStatus==="success" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(46,160,120,.15)",color:"#1B6B35",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Thank you. Your inquiry was sent. We respond within 24 hours.</div>}
+              {svcStatus==="error" && <div style={{marginTop:12,padding:"10px 12px",borderRadius:8,background:"rgba(214,90,90,.15)",color:"#B0413E",fontSize:".82rem",fontWeight:600,lineHeight:1.5}}>Please complete every field with a valid email address, then try again. If it keeps failing, email info@istructgroup.com.</div>}
             </div>
           </div>
         )}
